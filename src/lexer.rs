@@ -79,19 +79,12 @@ impl Lexer {
 
     pub fn tokenize(&mut self) -> Result<Vec<Token>, CompilerError> {
         let mut tokens = Vec::new();
-        while let Some(ch) = self.current_char() {
+        while let Some((ch, line, column)) = self.advance() {
             if ch.is_whitespace() {
-                self.advance();
                 continue;
             }
 
-            // 保存token开始位置
-            let start_line = self.line;
-            let start_column = self.column;
-
-            self.advance();
-
-            if ch == '/' && self.current_char() == Some('/') {
+            if ch == '/' && self.peek() == Some('/') {
                 self.skip_comment();
                 continue;
             }
@@ -100,15 +93,15 @@ impl Lexer {
             if token_type == TokenType::Unknown {
                 return Err(CompilerError::lexical_error(
                     format!("Unexpected character: {}", ch),
-                    start_line,
-                    start_column,
+                    line,
+                    column,
                 ));
             }
 
             tokens.push(Token {
                 token_type,
-                line: start_line,
-                column: start_column,
+                line: line,
+                column: column,
             });
         }
 
@@ -121,12 +114,14 @@ impl Lexer {
         Ok(tokens)
     }
 
-    fn current_char(&self) -> Option<char> {
+    fn peek(&self) -> Option<char> {
         self.input.get(self.position).copied()
     }
 
-    fn advance(&mut self) {
-        if let Some(ch) = self.current_char() {
+    fn advance(&mut self) -> Option<(char, usize, usize)> {
+        if let Some(ch) = self.peek() {
+            let old_line = self.line;
+            let old_column = self.column;
             if ch == '\n' {
                 self.line += 1;
                 self.column = 1;
@@ -134,15 +129,16 @@ impl Lexer {
                 self.column += 1;
             }
             self.position += 1;
+            return Some((ch, old_line, old_column));
         }
+        None
     }
 
     fn skip_comment(&mut self) {
-        while let Some(ch) = self.current_char() {
+        while let Some((ch, ..)) = self.advance() {
             if ch == '\n' {
                 break;
             }
-            self.advance();
         }
     }
 
@@ -159,7 +155,7 @@ impl Lexer {
             ':' => Ok(TokenType::Colon),
             '+' => Ok(TokenType::Plus),
             '-' => {
-                if self.current_char() == Some('>') {
+                if self.peek() == Some('>') {
                     self.advance();
                     Ok(TokenType::Arrow)
                 } else {
@@ -170,7 +166,7 @@ impl Lexer {
             '/' => Ok(TokenType::Slash),
             '%' => Ok(TokenType::Percent),
             '=' => {
-                if self.current_char() == Some('=') {
+                if self.peek() == Some('=') {
                     self.advance();
                     Ok(TokenType::Equal)
                 } else {
@@ -178,7 +174,7 @@ impl Lexer {
                 }
             }
             '!' => {
-                if self.current_char() == Some('=') {
+                if self.peek() == Some('=') {
                     self.advance();
                     Ok(TokenType::NotEqual)
                 } else {
@@ -186,7 +182,7 @@ impl Lexer {
                 }
             }
             '<' => {
-                if self.current_char() == Some('=') {
+                if self.peek() == Some('=') {
                     self.advance();
                     Ok(TokenType::LessEqual)
                 } else {
@@ -194,7 +190,7 @@ impl Lexer {
                 }
             }
             '>' => {
-                if self.current_char() == Some('=') {
+                if self.peek() == Some('=') {
                     self.advance();
                     Ok(TokenType::GreaterEqual)
                 } else {
@@ -202,7 +198,7 @@ impl Lexer {
                 }
             }
             '&' => {
-                if self.current_char() == Some('&') {
+                if self.peek() == Some('&') {
                     self.advance();
                     Ok(TokenType::And)
                 } else {
@@ -214,7 +210,7 @@ impl Lexer {
                 }
             }
             '|' => {
-                if self.current_char() == Some('|') {
+                if self.peek() == Some('|') {
                     self.advance();
                     Ok(TokenType::Or)
                 } else {
@@ -235,7 +231,7 @@ impl Lexer {
     fn read_number(&mut self, ch: char) -> Result<TokenType, CompilerError> {
         let mut number = ch.to_string();
         let mut has_dot = false;
-        while let Some(ch) = self.current_char() {
+        while let Some(ch) = self.peek() {
             if ch == '.' {
                 if has_dot {
                     return Err(CompilerError::lexical_error(
@@ -261,34 +257,30 @@ impl Lexer {
     fn read_string(&mut self, delimiter: char) -> Result<TokenType, CompilerError> {
         let mut string = String::new();
 
-        while let Some(ch) = self.current_char() {
+        while let Some((ch, line, column)) = self.advance() {
             if ch == delimiter {
-                self.advance();
                 return Ok(TokenType::String(string));
             }
             if ch == '\\' {
-                self.advance();
-                if let Some(escaped_ch) = self.current_char() {
+                if let Some((escaped_ch, ..)) = self.advance() {
                     string.push(escaped_ch);
-                    self.advance();
                     continue;
                 } else {
                     return Err(CompilerError::lexical_error(
                         "Unterminated string literal".to_string(),
-                        self.line,
-                        self.column,
+                        line,
+                        column,
                     ));
                 }
             }
             if ch == '\n' {
                 return Err(CompilerError::lexical_error(
                     "Unterminated string literal".to_string(),
-                    self.line,
-                    self.column,
+                    line,
+                    column,
                 ));
             }
             string.push(ch);
-            self.advance();
         }
 
         Err(CompilerError::lexical_error(
@@ -300,7 +292,7 @@ impl Lexer {
 
     fn read_identifier(&mut self, ch: char) -> TokenType {
         let mut identifier = ch.to_string();
-        while let Some(ch) = self.current_char() {
+        while let Some(ch) = self.peek() {
             if !ch.is_alphanumeric() && ch != '_' {
                 break;
             }
