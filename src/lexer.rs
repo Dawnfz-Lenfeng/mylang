@@ -16,8 +16,6 @@ pub enum TokenType {
     While,
     For,
     Return,
-    True,
-    False,
 
     // Operators
     Plus,
@@ -309,8 +307,8 @@ impl Lexer {
             "while" => TokenType::While,
             "for" => TokenType::For,
             "return" => TokenType::Return,
-            "true" => TokenType::True,
-            "false" => TokenType::False,
+            "true" => TokenType::Boolean(true),
+            "false" => TokenType::Boolean(false),
             _ => TokenType::Identifier(identifier),
         }
     }

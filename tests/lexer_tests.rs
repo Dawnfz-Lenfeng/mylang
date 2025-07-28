@@ -114,8 +114,8 @@ mod lexer_tests {
             TokenType::While,
             TokenType::For,
             TokenType::Return,
-            TokenType::True,
-            TokenType::False,
+            TokenType::Boolean(true),
+            TokenType::Boolean(false),
             TokenType::Eof,
         ];
 
