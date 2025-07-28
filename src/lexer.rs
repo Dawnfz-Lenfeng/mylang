@@ -15,6 +15,7 @@ pub enum TokenType {
     Else,
     While,
     For,
+    In,
     Return,
 
     // Operators
@@ -314,6 +315,7 @@ impl Lexer {
             "else" => TokenType::Else,
             "while" => TokenType::While,
             "for" => TokenType::For,
+            "in" => TokenType::In,
             "return" => TokenType::Return,
             "true" => TokenType::Boolean(true),
             "false" => TokenType::Boolean(false),

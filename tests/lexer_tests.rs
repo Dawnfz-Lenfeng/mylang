@@ -102,7 +102,7 @@ mod lexer_tests {
 
     #[test]
     fn test_keywords() {
-        let input = "let fn if else while for return true false";
+        let input = "let fn if else while for return true false in";
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
 
@@ -116,6 +116,7 @@ mod lexer_tests {
             TokenType::Return,
             TokenType::Boolean(true),
             TokenType::Boolean(false),
+            TokenType::In,
             TokenType::Eof,
         ];
 
