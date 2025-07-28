@@ -21,8 +21,8 @@ pub enum TokenType {
     // Operators
     Plus,
     Minus,
-    Multiply,
-    Divide,
+    Asterisk,
+    Slash,
     Modulo,
     Assign,
     Equal,
@@ -166,8 +166,8 @@ impl Lexer {
                     Ok(TokenType::Minus)
                 }
             }
-            '*' => Ok(TokenType::Multiply),
-            '/' => Ok(TokenType::Divide),
+            '*' => Ok(TokenType::Asterisk),
+            '/' => Ok(TokenType::Slash),
             '%' => Ok(TokenType::Modulo),
             '=' => {
                 if self.current_char() == Some('=') {
