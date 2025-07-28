@@ -1,4 +1,4 @@
-use crate::ast::{DataType, Expr, Parameter, Program, Stmt, UnaryOp};
+use crate::ast::{BinaryOp, DataType, Expr, Parameter, Program, Stmt, UnaryOp};
 use crate::error::CompilerError;
 use crate::lexer::{Token, TokenType};
 
@@ -69,14 +69,7 @@ impl Parser {
         self.advance(); // consume 'fn'
 
         let name = self.consume_identifier()?;
-
-        self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
         let parameters = self.parse_parameters()?;
-        self.consume(
-            TokenType::RightParen,
-            "Expected ')' after function parameters",
-        )?;
-
         let return_type = self
             .check(&TokenType::Arrow)
             .then(|| {
@@ -84,7 +77,6 @@ impl Parser {
                 self.parse_type()
             })
             .transpose()?;
-
         let body = self.parse_block_statement_inner()?;
 
         Ok(Stmt::FuncDecl {
@@ -169,56 +161,208 @@ impl Parser {
         Ok(statements)
     }
 
+    fn parse_type(&mut self) -> Result<DataType, CompilerError> {
+        let type_name = self.consume_identifier()?;
+        match type_name.as_str() {
+            "number" => Ok(DataType::Number),
+            "str" => Ok(DataType::String),
+            "bool" => Ok(DataType::Boolean),
+            "array" => {
+                self.consume(TokenType::LeftBracket, "Expected '[' after array type")?;
+                let element_type = self.parse_type()?;
+                self.consume(TokenType::RightBracket, "Expected ']' after array type")?;
+                Ok(DataType::Array(Box::new(element_type)))
+            }
+            _ => Err(CompilerError::type_error(format!(
+                "Unknown type: {}",
+                type_name
+            ))),
+        }
+    }
+
+    fn parse_parameters(&mut self) -> Result<Vec<Parameter>, CompilerError> {
+        self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
+
+        let mut parameters = Vec::new();
+        if self.check(&TokenType::RightParen) {
+            self.consume(TokenType::RightParen, "Expected ')' after parameters")?;
+            return Ok(parameters);
+        }
+        parameters.push(self.parse_parameter()?);
+
+        while self.check(&TokenType::Comma) {
+            self.advance();
+            parameters.push(self.parse_parameter()?);
+        }
+        self.consume(TokenType::RightParen, "Expected ')' after parameters")?;
+
+        Ok(parameters)
+    }
+
+    fn parse_parameter(&mut self) -> Result<Parameter, CompilerError> {
+        let name = self.consume_identifier()?;
+        let param_type = self
+            .check(&TokenType::Colon)
+            .then(|| {
+                self.advance();
+                self.parse_type()
+            })
+            .transpose()?;
+        Ok(Parameter { name, param_type })
+    }
+
     /// Grammar: assignment
     fn parse_expression(&mut self) -> Result<Expr, CompilerError> {
         self.parse_assignment()
     }
 
-    /// Grammar: identifier '=' expression | or
+    /// Grammar: or ('=' or)*
     fn parse_assignment(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement assignment parsing
-        self.parse_or()
+        let mut expr = self.parse_or()?;
+        if self.check(&TokenType::Assign) {
+            let op = match self.advance().token_type {
+                TokenType::Assign => BinaryOp::Assign,
+                _ => unreachable!(),
+            };
+            let right = self.parse_assignment()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
     /// Grammar: and ('||' and)*
     fn parse_or(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement logical OR parsing
-        self.parse_and()
+        let mut expr = self.parse_and()?;
+        while matches!(self.peek().token_type, TokenType::Or) {
+            let op = match self.advance().token_type {
+                TokenType::Or => BinaryOp::Or,
+                _ => unreachable!(),
+            };
+            let right = self.parse_and()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
     /// Grammar: equality ('&&' equality)*
     fn parse_and(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement logical AND parsing
-        self.parse_equality()
+        let mut expr = self.parse_equality()?;
+        while matches!(self.peek().token_type, TokenType::And) {
+            let op = match self.advance().token_type {
+                TokenType::And => BinaryOp::And,
+                _ => unreachable!(),
+            };
+            let right = self.parse_equality()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
     /// Grammar: comparison ('==' comparison | '!=' comparison)*
     fn parse_equality(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement equality parsing
-        self.parse_comparison()
+        let mut expr = self.parse_comparison()?;
+        while matches!(
+            self.peek().token_type,
+            TokenType::Equal | TokenType::NotEqual
+        ) {
+            let op = match self.advance().token_type {
+                TokenType::Equal => BinaryOp::Equal,
+                TokenType::NotEqual => BinaryOp::NotEqual,
+                _ => unreachable!(),
+            };
+            let right = self.parse_comparison()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
     /// Grammar: term ('<' term | '>' term | '<=' term | '>=' term)*
     fn parse_comparison(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement comparison parsing
-        self.parse_term()
+        let mut expr = self.parse_term()?;
+        while matches!(
+            self.peek().token_type,
+            TokenType::LessThan
+                | TokenType::GreaterThan
+                | TokenType::LessEqual
+                | TokenType::GreaterEqual
+        ) {
+            let op = match self.advance().token_type {
+                TokenType::LessThan => BinaryOp::LessThan,
+                TokenType::GreaterThan => BinaryOp::GreaterThan,
+                TokenType::LessEqual => BinaryOp::LessEqual,
+                TokenType::GreaterEqual => BinaryOp::GreaterEqual,
+                _ => unreachable!(),
+            };
+            let right = self.parse_term()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
-    /// Grammar: factor ('+' factor | '-' factor)*
+    /// Grammar: factor '+' term | '-' term
     fn parse_term(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement addition/subtraction parsing
-        self.parse_factor()
+        let mut expr = self.parse_factor()?;
+        while matches!(self.peek().token_type, TokenType::Plus | TokenType::Minus) {
+            let op = match self.advance().token_type {
+                TokenType::Plus => BinaryOp::Add,
+                TokenType::Minus => BinaryOp::Subtract,
+                _ => unreachable!(),
+            };
+            let right = self.parse_term()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
-    /// Grammar: unary ('*' unary | '/' unary)*
+    /// Grammar: unary '*' factor | '/' factor
     fn parse_factor(&mut self) -> Result<Expr, CompilerError> {
-        // TODO: Implement multiplication/division parsing
-        self.parse_unary()
+        let mut expr = self.parse_unary()?;
+        while matches!(
+            self.peek().token_type,
+            TokenType::Asterisk | TokenType::Slash
+        ) {
+            let op = match self.advance().token_type {
+                TokenType::Asterisk => BinaryOp::Multiply,
+                TokenType::Slash => BinaryOp::Divide,
+                _ => unreachable!(),
+            };
+            let right = self.parse_factor()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(right),
+            };
+        }
+        Ok(expr)
     }
 
     /// Grammar: '-' unary | '!' unary | call
     fn parse_unary(&mut self) -> Result<Expr, CompilerError> {
-        if let TokenType::Minus | TokenType::Not = self.peek().token_type {
+        if matches!(self.peek().token_type, TokenType::Minus | TokenType::Not) {
             let op = match self.advance().token_type {
                 TokenType::Minus => UnaryOp::Minus,
                 TokenType::Not => UnaryOp::Not,
@@ -236,25 +380,34 @@ impl Parser {
     /// Grammar: primary ( '(' arguments? ')' | '[' expr ']' )*
     fn parse_call(&mut self) -> Result<Expr, CompilerError> {
         let mut expr = self.parse_primary()?;
-        while let TokenType::LeftParen | TokenType::LeftBracket = self.peek().token_type {
-            if self.check(&TokenType::LeftParen) {
-                expr = Expr::Call {
+        while matches!(
+            self.peek().token_type,
+            TokenType::LeftParen | TokenType::LeftBracket
+        ) {
+            expr = if self.check(&TokenType::LeftParen) {
+                Expr::Call {
                     callee: Box::new(expr),
                     arguments: self.parse_arguments()?,
-                };
+                }
             } else {
-                expr = Expr::Index {
+                Expr::Index {
                     array: Box::new(expr),
                     index: Box::new(self.parse_expression()?),
-                };
-            }
+                }
+            };
         }
         Ok(expr)
     }
 
+    /// Grammar: expression ( ',' expression )*
     fn parse_arguments(&mut self) -> Result<Vec<Expr>, CompilerError> {
         let mut arguments = Vec::new();
-        while !self.check(&TokenType::RightParen) {
+        if self.check(&TokenType::RightParen) {
+            return Ok(arguments);
+        }
+        arguments.push(self.parse_expression()?);
+        while self.check(&TokenType::Comma) {
+            self.advance();
             arguments.push(self.parse_expression()?);
         }
         self.consume(TokenType::RightParen, "Expected ')' after arguments")?;
@@ -293,47 +446,6 @@ impl Parser {
         }
     }
 
-    fn parse_type(&mut self) -> Result<DataType, CompilerError> {
-        let type_name = self.consume_identifier()?;
-        match type_name.as_str() {
-            "number" => Ok(DataType::Number),
-            "str" => Ok(DataType::String),
-            "bool" => Ok(DataType::Boolean),
-            "array" => {
-                self.consume(TokenType::LeftBracket, "Expected '[' after array type")?;
-                let element_type = self.parse_type()?;
-                self.consume(TokenType::RightBracket, "Expected ']' after array type")?;
-                Ok(DataType::Array(Box::new(element_type)))
-            }
-            _ => Err(CompilerError::type_error(format!(
-                "Unknown type: {}",
-                type_name
-            ))),
-        }
-    }
-
-    fn parse_parameters(&mut self) -> Result<Vec<Parameter>, CompilerError> {
-        let mut parameters = Vec::new();
-
-        while !self.check(&TokenType::RightParen) {
-            let name = self.consume_identifier()?;
-            let param_type = self
-                .check(&TokenType::Colon)
-                .then(|| {
-                    self.advance();
-                    self.parse_type()
-                })
-                .transpose()?;
-            parameters.push(Parameter { name, param_type });
-            if self.check(&TokenType::RightParen) {
-                break;
-            }
-            self.consume(TokenType::Comma, "Expected ',' after parameter")?;
-        }
-
-        Ok(parameters)
-    }
-
     // Utility methods
     fn peek(&self) -> &Token {
         &self.tokens[self.current]
@@ -358,7 +470,7 @@ impl Parser {
         if self.is_at_end() {
             false
         } else {
-            std::mem::discriminant(&self.peek().token_type) == std::mem::discriminant(token_type)
+            self.peek().token_type == *token_type
         }
     }
 
