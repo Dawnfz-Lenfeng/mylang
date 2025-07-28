@@ -48,6 +48,7 @@ pub enum TokenType {
     Colon,
 
     // Special
+    Unknown,
     Newline,
     Eof,
 }
@@ -79,20 +80,31 @@ impl Lexer {
     pub fn tokenize(&mut self) -> Result<Vec<Token>, CompilerError> {
         let mut tokens = Vec::new();
         while let Some(ch) = self.current_char() {
-            self.advance();
             if ch.is_whitespace() {
-                self.skip_whitespace();
-                continue;
-            }
-            if ch == '/' && self.current_char() == Some('/') {
-                self.skip_comment();
+                self.advance();
                 continue;
             }
 
             // 保存token开始位置
             let start_line = self.line;
             let start_column = self.column;
+
+            self.advance();
+
+            if ch == '/' && self.current_char() == Some('/') {
+                self.skip_comment();
+                continue;
+            }
+
             let token_type = self.read_token_type(ch)?;
+            if token_type == TokenType::Unknown {
+                return Err(CompilerError::lexical_error(
+                    format!("Unexpected character: {}", ch),
+                    start_line,
+                    start_column,
+                ));
+            }
+
             tokens.push(Token {
                 token_type,
                 line: start_line,
@@ -122,15 +134,6 @@ impl Lexer {
                 self.column += 1;
             }
             self.position += 1;
-        }
-    }
-
-    fn skip_whitespace(&mut self) {
-        while let Some(ch) = self.current_char() {
-            if !ch.is_whitespace() {
-                break;
-            }
-            self.advance();
         }
     }
 
@@ -218,11 +221,7 @@ impl Lexer {
             '"' | '\'' => self.read_string(ch),
             '0'..='9' => self.read_number(ch),
             'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier(ch)),
-            _ => Err(CompilerError::lexical_error(
-                format!("Unexpected character: {}", ch),
-                self.line,
-                self.column,
-            )),
+            _ => Ok(TokenType::Unknown),
         }
     }
 
@@ -258,7 +257,7 @@ impl Lexer {
         while let Some(ch) = self.current_char() {
             if ch == delimiter {
                 self.advance();
-                break;
+                return Ok(TokenType::String(string));
             }
             if ch == '\\' {
                 self.advance();
@@ -285,7 +284,11 @@ impl Lexer {
             self.advance();
         }
 
-        Ok(TokenType::String(string))
+        Err(CompilerError::lexical_error(
+            "Unterminated string literal".to_string(),
+            self.line,
+            self.column,
+        ))
     }
 
     fn read_identifier(&mut self, ch: char) -> TokenType {
