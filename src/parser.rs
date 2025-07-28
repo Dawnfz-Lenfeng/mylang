@@ -338,16 +338,17 @@ impl Parser {
         Ok(expr)
     }
 
-    /// Grammar: unary '*' factor | '/' factor
+    /// Grammar: unary '*' factor | '/' factor | '%' factor
     fn parse_factor(&mut self) -> Result<Expr, CompilerError> {
         let mut expr = self.parse_unary()?;
         while matches!(
             self.peek().token_type,
-            TokenType::Asterisk | TokenType::Slash
+            TokenType::Asterisk | TokenType::Slash | TokenType::Percent
         ) {
             let op = match self.advance().token_type {
                 TokenType::Asterisk => BinaryOp::Multiply,
                 TokenType::Slash => BinaryOp::Divide,
+                TokenType::Percent => BinaryOp::Modulo,
                 _ => unreachable!(),
             };
             let right = self.parse_factor()?;

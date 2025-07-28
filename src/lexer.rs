@@ -23,7 +23,7 @@ pub enum TokenType {
     Minus,
     Asterisk,
     Slash,
-    Modulo,
+    Percent,
     Assign,
     Equal,
     NotEqual,
@@ -168,7 +168,7 @@ impl Lexer {
             }
             '*' => Ok(TokenType::Asterisk),
             '/' => Ok(TokenType::Slash),
-            '%' => Ok(TokenType::Modulo),
+            '%' => Ok(TokenType::Percent),
             '=' => {
                 if self.current_char() == Some('=') {
                     self.advance();
