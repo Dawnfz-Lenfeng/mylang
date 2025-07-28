@@ -1,0 +1,20 @@
+[package]
+name = "interpreter"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "interpreter"
+path = "src/main.rs"
+
+[lib]
+name = "interpreter"
+path = "src/lib.rs"
+
+[dependencies]
+
+[dev-dependencies]
+
+[[test]]
+name = "integration"
+path = "tests/mod.rs"
