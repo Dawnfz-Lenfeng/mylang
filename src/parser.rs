@@ -16,9 +16,7 @@ impl Parser {
         let mut program = Program::new();
 
         while !self.is_at_end() {
-            if let Ok(stmt) = self.parse_statement() {
-                program.add_statement(stmt);
-            }
+            program.add_statement(self.parse_statement()?);
         }
 
         Ok(program)
@@ -131,10 +129,12 @@ impl Parser {
     /// Grammar: 'return' [EXPRESSION] ';'
     fn parse_return_statement(&mut self) -> Result<Stmt, CompilerError> {
         self.advance();
-        let value = self
-            .check(&TokenType::Semicolon)
-            .then(|| self.parse_expression())
-            .transpose()?;
+        let value = if !self.check(&TokenType::Semicolon) {
+            Some(self.parse_expression()?)
+        } else {
+            None
+        };
+        self.consume_semicolon()?;
         Ok(Stmt::Return { value })
     }
 
@@ -391,9 +391,12 @@ impl Parser {
                     arguments: self.parse_arguments()?,
                 }
             } else {
+                self.advance();
+                let index = self.parse_expression()?;
+                self.consume(TokenType::RightBracket, "Expected ']' after array index")?;
                 Expr::Index {
                     array: Box::new(expr),
-                    index: Box::new(self.parse_expression()?),
+                    index: Box::new(index),
                 }
             };
         }
@@ -402,8 +405,10 @@ impl Parser {
 
     /// Grammar: expression ( ',' expression )*
     fn parse_arguments(&mut self) -> Result<Vec<Expr>, CompilerError> {
+        self.advance(); // consume '('
         let mut arguments = Vec::new();
         if self.check(&TokenType::RightParen) {
+            self.advance(); // consume ')'
             return Ok(arguments);
         }
         arguments.push(self.parse_expression()?);
@@ -443,7 +448,11 @@ impl Parser {
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
-            _ => Err(CompilerError::new("Expected expression".to_string())),
+            _ => Err(CompilerError::syntax_error(
+                "Expected expression".to_string(),
+                self.peek().line,
+                self.peek().column,
+            )),
         }
     }
 
@@ -479,7 +488,11 @@ impl Parser {
         if self.check(&token_type) {
             Ok(self.advance())
         } else {
-            Err(CompilerError::new(message.to_string()))
+            Err(CompilerError::syntax_error(
+                message.to_string(),
+                self.peek().line,
+                self.peek().column,
+            ))
         }
     }
 
@@ -489,7 +502,11 @@ impl Parser {
             self.advance();
             Ok(name)
         } else {
-            Err(CompilerError::new("Expected identifier".to_string()))
+            Err(CompilerError::syntax_error(
+                "Expected identifier".to_string(),
+                self.peek().line,
+                self.peek().column,
+            ))
         }
     }
 

@@ -290,7 +290,7 @@ mod parser_tests {
 
     #[test]
     fn test_if_statement_structure() {
-        let program = parse_program("if (x > 0) { x; } else { y; }").unwrap();
+        let program = parse_program("if x > 0 { x; } else { y; }").unwrap();
         let expected = Program {
             statements: vec![Stmt::If {
                 condition: Expr::Binary {
@@ -406,20 +406,20 @@ mod parser_tests {
                 "a + b * c - d / e;",
                 Program {
                     statements: vec![Stmt::Expression(Expr::Binary {
-                        left: Box::new(Expr::Binary {
-                            left: Box::new(Expr::Identifier("a".to_string())),
-                            operator: BinaryOp::Add,
-                            right: Box::new(Expr::Binary {
+                        left: Box::new(Expr::Identifier("a".to_string())),
+                        operator: BinaryOp::Add,
+                        right: Box::new(Expr::Binary {
+                            left: Box::new(Expr::Binary {
                                 left: Box::new(Expr::Identifier("b".to_string())),
                                 operator: BinaryOp::Multiply,
                                 right: Box::new(Expr::Identifier("c".to_string())),
                             }),
-                        }),
-                        operator: BinaryOp::Subtract,
-                        right: Box::new(Expr::Binary {
-                            left: Box::new(Expr::Identifier("d".to_string())),
-                            operator: BinaryOp::Divide,
-                            right: Box::new(Expr::Identifier("e".to_string())),
+                            operator: BinaryOp::Subtract,
+                            right: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Identifier("d".to_string())),
+                                operator: BinaryOp::Divide,
+                                right: Box::new(Expr::Identifier("e".to_string())),
+                            }),
                         }),
                     })],
                 },
@@ -729,7 +729,7 @@ mod parser_tests {
 
     #[test]
     fn test_if_statement() {
-        let result = parse_program("if (x > 0) { x; }").unwrap();
+        let result = parse_program("if x > 0 { x; }").unwrap();
         let expected = Program {
             statements: vec![Stmt::If {
                 condition: Expr::Binary {
@@ -746,7 +746,7 @@ mod parser_tests {
 
     #[test]
     fn test_if_else_statement() {
-        let result = parse_program("if (x > 0) { x; } else { y; }").unwrap();
+        let result = parse_program("if x > 0 { x; } else { y; }").unwrap();
         let expected = Program {
             statements: vec![Stmt::If {
                 condition: Expr::Binary {
@@ -764,8 +764,8 @@ mod parser_tests {
     #[test]
     fn test_nested_if_statements() {
         let input = r#"
-            if (a > 0) {
-                if (b > 0) {
+            if a > 0 {
+                if b > 0 {
                     return a + b;
                 }
             } else {
@@ -805,7 +805,7 @@ mod parser_tests {
 
     #[test]
     fn test_while_statement() {
-        let result = parse_program("while (x > 0) { x = x - 1; }").unwrap();
+        let result = parse_program("while x > 0 { x = x - 1; }").unwrap();
         let expected = Program {
             statements: vec![Stmt::While {
                 condition: Expr::Binary {
@@ -1107,7 +1107,7 @@ mod parser_tests {
             fn main() {
                 let x = 42;
                 let y = x + 1;
-                if (y > x) {
+                if y > x {
                     return y;
                 }
                 return x;
@@ -1125,7 +1125,7 @@ mod parser_tests {
     fn test_fibonacci_example() {
         let input = r#"
             fn fibonacci(n: number) -> number {
-                if (n <= 1) {
+                if n <= 1 {
                     return n;
                 }
                 return fibonacci(n - 1) + fibonacci(n - 2);
@@ -1162,13 +1162,11 @@ mod parser_tests {
 
     #[test]
     fn test_error_recovery() {
-        // Missing semicolon - might still parse depending on implementation
-        let _result = parse_program("let x = 42");
-        // Don't assert error since parser might be lenient
+        let result = parse_program("let x = 42");
+        assert!(result.is_err());
 
-        // Invalid expression
-        let _result = parse_program("1 + + 2;");
-        // This should likely fail but implementation dependent
+        let result = parse_program("1 + + 2;");
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1182,9 +1180,8 @@ mod parser_tests {
         ];
 
         for input in error_cases {
-            let _result = parse_program(input);
-            // Most of these should fail, but we don't strictly assert
-            // since error recovery behavior may vary
+            let result = parse_program(input);
+            assert!(result.is_err());
         }
     }
 
