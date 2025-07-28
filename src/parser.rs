@@ -448,11 +448,7 @@ impl Parser {
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
-            _ => Err(CompilerError::syntax_error(
-                "Expected expression".to_string(),
-                self.peek().line,
-                self.peek().column,
-            )),
+            _ => Err(self.syntax_error("Expected expression".to_string())),
         }
     }
 
@@ -488,11 +484,7 @@ impl Parser {
         if self.check(&token_type) {
             Ok(self.advance())
         } else {
-            Err(CompilerError::syntax_error(
-                message.to_string(),
-                self.peek().line,
-                self.peek().column,
-            ))
+            Err(self.syntax_error(message.to_string()))
         }
     }
 
@@ -502,16 +494,16 @@ impl Parser {
             self.advance();
             Ok(name)
         } else {
-            Err(CompilerError::syntax_error(
-                "Expected identifier".to_string(),
-                self.peek().line,
-                self.peek().column,
-            ))
+            Err(self.syntax_error("Expected identifier".to_string()))
         }
     }
 
     fn consume_semicolon(&mut self) -> Result<(), CompilerError> {
         self.consume(TokenType::Semicolon, "Expected ';' after statement")?;
         Ok(())
+    }
+
+    fn syntax_error(&self, message: String) -> CompilerError {
+        CompilerError::syntax_error(message, self.peek().line, self.peek().column)
     }
 }
