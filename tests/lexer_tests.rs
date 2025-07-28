@@ -1,4 +1,4 @@
-use interpreter::{Lexer, Token, TokenType, CompilerError};
+use interpreter::{Lexer, TokenType};
 
 #[cfg(test)]
 mod lexer_tests {
@@ -44,15 +44,22 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(tokens.len(), expected.len(),
-            "Single char tokens: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}", 
-            expected.len(), tokens.len(), tokens);
+        assert_eq!(
+            tokens.len(),
+            expected.len(),
+            "Single char tokens: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
+            expected.len(),
+            tokens.len(),
+            tokens
+        );
         for (i, expected_token) in expected.iter().enumerate() {
             assert_eq!(
                 std::mem::discriminant(&tokens[i].token_type),
                 std::mem::discriminant(expected_token),
                 "Single char tokens: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i, tokens[i], expected_token
+                i,
+                tokens[i],
+                expected_token
             );
         }
     }
@@ -73,15 +80,22 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(tokens.len(), expected.len(),
-            "Two char tokens: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}", 
-            expected.len(), tokens.len(), tokens);
+        assert_eq!(
+            tokens.len(),
+            expected.len(),
+            "Two char tokens: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
+            expected.len(),
+            tokens.len(),
+            tokens
+        );
         for (i, expected_token) in expected.iter().enumerate() {
             assert_eq!(
                 std::mem::discriminant(&tokens[i].token_type),
                 std::mem::discriminant(expected_token),
                 "Two char tokens: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i, tokens[i], expected_token
+                i,
+                tokens[i],
+                expected_token
             );
         }
     }
@@ -105,16 +119,24 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(tokens.len(), expected.len(), 
-            "Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}", 
-            expected.len(), tokens.len(), tokens);
-            
+        assert_eq!(
+            tokens.len(),
+            expected.len(),
+            "Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
+            expected.len(),
+            tokens.len(),
+            tokens
+        );
+
         for (i, expected_token) in expected.iter().enumerate() {
             assert_eq!(
                 std::mem::discriminant(&tokens[i].token_type),
                 std::mem::discriminant(expected_token),
                 "Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}\nAll tokens: {:#?}",
-                i, tokens[i], expected_token, tokens
+                i,
+                tokens[i],
+                expected_token,
+                tokens
             );
         }
     }
@@ -131,16 +153,26 @@ mod lexer_tests {
             .filter(|t| matches!(t.token_type, TokenType::Identifier(_)))
             .collect();
 
-        assert_eq!(identifier_tokens.len(), expected_names.len(),
-            "Identifier tokens: Count mismatch!\nExpected: {} identifiers\nActual: {} identifiers\nAll tokens: {:#?}", 
-            expected_names.len(), identifier_tokens.len(), tokens);
+        assert_eq!(
+            identifier_tokens.len(),
+            expected_names.len(),
+            "Identifier tokens: Count mismatch!\nExpected: {} identifiers\nActual: {} identifiers\nAll tokens: {:#?}",
+            expected_names.len(),
+            identifier_tokens.len(),
+            tokens
+        );
         for (i, expected_name) in expected_names.iter().enumerate() {
             if let TokenType::Identifier(name) = &identifier_tokens[i].token_type {
-                assert_eq!(name, expected_name,
+                assert_eq!(
+                    name, expected_name,
                     "Identifier mismatch at position {}!\nActual: '{}'\nExpected: '{}'",
-                    i, name, expected_name);
+                    i, name, expected_name
+                );
             } else {
-                panic!("Expected identifier token at position {}, got: {:#?}", i, identifier_tokens[i]);
+                panic!(
+                    "Expected identifier token at position {}, got: {:#?}",
+                    i, identifier_tokens[i]
+                );
             }
         }
     }
@@ -157,42 +189,67 @@ mod lexer_tests {
             .filter(|t| matches!(t.token_type, TokenType::Number(_)))
             .collect();
 
-        assert_eq!(number_tokens.len(), expected_numbers.len(),
-            "Number tokens: Count mismatch!\nExpected: {} numbers\nActual: {} numbers\nAll tokens: {:#?}", 
-            expected_numbers.len(), number_tokens.len(), tokens);
+        assert_eq!(
+            number_tokens.len(),
+            expected_numbers.len(),
+            "Number tokens: Count mismatch!\nExpected: {} numbers\nActual: {} numbers\nAll tokens: {:#?}",
+            expected_numbers.len(),
+            number_tokens.len(),
+            tokens
+        );
         for (i, expected_num) in expected_numbers.iter().enumerate() {
             if let TokenType::Number(num) = number_tokens[i].token_type {
-                assert_eq!(num, *expected_num,
+                assert_eq!(
+                    num, *expected_num,
                     "Number mismatch at position {}!\nActual: {}\nExpected: {}",
-                    i, num, expected_num);
+                    i, num, expected_num
+                );
             } else {
-                panic!("Expected number token at position {}, got: {:#?}", i, number_tokens[i]);
+                panic!(
+                    "Expected number token at position {}, got: {:#?}",
+                    i, number_tokens[i]
+                );
             }
         }
     }
 
     #[test]
     fn test_strings() {
-        let input = r#""hello" "world with spaces" "escaped\"quote""#;
+        let input = r#""hello" "world with spaces" 'one "double" quote' "escaped\"quote""#;
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
 
-        let expected_strings = vec!["hello", "world with spaces", "escaped\"quote"];
+        let expected_strings = vec![
+            "hello",
+            "world with spaces",
+            r#"one "double" quote"#,
+            r#"escaped"quote"#,
+        ];
         let string_tokens: Vec<_> = tokens
             .iter()
             .filter(|t| matches!(t.token_type, TokenType::String(_)))
             .collect();
 
-        assert_eq!(string_tokens.len(), expected_strings.len(),
-            "String tokens: Count mismatch!\nExpected: {} strings\nActual: {} strings\nAll tokens: {:#?}", 
-            expected_strings.len(), string_tokens.len(), tokens);
+        assert_eq!(
+            string_tokens.len(),
+            expected_strings.len(),
+            "String tokens: Count mismatch!\nExpected: {} strings\nActual: {} strings\nAll tokens: {:#?}",
+            expected_strings.len(),
+            string_tokens.len(),
+            tokens
+        );
         for (i, expected_str) in expected_strings.iter().enumerate() {
             if let TokenType::String(s) = &string_tokens[i].token_type {
-                assert_eq!(s, expected_str,
+                assert_eq!(
+                    s, expected_str,
                     "String mismatch at position {}!\nActual: '{}'\nExpected: '{}'",
-                    i, s, expected_str);
+                    i, s, expected_str
+                );
             } else {
-                panic!("Expected string token at position {}, got: {:#?}", i, string_tokens[i]);
+                panic!(
+                    "Expected string token at position {}, got: {:#?}",
+                    i, string_tokens[i]
+                );
             }
         }
     }
@@ -213,15 +270,22 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(tokens.len(), expected_types.len(),
-            "Comment test: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}", 
-            expected_types.len(), tokens.len(), tokens);
+        assert_eq!(
+            tokens.len(),
+            expected_types.len(),
+            "Comment test: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
+            expected_types.len(),
+            tokens.len(),
+            tokens
+        );
         for (i, expected_type) in expected_types.iter().enumerate() {
             assert_eq!(
                 std::mem::discriminant(&tokens[i].token_type),
                 std::mem::discriminant(expected_type),
                 "Comment test: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i, tokens[i], expected_type
+                i,
+                tokens[i],
+                expected_type
             );
         }
     }
@@ -248,15 +312,176 @@ mod lexer_tests {
 
     #[test]
     fn test_error_handling() {
-        let input = "let x = @invalid";
-        let mut lexer = Lexer::new(input.to_string());
+        let test_cases = vec![
+            ("let x = @invalid", "Unexpected character: @"),
+            ("let x = #hash", "Unexpected character: #"),
+            ("let x = $dollar", "Unexpected character: $"),
+            ("let x = `backtick", "Unexpected character: `"),
+            ("let x = ~tilde", "Unexpected character: ~"),
+        ];
 
-        // Should produce an error for invalid character
+        for (input, expected_error_part) in test_cases {
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
+
+            assert!(
+                result.is_err(),
+                "Expected lexing to fail for input: '{}', but it succeeded with tokens: {:?}",
+                input,
+                result
+            );
+
+            let error = result.unwrap_err();
+            assert!(
+                error.message.contains(expected_error_part),
+                "Error message '{}' should contain '{}'",
+                error.message,
+                expected_error_part
+            );
+        }
+    }
+
+    #[test]
+    fn test_unterminated_string_errors() {
+        let test_cases = vec![
+            (r#""unterminated"#, "Unterminated string literal"),
+            (r#"'unterminated"#, "Unterminated string literal"),
+            ("\"newline\nin\nstring\"", "Unterminated string literal"),
+            ("'newline\nin\nstring'", "Unterminated string literal"),
+        ];
+
+        for (input, expected_error_part) in test_cases {
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
+
+            assert!(
+                result.is_err(),
+                "Expected lexing to fail for input: '{}', but it succeeded",
+                input
+            );
+
+            let error = result.unwrap_err();
+            assert!(
+                error.message.contains(expected_error_part),
+                "Error message '{}' should contain '{}'",
+                error.message,
+                expected_error_part
+            );
+        }
+    }
+
+    #[test]
+    fn test_invalid_number_errors() {
+        let test_cases = vec![
+            ("123.45.67", "Invalid number"),
+            ("123..45", "Invalid number"),
+            ("1.2.3.4", "Invalid number"),
+        ];
+
+        for (input, expected_error_part) in test_cases {
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
+
+            assert!(
+                result.is_err(),
+                "Expected lexing to fail for input: '{}', but it succeeded",
+                input
+            );
+
+            let error = result.unwrap_err();
+            assert!(
+                error.message.contains(expected_error_part),
+                "Error message '{}' should contain '{}'",
+                error.message,
+                expected_error_part
+            );
+        }
+    }
+
+    #[test]
+    fn test_incomplete_operators() {
+        let test_cases = vec![
+            ("let x = &", "Expected '&&'"),
+            ("let x = |", "Expected '||'"),
+            ("x & y", "Expected '&&'"),
+            ("x | y", "Expected '||'"),
+        ];
+
+        for (input, expected_error_part) in test_cases {
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
+
+            assert!(
+                result.is_err(),
+                "Expected lexing to fail for input: '{}', but it succeeded",
+                input
+            );
+
+            let error = result.unwrap_err();
+            assert!(
+                error.message.contains(expected_error_part),
+                "Error message '{}' should contain '{}'",
+                error.message,
+                expected_error_part
+            );
+        }
+    }
+
+    #[test]
+    fn test_unicode_and_special_characters() {
+        let test_cases = vec![
+            ("let x = ü", "Unexpected character: ü"),
+            ("let x = 中文", "Unexpected character: 中"),
+            ("let x = 🚀", "Unexpected character: 🚀"),
+            ("let x = €", "Unexpected character: €"),
+        ];
+
+        for (input, expected_error_part) in test_cases {
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
+
+            assert!(
+                result.is_err(),
+                "Expected lexing to fail for input: '{}', but it succeeded",
+                input
+            );
+
+            let error = result.unwrap_err();
+            assert!(
+                error.message.contains(expected_error_part),
+                "Error message '{}' should contain '{}'",
+                error.message,
+                expected_error_part
+            );
+        }
+    }
+
+    #[test]
+    fn test_error_position_tracking() {
+        let input = "let x = @";
+        let mut lexer = Lexer::new(input.to_string());
         let result = lexer.tokenize();
-        assert!(
-            result.is_err(),
-            "Expected lexing to fail with invalid character"
-        );
+
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+
+        // Error should be at line 1, column 9 (position of @)
+        assert_eq!(error.line, Some(1), "Error line should be 1");
+        assert_eq!(error.column, Some(9), "Error column should be 9");
+    }
+
+    #[test]
+    fn test_multiline_error_position() {
+        let input = "let x = 42;\nlet y = #invalid";
+        let mut lexer = Lexer::new(input.to_string());
+        let result = lexer.tokenize();
+
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+
+        // Error should be at line 2
+        assert_eq!(error.line, Some(2), "Error line should be 2");
+        assert!(error.column.is_some(), "Error column should be set");
     }
 
     #[test]
@@ -283,15 +508,22 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(tokens.len(), expected.len(),
-            "Function definition: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}", 
-            expected.len(), tokens.len(), tokens);
+        assert_eq!(
+            tokens.len(),
+            expected.len(),
+            "Function definition: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
+            expected.len(),
+            tokens.len(),
+            tokens
+        );
         for (i, expected_token) in expected.iter().enumerate() {
             assert_eq!(
                 std::mem::discriminant(&tokens[i].token_type),
                 std::mem::discriminant(expected_token),
                 "Function definition: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i, tokens[i], expected_token
+                i,
+                tokens[i],
+                expected_token
             );
         }
     }
