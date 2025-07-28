@@ -216,8 +216,8 @@ impl Lexer {
                     ))
                 }
             }
-            '"' => Ok(self.read_string()?),
-            '0'..='9' => Ok(self.read_number()),
+            '"' | '\'' => self.read_string(ch),
+            '0'..='9' => self.read_number(),
             'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier()),
             _ => Err(CompilerError::lexical_error(
                 format!("Unexpected character: {}", ch),
@@ -227,25 +227,59 @@ impl Lexer {
         }
     }
 
-    fn read_number(&mut self) -> TokenType {
+    fn read_number(&mut self) -> Result<TokenType, CompilerError> {
         let mut number = String::new();
+        let mut has_dot = false;
         while let Some(ch) = self.current_char() {
+            if ch == '.' {
+                if has_dot {
+                    return Err(CompilerError::lexical_error(
+                        format!("Invalid number"),
+                        self.line,
+                        self.column,
+                    ));
+                }
+                has_dot = true;
+                number.push(ch);
+                self.advance();
+                continue;
+            }
             if !ch.is_numeric() {
                 break;
             }
             number.push(ch);
             self.advance();
         }
-        TokenType::Number(number.parse().unwrap())
+        Ok(TokenType::Number(number.parse().unwrap()))
     }
 
-    fn read_string(&mut self) -> Result<TokenType, CompilerError> {
+    fn read_string(&mut self, delimiter: char) -> Result<TokenType, CompilerError> {
         let mut string = String::new();
         self.advance();
         while let Some(ch) = self.current_char() {
-            if ch == '"' {
+            if ch == delimiter {
                 self.advance();
                 break;
+            }
+            if ch == '\\' {
+                self.advance();
+                if let Some(ch) = self.current_char() {
+                    string.push(ch);
+                    self.advance();
+                    continue;
+                }
+                return Err(CompilerError::lexical_error(
+                    format!("Unterminated string literal"),
+                    self.line,
+                    self.column,
+                ));
+            }
+            if ch == '\n' {
+                return Err(CompilerError::lexical_error(
+                    format!("Unterminated string literal"),
+                    self.line,
+                    self.column,
+                ));
             }
             string.push(ch);
             self.advance();
