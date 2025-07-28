@@ -35,6 +35,7 @@ pub enum TokenType {
     Not,
 
     // Delimiters
+    Arrow,
     LeftParen,
     RightParen,
     LeftBrace,
@@ -156,7 +157,14 @@ impl Lexer {
             ';' => Ok(TokenType::Semicolon),
             ':' => Ok(TokenType::Colon),
             '+' => Ok(TokenType::Plus),
-            '-' => Ok(TokenType::Minus),
+            '-' => {
+                if self.current_char() == Some('>') {
+                    self.advance();
+                    Ok(TokenType::Arrow)
+                } else {
+                    Ok(TokenType::Minus)
+                }
+            }
             '*' => Ok(TokenType::Multiply),
             '/' => Ok(TokenType::Divide),
             '%' => Ok(TokenType::Modulo),

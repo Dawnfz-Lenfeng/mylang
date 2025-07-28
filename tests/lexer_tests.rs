@@ -486,7 +486,7 @@ mod lexer_tests {
 
     #[test]
     fn test_function_definition() {
-        let input = "fn add(a, b) { return a + b; }";
+        let input = "fn add(a: number, b: number) -> number { return a + b; }";
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
 
@@ -495,9 +495,15 @@ mod lexer_tests {
             TokenType::Identifier("add".to_string()),
             TokenType::LeftParen,
             TokenType::Identifier("a".to_string()),
+            TokenType::Colon,
+            TokenType::Identifier("number".to_string()),
             TokenType::Comma,
             TokenType::Identifier("b".to_string()),
+            TokenType::Colon,
+            TokenType::Identifier("number".to_string()),
             TokenType::RightParen,
+            TokenType::Arrow,
+            TokenType::Identifier("number".to_string()),
             TokenType::LeftBrace,
             TokenType::Return,
             TokenType::Identifier("a".to_string()),
