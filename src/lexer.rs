@@ -1,0 +1,279 @@
+use crate::error::CompilerError;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TokenType {
+    // Literals
+    Number(f64),
+    String(String),
+    Identifier(String),
+    Boolean(bool),
+
+    // Keywords
+    Let,
+    Fn,
+    If,
+    Else,
+    While,
+    For,
+    Return,
+    True,
+    False,
+
+    // Operators
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    Modulo,
+    Assign,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessEqual,
+    GreaterThan,
+    GreaterEqual,
+    And,
+    Or,
+    Not,
+
+    // Delimiters
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    LeftBracket,
+    RightBracket,
+    Comma,
+    Semicolon,
+    Colon,
+
+    // Special
+    Newline,
+    Eof,
+}
+
+#[derive(Debug, Clone)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub line: usize,
+    pub column: usize,
+}
+
+pub struct Lexer {
+    input: Vec<char>,
+    position: usize,
+    line: usize,
+    column: usize,
+}
+
+impl Lexer {
+    pub fn new(input: String) -> Self {
+        Self {
+            input: input.chars().collect(),
+            position: 0,
+            line: 1,
+            column: 1,
+        }
+    }
+
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, CompilerError> {
+        let mut tokens = Vec::new();
+        while let Some(ch) = self.current_char() {
+            if ch.is_whitespace() {
+                self.skip_whitespace();
+                continue;
+            }
+            if ch == '/' && self.peek_next() == Some('/') {
+                self.skip_comment();
+                continue;
+            }
+
+            let token_type = self.read_token_type(ch)?;
+            tokens.push(Token {
+                token_type,
+                line: self.line,
+                column: self.column,
+            });
+            self.advance();
+        }
+
+        tokens.push(Token {
+            token_type: TokenType::Eof,
+            line: self.line,
+            column: self.column,
+        });
+
+        Ok(tokens)
+    }
+
+    fn current_char(&self) -> Option<char> {
+        self.input.get(self.position).copied()
+    }
+
+    fn peek_next(&self) -> Option<char> {
+        self.input.get(self.position + 1).copied()
+    }
+
+    fn advance(&mut self) {
+        if let Some(ch) = self.current_char() {
+            if ch == '\n' {
+                self.line += 1;
+                self.column = 1;
+            } else {
+                self.column += 1;
+            }
+            self.position += 1;
+        }
+    }
+
+    fn skip_whitespace(&mut self) {
+        while let Some(ch) = self.current_char() {
+            if !ch.is_whitespace() {
+                break;
+            }
+            self.advance();
+        }
+    }
+
+    fn skip_comment(&mut self) {
+        while let Some(ch) = self.current_char() {
+            if ch == '\n' {
+                break;
+            }
+            self.advance();
+        }
+    }
+
+    fn read_token_type(&mut self, ch: char) -> Result<TokenType, CompilerError> {
+        match ch {
+            '(' => Ok(TokenType::LeftParen),
+            ')' => Ok(TokenType::RightParen),
+            '{' => Ok(TokenType::LeftBrace),
+            '}' => Ok(TokenType::RightBrace),
+            '[' => Ok(TokenType::LeftBracket),
+            ']' => Ok(TokenType::RightBracket),
+            ',' => Ok(TokenType::Comma),
+            ';' => Ok(TokenType::Semicolon),
+            ':' => Ok(TokenType::Colon),
+            '+' => Ok(TokenType::Plus),
+            '-' => Ok(TokenType::Minus),
+            '*' => Ok(TokenType::Multiply),
+            '/' => Ok(TokenType::Divide),
+            '%' => Ok(TokenType::Modulo),
+            '=' => {
+                if self.peek_next() == Some('=') {
+                    self.advance();
+                    Ok(TokenType::Equal)
+                } else {
+                    Ok(TokenType::Assign)
+                }
+            }
+            '!' => {
+                if self.peek_next() == Some('=') {
+                    self.advance();
+                    Ok(TokenType::NotEqual)
+                } else {
+                    Ok(TokenType::Not)
+                }
+            }
+            '<' => {
+                if self.peek_next() == Some('=') {
+                    self.advance();
+                    Ok(TokenType::LessEqual)
+                } else {
+                    Ok(TokenType::LessThan)
+                }
+            }
+            '>' => {
+                if self.peek_next() == Some('=') {
+                    self.advance();
+                    Ok(TokenType::GreaterEqual)
+                } else {
+                    Ok(TokenType::GreaterThan)
+                }
+            }
+            '&' => {
+                if self.peek_next() == Some('&') {
+                    self.advance();
+                    Ok(TokenType::And)
+                } else {
+                    Err(CompilerError::lexical_error(
+                        "Expected '&&'".to_string(),
+                        self.line,
+                        self.column,
+                    ))
+                }
+            }
+            '|' => {
+                if self.peek_next() == Some('|') {
+                    self.advance();
+                    Ok(TokenType::Or)
+                } else {
+                    Err(CompilerError::lexical_error(
+                        "Expected '||'".to_string(),
+                        self.line,
+                        self.column,
+                    ))
+                }
+            }
+            '"' => Ok(self.read_string()?),
+            '0'..='9' => Ok(self.read_number()),
+            'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier()),
+            _ => Err(CompilerError::lexical_error(
+                format!("Unexpected character: {}", ch),
+                self.line,
+                self.column,
+            )),
+        }
+    }
+
+    fn read_number(&mut self) -> TokenType {
+        let mut number = String::new();
+        while let Some(ch) = self.current_char() {
+            if !ch.is_numeric() {
+                break;
+            }
+            number.push(ch);
+            self.advance();
+        }
+        TokenType::Number(number.parse().unwrap())
+    }
+
+    fn read_string(&mut self) -> Result<TokenType, CompilerError> {
+        let mut string = String::new();
+        self.advance();
+        while let Some(ch) = self.current_char() {
+            if ch == '"' {
+                self.advance();
+                break;
+            }
+            string.push(ch);
+            self.advance();
+        }
+        Ok(TokenType::String(string))
+    }
+
+    fn read_identifier(&mut self) -> TokenType {
+        let mut identifier = String::new();
+        while let Some(ch) = self.current_char() {
+            if !ch.is_alphanumeric() && ch != '_' {
+                break;
+            }
+            identifier.push(ch);
+            self.advance();
+        }
+
+        match identifier.as_str() {
+            "let" => TokenType::Let,
+            "fn" => TokenType::Fn,
+            "if" => TokenType::If,
+            "else" => TokenType::Else,
+            "while" => TokenType::While,
+            "for" => TokenType::For,
+            "return" => TokenType::Return,
+            "true" => TokenType::True,
+            "false" => TokenType::False,
+            _ => TokenType::Identifier(identifier),
+        }
+    }
+}
