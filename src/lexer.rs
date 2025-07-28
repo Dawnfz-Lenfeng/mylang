@@ -79,22 +79,25 @@ impl Lexer {
     pub fn tokenize(&mut self) -> Result<Vec<Token>, CompilerError> {
         let mut tokens = Vec::new();
         while let Some(ch) = self.current_char() {
+            self.advance();
             if ch.is_whitespace() {
                 self.skip_whitespace();
                 continue;
             }
-            if ch == '/' && self.peek_next() == Some('/') {
+            if ch == '/' && self.current_char() == Some('/') {
                 self.skip_comment();
                 continue;
             }
 
+            // 保存token开始位置
+            let start_line = self.line;
+            let start_column = self.column;
             let token_type = self.read_token_type(ch)?;
             tokens.push(Token {
                 token_type,
-                line: self.line,
-                column: self.column,
+                line: start_line,
+                column: start_column,
             });
-            self.advance();
         }
 
         tokens.push(Token {
@@ -108,10 +111,6 @@ impl Lexer {
 
     fn current_char(&self) -> Option<char> {
         self.input.get(self.position).copied()
-    }
-
-    fn peek_next(&self) -> Option<char> {
-        self.input.get(self.position + 1).copied()
     }
 
     fn advance(&mut self) {
@@ -161,7 +160,7 @@ impl Lexer {
             '/' => Ok(TokenType::Divide),
             '%' => Ok(TokenType::Modulo),
             '=' => {
-                if self.peek_next() == Some('=') {
+                if self.current_char() == Some('=') {
                     self.advance();
                     Ok(TokenType::Equal)
                 } else {
@@ -169,7 +168,7 @@ impl Lexer {
                 }
             }
             '!' => {
-                if self.peek_next() == Some('=') {
+                if self.current_char() == Some('=') {
                     self.advance();
                     Ok(TokenType::NotEqual)
                 } else {
@@ -177,7 +176,7 @@ impl Lexer {
                 }
             }
             '<' => {
-                if self.peek_next() == Some('=') {
+                if self.current_char() == Some('=') {
                     self.advance();
                     Ok(TokenType::LessEqual)
                 } else {
@@ -185,7 +184,7 @@ impl Lexer {
                 }
             }
             '>' => {
-                if self.peek_next() == Some('=') {
+                if self.current_char() == Some('=') {
                     self.advance();
                     Ok(TokenType::GreaterEqual)
                 } else {
@@ -193,7 +192,7 @@ impl Lexer {
                 }
             }
             '&' => {
-                if self.peek_next() == Some('&') {
+                if self.current_char() == Some('&') {
                     self.advance();
                     Ok(TokenType::And)
                 } else {
@@ -205,7 +204,7 @@ impl Lexer {
                 }
             }
             '|' => {
-                if self.peek_next() == Some('|') {
+                if self.current_char() == Some('|') {
                     self.advance();
                     Ok(TokenType::Or)
                 } else {
@@ -217,8 +216,8 @@ impl Lexer {
                 }
             }
             '"' | '\'' => self.read_string(ch),
-            '0'..='9' => self.read_number(),
-            'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier()),
+            '0'..='9' => self.read_number(ch),
+            'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier(ch)),
             _ => Err(CompilerError::lexical_error(
                 format!("Unexpected character: {}", ch),
                 self.line,
@@ -227,8 +226,8 @@ impl Lexer {
         }
     }
 
-    fn read_number(&mut self) -> Result<TokenType, CompilerError> {
-        let mut number = String::new();
+    fn read_number(&mut self, ch: char) -> Result<TokenType, CompilerError> {
+        let mut number = ch.to_string();
         let mut has_dot = false;
         while let Some(ch) = self.current_char() {
             if ch == '.' {
@@ -255,7 +254,7 @@ impl Lexer {
 
     fn read_string(&mut self, delimiter: char) -> Result<TokenType, CompilerError> {
         let mut string = String::new();
-        self.advance();
+
         while let Some(ch) = self.current_char() {
             if ch == delimiter {
                 self.advance();
@@ -263,20 +262,21 @@ impl Lexer {
             }
             if ch == '\\' {
                 self.advance();
-                if let Some(ch) = self.current_char() {
-                    string.push(ch);
+                if let Some(escaped_ch) = self.current_char() {
+                    string.push(escaped_ch);
                     self.advance();
                     continue;
+                } else {
+                    return Err(CompilerError::lexical_error(
+                        "Unterminated string literal".to_string(),
+                        self.line,
+                        self.column,
+                    ));
                 }
-                return Err(CompilerError::lexical_error(
-                    format!("Unterminated string literal"),
-                    self.line,
-                    self.column,
-                ));
             }
             if ch == '\n' {
                 return Err(CompilerError::lexical_error(
-                    format!("Unterminated string literal"),
+                    "Unterminated string literal".to_string(),
                     self.line,
                     self.column,
                 ));
@@ -284,11 +284,12 @@ impl Lexer {
             string.push(ch);
             self.advance();
         }
+
         Ok(TokenType::String(string))
     }
 
-    fn read_identifier(&mut self) -> TokenType {
-        let mut identifier = String::new();
+    fn read_identifier(&mut self, ch: char) -> TokenType {
+        let mut identifier = ch.to_string();
         while let Some(ch) = self.current_char() {
             if !ch.is_alphanumeric() && ch != '_' {
                 break;
