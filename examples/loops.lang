@@ -1,0 +1,23 @@
+fn main() {
+    // Simple counting loop
+    let i = 0;
+    while i < 5 {
+        print("Count: ");
+        print(i);
+        i = i + 1;
+    }
+    
+    // Nested loops example
+    let x = 0;
+    while x < 3 {
+        let y = 0;
+        while y < 3 {
+            print("Position: ");
+            print(x);
+            print(", ");
+            print(y);
+            y = y + 1;
+        }
+        x = x + 1;
+    }
+} 

@@ -1,4 +1,4 @@
-use interpreter::{Compiler, Interpreter, Lexer, Parser, TargetPlatform};
+use my::{Interpreter, Lexer, Parser, Value, CompilerError};
 use std::env;
 use std::fs;
 use std::io::{self, Write};
@@ -9,24 +9,16 @@ fn main() {
     if args.len() < 2 {
         println!("Usage:");
         println!("  {} <file>              - Compile file", args[0]);
-        println!("  {} --interpret <file>  - Interpret file", args[0]);
         println!("  {} --repl              - Start REPL", args[0]);
         return;
     }
 
     match args[1].as_str() {
-        "--interpret" => {
-            if args.len() < 3 {
-                eprintln!("Error: Please provide a file to interpret");
-                return;
-            }
-            interpret_file(&args[2]);
-        }
         "--repl" => {
             start_repl();
         }
         file => {
-            compile_file(file);
+            interpret_file(file);
         }
     }
 }
@@ -35,7 +27,7 @@ fn interpret_file(filename: &str) {
     match fs::read_to_string(filename) {
         Ok(source) => match run_interpreter(&source) {
             Ok(result) => {
-                if !matches!(result, interpreter::Value::Null) {
+                if !matches!(result, my::Value::Null) {
                     println!("{}", result);
                 }
             }
@@ -49,7 +41,7 @@ fn interpret_file(filename: &str) {
     }
 }
 
-fn run_interpreter(source: &str) -> Result<interpreter::Value, interpreter::CompilerError> {
+fn run_interpreter(source: &str) -> Result<Value, CompilerError> {
     let mut lexer = Lexer::new(source.to_string());
     let tokens = lexer.tokenize()?;
 
@@ -83,7 +75,7 @@ fn start_repl() {
 
         match run_interpreter(input) {
             Ok(result) => {
-                if !matches!(result, interpreter::Value::Null) {
+                if !matches!(result, Value::Null) {
                     println!("{}", result);
                 }
             }
@@ -94,25 +86,4 @@ fn start_repl() {
     }
 
     println!("Goodbye!");
-}
-
-fn compile_file(filename: &str) {
-    match fs::read_to_string(filename) {
-        Ok(source) => {
-            let mut compiler = Compiler::new();
-
-            match compiler.compile(&source, TargetPlatform::JavaScript) {
-                Ok(js_code) => {
-                    println!("JavaScript output:");
-                    println!("{}", js_code);
-                }
-                Err(error) => {
-                    eprintln!("Compilation Error: {}", error);
-                }
-            }
-        }
-        Err(error) => {
-            eprintln!("Error reading file '{}': {}", filename, error);
-        }
-    }
 }

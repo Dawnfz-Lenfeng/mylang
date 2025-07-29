@@ -1,4 +1,4 @@
-use interpreter::{CompilerError, Lexer, Parser, SemanticAnalyzer};
+use my::{CompilerError, Lexer, Parser, SemanticAnalyzer};
 
 #[cfg(test)]
 mod semantic_tests {

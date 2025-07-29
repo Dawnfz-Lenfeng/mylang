@@ -1,0 +1,24 @@
+fn add(a, b) {
+    return a + b;
+}
+
+fn multiply(x, y) {
+    return x * y;
+}
+
+fn calculate_area(width, height) {
+    return multiply(width, height);
+}
+
+fn main() {
+    let width = 10;
+    let height = 20;
+    
+    let sum = add(width, height);
+    let area = calculate_area(width, height);
+    
+    print("Width + Height = ");
+    print(sum);
+    print("Area = ");
+    print(area);
+} 

@@ -1,4 +1,4 @@
-use interpreter::{Lexer, TokenType};
+use my::{Lexer, TokenType};
 
 #[cfg(test)]
 mod lexer_tests {

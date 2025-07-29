@@ -1,5 +1,7 @@
-use interpreter::ast::{BinaryOp, Parameter, UnaryOp};
-use interpreter::{CompilerError, Expr, Lexer, Parser, Program, Stmt};
+use my::{
+    CompilerError, Expr, Lexer, Parser, Program, Stmt,
+    ast::{BinaryOp, Parameter, UnaryOp},
+};
 
 #[cfg(test)]
 mod parser_tests {

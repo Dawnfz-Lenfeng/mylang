@@ -14,7 +14,7 @@ pub enum Value {
         name: String,
         params: Vec<String>,
         body: Vec<Stmt>,
-        // closure: Environment, // Capture lexical scope
+        closure: Environment, // Capture lexical scope
     },
     Null,
 }
@@ -70,7 +70,7 @@ impl Value {
 }
 
 /// Runtime environment for variable storage and scoping
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     scopes: Vec<HashMap<String, Value>>,
 }

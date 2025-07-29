@@ -1,14 +1,14 @@
 [package]
-name = "interpreter"
+name = "MyLang"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "interpreter"
+name = "my"
 path = "src/main.rs"
 
 [lib]
-name = "interpreter"
+name = "my"
 path = "src/lib.rs"
 
 [dependencies]
