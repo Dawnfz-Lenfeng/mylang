@@ -300,14 +300,14 @@ mod lexer_tests {
         assert!(tokens.len() >= 2);
 
         // First token should be on line 1
-        assert_eq!(tokens[0].line, 1);
+        assert_eq!(tokens[0].span.start.line, 1);
 
         // Check that we have an identifier token on line 2
         if let Some(x_token) = tokens
             .iter()
             .find(|t| matches!(t.token_type, TokenType::Identifier(_)))
         {
-            assert_eq!(x_token.line, 2);
+            assert_eq!(x_token.span.start.line, 2);
         }
     }
 
@@ -467,8 +467,8 @@ mod lexer_tests {
         let error = result.unwrap_err();
 
         // Error should be at line 1, column 9 (position of @)
-        assert_eq!(error.line, Some(1), "Error line should be 1");
-        assert_eq!(error.column, Some(9), "Error column should be 9");
+        assert_eq!(error.span.unwrap().start.line, 1, "Error line should be 1");
+        assert_eq!(error.span.unwrap().start.column, 9, "Error column should be 9");
     }
 
     #[test]
@@ -481,8 +481,8 @@ mod lexer_tests {
         let error = result.unwrap_err();
 
         // Error should be at line 2
-        assert_eq!(error.line, Some(2), "Error line should be 2");
-        assert!(error.column.is_some(), "Error column should be set");
+        assert_eq!(error.span.unwrap().start.line, 2, "Error line should be 2");
+        assert_eq!(error.span.unwrap().start.column, 9, "Error column should be 9");
     }
 
     #[test]

@@ -1,4 +1,5 @@
 use crate::error::CompilerError;
+use crate::utils::{Position, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
@@ -48,38 +49,31 @@ pub enum TokenType {
     Colon,
 
     // Special
-    Unknown,
-    Newline,
     Eof,
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
-    pub line: usize,
-    pub column: usize,
+    pub span: Span,
 }
 
 pub struct Lexer {
     input: Vec<char>,
-    position: usize,
-    line: usize,
-    column: usize,
+    position: Position,
 }
 
 impl Lexer {
     pub fn new(input: String) -> Self {
         Self {
             input: input.chars().collect(),
-            position: 0,
-            line: 1,
-            column: 1,
+            position: Position::new(),
         }
     }
 
     pub fn tokenize(&mut self) -> Result<Vec<Token>, CompilerError> {
         let mut tokens = Vec::new();
-        while let Some((ch, line, column)) = self.advance() {
+        while let Some((ch, position)) = self.consume_char() {
             if ch.is_whitespace() {
                 continue;
             }
@@ -88,62 +82,47 @@ impl Lexer {
                 self.skip_comment();
                 continue;
             }
-
-            let token_type = self.read_token_type(ch)?;
-            if token_type == TokenType::Unknown {
-                return Err(CompilerError::lexical_error(
-                    format!("Unexpected character: {}", ch),
-                    line,
-                    column,
-                ));
-            }
-
-            tokens.push(Token {
-                token_type,
-                line: line,
-                column: column,
-            });
+            tokens.push(self.read_token(ch, position)?);
         }
 
         tokens.push(Token {
             token_type: TokenType::Eof,
-            line: self.line,
-            column: self.column,
+            span: Span {
+                start: self.position,
+                end: self.position,
+            },
         });
 
         Ok(tokens)
     }
 
     fn peek(&self) -> Option<char> {
-        self.input.get(self.position).copied()
+        self.input.get(self.position.offset).copied()
     }
 
-    fn advance(&mut self) -> Option<(char, usize, usize)> {
+    fn consume_char(&mut self) -> Option<(char, Position)> {
+        let ch = self.peek()?;
+        let position = self.position;
+        self.advance();
+        Some((ch, position))
+    }
+
+    fn advance(&mut self) {
         if let Some(ch) = self.peek() {
-            let old_line = self.line;
-            let old_column = self.column;
-            if ch == '\n' {
-                self.line += 1;
-                self.column = 1;
-            } else {
-                self.column += 1;
-            }
-            self.position += 1;
-            return Some((ch, old_line, old_column));
+            self.position.advance(ch);
         }
-        None
     }
 
     fn skip_comment(&mut self) {
-        while let Some((ch, ..)) = self.advance() {
+        while let Some((ch, ..)) = self.consume_char() {
             if ch == '\n' {
                 break;
             }
         }
     }
 
-    fn read_token_type(&mut self, ch: char) -> Result<TokenType, CompilerError> {
-        match ch {
+    fn read_token(&mut self, ch: char, start: Position) -> Result<Token, CompilerError> {
+        let token_type = match ch {
             '(' => Ok(TokenType::LeftParen),
             ')' => Ok(TokenType::RightParen),
             '{' => Ok(TokenType::LeftBrace),
@@ -204,8 +183,10 @@ impl Lexer {
                 } else {
                     Err(CompilerError::lexical_error(
                         "Expected '&&'".to_string(),
-                        self.line,
-                        self.column,
+                        Span {
+                            start,
+                            end: self.position,
+                        },
                     ))
                 }
             }
@@ -216,16 +197,32 @@ impl Lexer {
                 } else {
                     Err(CompilerError::lexical_error(
                         "Expected '||'".to_string(),
-                        self.line,
-                        self.column,
+                        Span {
+                            start,
+                            end: self.position,
+                        },
                     ))
                 }
             }
             '"' | '\'' => self.read_string(ch),
             '0'..='9' => self.read_number(ch),
             'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier(ch)),
-            _ => Ok(TokenType::Unknown),
-        }
+            _ => Err(CompilerError::lexical_error(
+                format!("Unexpected character: {}", ch),
+                Span {
+                    start,
+                    end: self.position,
+                },
+            )),
+        };
+
+        Ok(Token {
+            token_type: token_type?,
+            span: Span {
+                start,
+                end: self.position,
+            },
+        })
     }
 
     fn read_number(&mut self, ch: char) -> Result<TokenType, CompilerError> {
@@ -236,8 +233,10 @@ impl Lexer {
                 if has_dot {
                     return Err(CompilerError::lexical_error(
                         format!("Invalid number"),
-                        self.line,
-                        self.column,
+                        Span {
+                            start: self.position,
+                            end: self.position,
+                        },
                     ));
                 }
                 has_dot = true;
@@ -257,27 +256,31 @@ impl Lexer {
     fn read_string(&mut self, delimiter: char) -> Result<TokenType, CompilerError> {
         let mut string = String::new();
 
-        while let Some((ch, line, column)) = self.advance() {
+        while let Some((ch, position)) = self.consume_char() {
             if ch == delimiter {
                 return Ok(TokenType::String(string));
             }
             if ch == '\\' {
-                if let Some((escaped_ch, ..)) = self.advance() {
+                if let Some((escaped_ch, ..)) = self.consume_char() {
                     string.push(escaped_ch);
                     continue;
                 } else {
                     return Err(CompilerError::lexical_error(
                         "Unterminated string literal".to_string(),
-                        line,
-                        column,
+                        Span {
+                            start: position,
+                            end: self.position,
+                        },
                     ));
                 }
             }
             if ch == '\n' {
                 return Err(CompilerError::lexical_error(
                     "Unterminated string literal".to_string(),
-                    line,
-                    column,
+                    Span {
+                        start: position,
+                        end: self.position,
+                    },
                 ));
             }
             string.push(ch);
@@ -285,8 +288,10 @@ impl Lexer {
 
         Err(CompilerError::lexical_error(
             "Unterminated string literal".to_string(),
-            self.line,
-            self.column,
+            Span {
+                start: self.position,
+                end: self.position,
+            },
         ))
     }
 

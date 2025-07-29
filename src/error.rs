@@ -1,11 +1,11 @@
 use std::fmt;
+use crate::utils::{Span, Position};
 
 #[derive(Debug, Clone)]
 pub struct CompilerError {
     pub message: String,
     pub error_type: ErrorType,
-    pub line: Option<usize>,
-    pub column: Option<usize>,
+    pub span: Option<Span>,
     pub file: Option<String>,
 }
 
@@ -25,8 +25,7 @@ impl CompilerError {
         Self {
             message,
             error_type: ErrorType::InternalError,
-            line: None,
-            column: None,
+            span: None,
             file: None,
         }
     }
@@ -36,9 +35,10 @@ impl CompilerError {
         self
     }
 
+
     pub fn with_location(mut self, line: usize, column: usize) -> Self {
-        self.line = Some(line);
-        self.column = Some(column);
+        let location = Position { line, column, offset: 0 };
+        self.span = Some(Span { start: location, end: location });
         self
     }
 
@@ -47,22 +47,29 @@ impl CompilerError {
         self
     }
 
-    pub fn lexical_error(message: String, line: usize, column: usize) -> Self {
+    pub fn lexical_error(message: String, span: Span) -> Self {
         Self {
             message,
             error_type: ErrorType::LexicalError,
-            line: Some(line),
-            column: Some(column),
+            span: Some(span),
             file: None,
         }
     }
 
-    pub fn syntax_error(message: String, line: usize, column: usize) -> Self {
+    pub fn lexical_error_with_span(message: String, span: Span) -> Self {
+        Self {
+            message,
+            error_type: ErrorType::LexicalError,
+            span: Some(span),
+            file: None,
+        }
+    }
+
+    pub fn syntax_error(message: String, span: Span) -> Self {
         Self {
             message,
             error_type: ErrorType::SyntaxError,
-            line: Some(line),
-            column: Some(column),
+            span: Some(span),
             file: None,
         }
     }
@@ -71,28 +78,34 @@ impl CompilerError {
         Self {
             message,
             error_type: ErrorType::SemanticError,
-            line: None,
-            column: None,
+            span: None,
             file: None,
         }
     }
 
-    pub fn type_error(message: String) -> Self {
+    pub fn semantic_error_with_span(message: String, span: Span) -> Self {
+        Self {
+            message,
+            error_type: ErrorType::SemanticError,
+            span: Some(span),
+            file: None,
+        }
+    }
+
+    pub fn type_error(message: String, span: Span) -> Self {
         Self {
             message,
             error_type: ErrorType::TypeError,
-            line: None,
-            column: None,
+            span: Some(span),
             file: None,
         }
     }
 
-    pub fn name_error(message: String) -> Self {
+    pub fn name_error(message: String, span: Span) -> Self {
         Self {
             message,
             error_type: ErrorType::NameError,
-            line: None,
-            column: None,
+            span: Some(span),
             file: None,
         }
     }
@@ -101,10 +114,18 @@ impl CompilerError {
         Self {
             message,
             error_type: ErrorType::IOError,
-            line: None,
-            column: None,
+            span: None,
             file: None,
         }
+    }
+
+    // Convenience methods for backward compatibility
+    pub fn line(&self) -> Option<usize> {
+        self.span.map(|s| s.start.line)
+    }
+
+    pub fn column(&self) -> Option<usize> {
+        self.span.map(|s| s.start.column)
     }
 }
 
@@ -120,19 +141,37 @@ impl fmt::Display for CompilerError {
             ErrorType::InternalError => "Internal Error",
         };
 
-        if let (Some(line), Some(column)) = (self.line, self.column) {
+        if let Some(span) = self.span {
             if let Some(file) = &self.file {
-                write!(
-                    f,
-                    "{}:{}:{}: {}: {}",
-                    file, line, column, error_type_str, self.message
-                )
+                // Show range if start and end are different
+                if span.start.line != span.end.line || span.start.column != span.end.column {
+                    write!(
+                        f,
+                        "{}:{}:{}-{}:{}: {}: {}",
+                        file, span.start.line, span.start.column, span.end.line, span.end.column, error_type_str, self.message
+                    )
+                } else {
+                    write!(
+                        f,
+                        "{}:{}:{}: {}: {}",
+                        file, span.start.line, span.start.column, error_type_str, self.message
+                    )
+                }
             } else {
-                write!(
-                    f,
-                    "{}:{}: {}: {}",
-                    line, column, error_type_str, self.message
-                )
+                // Show range if start and end are different
+                if span.start.line != span.end.line || span.start.column != span.end.column {
+                    write!(
+                        f,
+                        "{}:{}-{}:{}: {}: {}",
+                        span.start.line, span.start.column, span.end.line, span.end.column, error_type_str, self.message
+                    )
+                } else {
+                    write!(
+                        f,
+                        "{}:{}: {}: {}",
+                        span.start.line, span.start.column, error_type_str, self.message
+                    )
+                }
             }
         } else {
             write!(f, "{}: {}", error_type_str, self.message)
