@@ -98,7 +98,7 @@ impl SemanticAnalyzer {
     fn expr_to_type(&self, expr: &Expr) -> Result<DataType, CompilerError> {
         match expr {
             Expr::Identifier(name) => match name.as_str() {
-                "number" => Ok(DataType::Number),
+                "num" => Ok(DataType::Number),
                 "str" => Ok(DataType::String),
                 "bool" => Ok(DataType::Boolean),
                 "void" => Ok(DataType::Void),

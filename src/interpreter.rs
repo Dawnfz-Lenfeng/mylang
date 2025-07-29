@@ -59,7 +59,7 @@ impl Value {
     /// Get the type name of the value
     pub fn type_name(&self) -> &'static str {
         match self {
-            Value::Number(_) => "number",
+            Value::Number(_) => "num",
             Value::String(_) => "string",
             Value::Boolean(_) => "boolean",
             Value::Array(_) => "array",
@@ -93,7 +93,7 @@ impl Environment {
 
     /// Enter a new scope (for blocks, functions)
     pub fn enter_scope(&mut self) {
-        // TODO: Implement scope entry
+        self.scopes.push(HashMap::new());
     }
 
     /// Exit current scope
