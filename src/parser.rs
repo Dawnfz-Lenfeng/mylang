@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOp, DataType, Expr, Parameter, Program, Stmt, UnaryOp};
+use crate::ast::{BinaryOp, Expr, Parameter, Program, Stmt, UnaryOp};
 use crate::error::CompilerError;
 use crate::lexer::{Token, TokenType};
 
@@ -44,7 +44,7 @@ impl Parser {
             .check(&TokenType::Colon)
             .then(|| {
                 self.advance();
-                self.parse_type()
+                self.parse_value_expression()
             })
             .transpose()?;
         let initializer = self
@@ -72,7 +72,7 @@ impl Parser {
             .check(&TokenType::Arrow)
             .then(|| {
                 self.advance();
-                self.parse_type()
+                self.parse_value_expression()
             })
             .transpose()?;
         let body = self.parse_block_statement_inner()?;
@@ -161,25 +161,6 @@ impl Parser {
         Ok(statements)
     }
 
-    fn parse_type(&mut self) -> Result<DataType, CompilerError> {
-        let type_name = self.consume_identifier()?;
-        match type_name.as_str() {
-            "number" => Ok(DataType::Number),
-            "str" => Ok(DataType::String),
-            "bool" => Ok(DataType::Boolean),
-            "array" => {
-                self.consume(TokenType::LeftBracket, "Expected '[' after array type")?;
-                let element_type = self.parse_type()?;
-                self.consume(TokenType::RightBracket, "Expected ']' after array type")?;
-                Ok(DataType::Array(Box::new(element_type)))
-            }
-            _ => Err(CompilerError::type_error(format!(
-                "Unknown type: {}",
-                type_name
-            ))),
-        }
-    }
-
     fn parse_parameters(&mut self) -> Result<Vec<Parameter>, CompilerError> {
         self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
 
@@ -205,7 +186,7 @@ impl Parser {
             .check(&TokenType::Colon)
             .then(|| {
                 self.advance();
-                self.parse_type()
+                self.parse_value_expression()
             })
             .transpose()?;
         Ok(Parameter { name, param_type })
@@ -216,6 +197,11 @@ impl Parser {
         self.parse_assignment()
     }
 
+    /// Grammar: or
+    fn parse_value_expression(&mut self) -> Result<Expr, CompilerError> {
+        self.parse_or()
+    }
+
     /// Grammar: or ('=' or)*
     fn parse_assignment(&mut self) -> Result<Expr, CompilerError> {
         let mut expr = self.parse_or()?;
@@ -224,11 +210,10 @@ impl Parser {
                 TokenType::Assign => BinaryOp::Assign,
                 _ => unreachable!(),
             };
-            let right = self.parse_assignment()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_assignment()?),
             };
         }
         Ok(expr)
@@ -239,14 +224,13 @@ impl Parser {
         let mut expr = self.parse_and()?;
         while matches!(self.peek().token_type, TokenType::Or) {
             let op = match self.advance().token_type {
-                TokenType::Or => BinaryOp::Or,
+                TokenType::Or => BinaryOp::LogicalOr,
                 _ => unreachable!(),
             };
-            let right = self.parse_and()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_or()?),
             };
         }
         Ok(expr)
@@ -257,14 +241,13 @@ impl Parser {
         let mut expr = self.parse_equality()?;
         while matches!(self.peek().token_type, TokenType::And) {
             let op = match self.advance().token_type {
-                TokenType::And => BinaryOp::And,
+                TokenType::And => BinaryOp::LogicalAnd,
                 _ => unreachable!(),
             };
-            let right = self.parse_equality()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_and()?),
             };
         }
         Ok(expr)
@@ -282,11 +265,10 @@ impl Parser {
                 TokenType::NotEqual => BinaryOp::NotEqual,
                 _ => unreachable!(),
             };
-            let right = self.parse_comparison()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_equality()?),
             };
         }
         Ok(expr)
@@ -294,7 +276,7 @@ impl Parser {
 
     /// Grammar: term ('<' term | '>' term | '<=' term | '>=' term)*
     fn parse_comparison(&mut self) -> Result<Expr, CompilerError> {
-        let mut expr = self.parse_term()?;
+        let mut expr = self.parse_bitwise()?;
         while matches!(
             self.peek().token_type,
             TokenType::LessThan
@@ -309,11 +291,31 @@ impl Parser {
                 TokenType::GreaterEqual => BinaryOp::GreaterEqual,
                 _ => unreachable!(),
             };
-            let right = self.parse_term()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_comparison()?),
+            };
+        }
+        Ok(expr)
+    }
+
+    /// Grammar: term '|' bitwise | '&' bitwise
+    fn parse_bitwise(&mut self) -> Result<Expr, CompilerError> {
+        let mut expr = self.parse_term()?;
+        while matches!(
+            self.peek().token_type,
+            TokenType::Pipe | TokenType::Ampersand
+        ) {
+            let op = match self.advance().token_type {
+                TokenType::Pipe => BinaryOp::BitOr,
+                TokenType::Ampersand => BinaryOp::BitAnd,
+                _ => unreachable!(),
+            };
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                operator: op,
+                right: Box::new(self.parse_bitwise()?),
             };
         }
         Ok(expr)
@@ -328,11 +330,10 @@ impl Parser {
                 TokenType::Minus => BinaryOp::Subtract,
                 _ => unreachable!(),
             };
-            let right = self.parse_term()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_term()?),
             };
         }
         Ok(expr)
@@ -351,11 +352,10 @@ impl Parser {
                 TokenType::Percent => BinaryOp::Modulo,
                 _ => unreachable!(),
             };
-            let right = self.parse_factor()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator: op,
-                right: Box::new(right),
+                right: Box::new(self.parse_factor()?),
             };
         }
         Ok(expr)
@@ -504,6 +504,6 @@ impl Parser {
     }
 
     fn syntax_error(&self, message: String) -> CompilerError {
-        CompilerError::syntax_error(message, self.peek().line, self.peek().column)
+        CompilerError::syntax_error(message, self.peek().span)
     }
 }

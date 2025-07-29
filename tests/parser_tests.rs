@@ -1,4 +1,4 @@
-use interpreter::ast::{BinaryOp, DataType, Parameter, UnaryOp};
+use interpreter::ast::{BinaryOp, Parameter, UnaryOp};
 use interpreter::{CompilerError, Expr, Lexer, Parser, Program, Stmt};
 
 #[cfg(test)]
@@ -99,8 +99,8 @@ mod parser_tests {
 
     #[test]
     fn test_comparison_precedence() {
-        // a < b && c > d should parse as (a < b) && (c > d)
-        let program = parse_program("a < b && c > d;").unwrap();
+        // a < b and c > d should parse as (a < b) and (c > d)
+        let program = parse_program("a < b and c > d;").unwrap();
         let expected = Program {
             statements: vec![Stmt::Expression(Expr::Binary {
                 left: Box::new(Expr::Binary {
@@ -108,12 +108,72 @@ mod parser_tests {
                     operator: BinaryOp::LessThan,
                     right: Box::new(Expr::Identifier("b".to_string())),
                 }),
-                operator: BinaryOp::And,
+                operator: BinaryOp::LogicalAnd,
                 right: Box::new(Expr::Binary {
                     left: Box::new(Expr::Identifier("c".to_string())),
                     operator: BinaryOp::GreaterThan,
                     right: Box::new(Expr::Identifier("d".to_string())),
                 }),
+            })],
+        };
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn test_logical_expressions() {
+        let test_cases = vec![
+            ("a and b;", "a", "b", BinaryOp::LogicalAnd),
+            ("x or y;", "x", "y", BinaryOp::LogicalOr),
+        ];
+
+        for (input, left_name, right_name, expected_op) in test_cases {
+            let program = parse_program(input).unwrap();
+            let expected = Program {
+                statements: vec![Stmt::Expression(Expr::Binary {
+                    left: Box::new(Expr::Identifier(left_name.to_string())),
+                    operator: expected_op,
+                    right: Box::new(Expr::Identifier(right_name.to_string())),
+                })],
+            };
+            assert_eq!(program, expected);
+        }
+    }
+
+    #[test]
+    fn test_unary_expressions() {
+        // Test unary minus
+        let program = parse_program("-42;").unwrap();
+        let expected = Program {
+            statements: vec![Stmt::Expression(Expr::Unary {
+                operator: UnaryOp::Minus,
+                operand: Box::new(Expr::Number(42.0)),
+            })],
+        };
+        assert_eq!(program, expected);
+
+        // Test unary not
+        let program = parse_program("not true;").unwrap();
+        let expected = Program {
+            statements: vec![Stmt::Expression(Expr::Unary {
+                operator: UnaryOp::Not,
+                operand: Box::new(Expr::Boolean(true)),
+            })],
+        };
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn test_parenthesized_expressions() {
+        let program = parse_program("(1 + 2) * 3;").unwrap();
+        let expected = Program {
+            statements: vec![Stmt::Expression(Expr::Binary {
+                left: Box::new(Expr::Binary {
+                    left: Box::new(Expr::Number(1.0)),
+                    operator: BinaryOp::Add,
+                    right: Box::new(Expr::Number(2.0)),
+                }),
+                operator: BinaryOp::Multiply,
+                right: Box::new(Expr::Number(3.0)),
             })],
         };
         assert_eq!(program, expected);
@@ -157,66 +217,6 @@ mod parser_tests {
     }
 
     #[test]
-    fn test_logical_expressions() {
-        let test_cases = vec![
-            ("a && b;", "a", "b", BinaryOp::And),
-            ("x || y;", "x", "y", BinaryOp::Or),
-        ];
-
-        for (input, left_name, right_name, expected_op) in test_cases {
-            let program = parse_program(input).unwrap();
-            let expected = Program {
-                statements: vec![Stmt::Expression(Expr::Binary {
-                    left: Box::new(Expr::Identifier(left_name.to_string())),
-                    operator: expected_op,
-                    right: Box::new(Expr::Identifier(right_name.to_string())),
-                })],
-            };
-            assert_eq!(program, expected);
-        }
-    }
-
-    #[test]
-    fn test_unary_expressions() {
-        // Test unary minus
-        let program = parse_program("-42;").unwrap();
-        let expected = Program {
-            statements: vec![Stmt::Expression(Expr::Unary {
-                operator: UnaryOp::Minus,
-                operand: Box::new(Expr::Number(42.0)),
-            })],
-        };
-        assert_eq!(program, expected);
-
-        // Test unary not
-        let program = parse_program("!true;").unwrap();
-        let expected = Program {
-            statements: vec![Stmt::Expression(Expr::Unary {
-                operator: UnaryOp::Not,
-                operand: Box::new(Expr::Boolean(true)),
-            })],
-        };
-        assert_eq!(program, expected);
-    }
-
-    #[test]
-    fn test_parenthesized_expressions() {
-        let program = parse_program("(1 + 2) * 3;").unwrap();
-        let expected = Program {
-            statements: vec![Stmt::Expression(Expr::Binary {
-                left: Box::new(Expr::Binary {
-                    left: Box::new(Expr::Number(1.0)),
-                    operator: BinaryOp::Add,
-                    right: Box::new(Expr::Number(2.0)),
-                }),
-                operator: BinaryOp::Multiply,
-                right: Box::new(Expr::Number(3.0)),
-            })],
-        };
-        assert_eq!(program, expected);
-    }
-
-    #[test]
     fn test_function_call_structure() {
         let program = parse_program("func(1, 2, x);").unwrap();
         let expected = Program {
@@ -251,7 +251,7 @@ mod parser_tests {
         let expected = Program {
             statements: vec![Stmt::VarDecl {
                 name: "x".to_string(),
-                type_annotation: Some(DataType::Number),
+                type_annotation: Some(Expr::Identifier("number".to_string())),
                 initializer: Some(Expr::Number(42.0)),
             }],
         };
@@ -268,14 +268,14 @@ mod parser_tests {
                 parameters: vec![
                     Parameter {
                         name: "a".to_string(),
-                        param_type: Some(DataType::Number),
+                        param_type: Some(Expr::Identifier("number".to_string())),
                     },
                     Parameter {
                         name: "b".to_string(),
-                        param_type: Some(DataType::Number),
+                        param_type: Some(Expr::Identifier("number".to_string())),
                     },
                 ],
-                return_type: Some(DataType::Number),
+                return_type: Some(Expr::Identifier("number".to_string())),
                 body: vec![Stmt::Return {
                     value: Some(Expr::Binary {
                         left: Box::new(Expr::Identifier("a".to_string())),
@@ -347,34 +347,34 @@ mod parser_tests {
                 },
             ),
             (
-                "a && b || c;",
+                "a and b or c;",
                 Program {
                     statements: vec![Stmt::Expression(Expr::Binary {
                         left: Box::new(Expr::Binary {
                             left: Box::new(Expr::Identifier("a".to_string())),
-                            operator: BinaryOp::And,
+                            operator: BinaryOp::LogicalAnd,
                             right: Box::new(Expr::Identifier("b".to_string())),
                         }),
-                        operator: BinaryOp::Or,
+                        operator: BinaryOp::LogicalOr,
                         right: Box::new(Expr::Identifier("c".to_string())),
                     })],
                 },
-            ), // && before ||
+            ), // and before or
             (
-                "!a && b;",
+                "not a and b;",
                 Program {
                     statements: vec![Stmt::Expression(Expr::Binary {
                         left: Box::new(Expr::Unary {
                             operator: UnaryOp::Not,
                             operand: Box::new(Expr::Identifier("a".to_string())),
                         }),
-                        operator: BinaryOp::And,
+                        operator: BinaryOp::LogicalAnd,
                         right: Box::new(Expr::Identifier("b".to_string())),
                     })],
                 },
-            ), // ! before &&
+            ), // not before and
             (
-                "a < b && c > d;",
+                "a < b and c > d;",
                 Program {
                     statements: vec![Stmt::Expression(Expr::Binary {
                         left: Box::new(Expr::Binary {
@@ -382,7 +382,7 @@ mod parser_tests {
                             operator: BinaryOp::LessThan,
                             right: Box::new(Expr::Identifier("b".to_string())),
                         }),
-                        operator: BinaryOp::And,
+                        operator: BinaryOp::LogicalAnd,
                         right: Box::new(Expr::Binary {
                             left: Box::new(Expr::Identifier("c".to_string())),
                             operator: BinaryOp::GreaterThan,
@@ -463,14 +463,14 @@ mod parser_tests {
                 },
             ),
             (
-                "!flag && count > 0;",
+                "not flag and count > 0;",
                 Program {
                     statements: vec![Stmt::Expression(Expr::Binary {
                         left: Box::new(Expr::Unary {
                             operator: UnaryOp::Not,
                             operand: Box::new(Expr::Identifier("flag".to_string())),
                         }),
-                        operator: BinaryOp::And,
+                        operator: BinaryOp::LogicalAnd,
                         right: Box::new(Expr::Binary {
                             left: Box::new(Expr::Identifier("count".to_string())),
                             operator: BinaryOp::GreaterThan,
@@ -480,7 +480,7 @@ mod parser_tests {
                 },
             ),
             (
-                "x == y || z != w && a < b;",
+                "x == y or z != w and a < b;",
                 Program {
                     statements: vec![Stmt::Expression(Expr::Binary {
                         left: Box::new(Expr::Binary {
@@ -488,14 +488,14 @@ mod parser_tests {
                             operator: BinaryOp::Equal,
                             right: Box::new(Expr::Identifier("y".to_string())),
                         }),
-                        operator: BinaryOp::Or,
+                        operator: BinaryOp::LogicalOr,
                         right: Box::new(Expr::Binary {
                             left: Box::new(Expr::Binary {
                                 left: Box::new(Expr::Identifier("z".to_string())),
                                 operator: BinaryOp::NotEqual,
                                 right: Box::new(Expr::Identifier("w".to_string())),
                             }),
-                            operator: BinaryOp::And,
+                            operator: BinaryOp::LogicalAnd,
                             right: Box::new(Expr::Binary {
                                 left: Box::new(Expr::Identifier("a".to_string())),
                                 operator: BinaryOp::LessThan,
@@ -619,7 +619,7 @@ mod parser_tests {
                 Program {
                     statements: vec![Stmt::VarDecl {
                         name: "x".to_string(),
-                        type_annotation: Some(DataType::Number),
+                        type_annotation: Some(Expr::Identifier("number".to_string())),
                         initializer: Some(Expr::Number(42.0)),
                     }],
                 },
@@ -629,7 +629,7 @@ mod parser_tests {
                 Program {
                     statements: vec![Stmt::VarDecl {
                         name: "name".to_string(),
-                        type_annotation: Some(DataType::String),
+                        type_annotation: Some(Expr::Identifier("str".to_string())),
                         initializer: Some(Expr::String("hello".to_string())),
                     }],
                 },
@@ -639,7 +639,7 @@ mod parser_tests {
                 Program {
                     statements: vec![Stmt::VarDecl {
                         name: "flag".to_string(),
-                        type_annotation: Some(DataType::Boolean),
+                        type_annotation: Some(Expr::Identifier("bool".to_string())),
                         initializer: Some(Expr::Boolean(true)),
                     }],
                 },
@@ -649,7 +649,10 @@ mod parser_tests {
                 Program {
                     statements: vec![Stmt::VarDecl {
                         name: "numbers".to_string(),
-                        type_annotation: Some(DataType::Array(Box::new(DataType::Number))),
+                        type_annotation: Some(Expr::Index {
+                            array: Box::new(Expr::Identifier("array".to_string())),
+                            index: Box::new(Expr::Identifier("number".to_string())),
+                        }),
                         initializer: None,
                     }],
                 },
@@ -668,7 +671,7 @@ mod parser_tests {
         let expected = Program {
             statements: vec![Stmt::VarDecl {
                 name: "x".to_string(),
-                type_annotation: Some(DataType::Number),
+                type_annotation: Some(Expr::Identifier("number".to_string())),
                 initializer: None,
             }],
         };
@@ -912,14 +915,14 @@ mod parser_tests {
                         parameters: vec![
                             Parameter {
                                 name: "a".to_string(),
-                                param_type: Some(DataType::Number),
+                                param_type: Some(Expr::Identifier("number".to_string())),
                             },
                             Parameter {
                                 name: "b".to_string(),
-                                param_type: Some(DataType::Number),
+                                param_type: Some(Expr::Identifier("number".to_string())),
                             },
                         ],
-                        return_type: Some(DataType::Number),
+                        return_type: Some(Expr::Identifier("number".to_string())),
                         body: vec![Stmt::Return {
                             value: Some(Expr::Binary {
                                 left: Box::new(Expr::Identifier("a".to_string())),
@@ -937,9 +940,9 @@ mod parser_tests {
                         name: "greet".to_string(),
                         parameters: vec![Parameter {
                             name: "name".to_string(),
-                            param_type: Some(DataType::String),
+                            param_type: Some(Expr::Identifier("str".to_string())),
                         }],
-                        return_type: Some(DataType::String),
+                        return_type: Some(Expr::Identifier("str".to_string())),
                         body: vec![Stmt::Return {
                             value: Some(Expr::Binary {
                                 left: Box::new(Expr::String("Hello ".to_string())),
@@ -957,9 +960,9 @@ mod parser_tests {
                         name: "check".to_string(),
                         parameters: vec![Parameter {
                             name: "flag".to_string(),
-                            param_type: Some(DataType::Boolean),
+                            param_type: Some(Expr::Identifier("bool".to_string())),
                         }],
-                        return_type: Some(DataType::Boolean),
+                        return_type: Some(Expr::Identifier("bool".to_string())),
                         body: vec![Stmt::Return {
                             value: Some(Expr::Unary {
                                 operator: UnaryOp::Not,
@@ -976,9 +979,12 @@ mod parser_tests {
                         name: "process".to_string(),
                         parameters: vec![Parameter {
                             name: "items".to_string(),
-                            param_type: Some(DataType::Array(Box::new(DataType::Number))),
+                            param_type: Some(Expr::Index {
+                                array: Box::new(Expr::Identifier("array".to_string())),
+                                index: Box::new(Expr::Identifier("number".to_string())),
+                            }),
                         }],
-                        return_type: Some(DataType::Number),
+                        return_type: Some(Expr::Identifier("number".to_string())),
                         body: vec![Stmt::Return {
                             value: Some(Expr::Index {
                                 array: Box::new(Expr::Identifier("items".to_string())),
@@ -1319,7 +1325,7 @@ mod parser_tests {
     #[test]
     fn test_chained_comparisons() {
         // Note: This might not be supported depending on grammar design
-        let input = "a < b && b < c;";
+        let input = "a < b and b < c;";
         let result = parse_program(input).unwrap();
         let expected = Program {
             statements: vec![Stmt::Expression(Expr::Binary {
@@ -1328,7 +1334,7 @@ mod parser_tests {
                     operator: BinaryOp::LessThan,
                     right: Box::new(Expr::Identifier("b".to_string())),
                 }),
-                operator: BinaryOp::And,
+                operator: BinaryOp::LogicalAnd,
                 right: Box::new(Expr::Binary {
                     left: Box::new(Expr::Identifier("b".to_string())),
                     operator: BinaryOp::LessThan,

@@ -66,7 +66,7 @@ mod lexer_tests {
 
     #[test]
     fn test_two_character_tokens() {
-        let input = "== != <= >= && ||";
+        let input = "== != <= >= ->";
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
 
@@ -75,8 +75,7 @@ mod lexer_tests {
             TokenType::NotEqual,
             TokenType::LessEqual,
             TokenType::GreaterEqual,
-            TokenType::And,
-            TokenType::Or,
+            TokenType::Arrow,
             TokenType::Eof,
         ];
 
@@ -400,35 +399,6 @@ mod lexer_tests {
     }
 
     #[test]
-    fn test_incomplete_operators() {
-        let test_cases = vec![
-            ("let x = &", "Expected '&&'"),
-            ("let x = |", "Expected '||'"),
-            ("x & y", "Expected '&&'"),
-            ("x | y", "Expected '||'"),
-        ];
-
-        for (input, expected_error_part) in test_cases {
-            let mut lexer = Lexer::new(input.to_string());
-            let result = lexer.tokenize();
-
-            assert!(
-                result.is_err(),
-                "Expected lexing to fail for input: '{}', but it succeeded",
-                input
-            );
-
-            let error = result.unwrap_err();
-            assert!(
-                error.message.contains(expected_error_part),
-                "Error message '{}' should contain '{}'",
-                error.message,
-                expected_error_part
-            );
-        }
-    }
-
-    #[test]
     fn test_unicode_and_special_characters() {
         let test_cases = vec![
             ("let x = ü", "Unexpected character: ü"),
@@ -468,7 +438,11 @@ mod lexer_tests {
 
         // Error should be at line 1, column 9 (position of @)
         assert_eq!(error.span.unwrap().start.line, 1, "Error line should be 1");
-        assert_eq!(error.span.unwrap().start.column, 9, "Error column should be 9");
+        assert_eq!(
+            error.span.unwrap().start.column,
+            9,
+            "Error column should be 9"
+        );
     }
 
     #[test]
@@ -482,7 +456,11 @@ mod lexer_tests {
 
         // Error should be at line 2
         assert_eq!(error.span.unwrap().start.line, 2, "Error line should be 2");
-        assert_eq!(error.span.unwrap().start.column, 9, "Error column should be 9");
+        assert_eq!(
+            error.span.unwrap().start.column,
+            9,
+            "Error column should be 9"
+        );
     }
 
     #[test]

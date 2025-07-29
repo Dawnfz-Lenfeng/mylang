@@ -1,5 +1,5 @@
+use crate::utils::{Position, Span};
 use std::fmt;
-use crate::utils::{Span, Position};
 
 #[derive(Debug, Clone)]
 pub struct CompilerError {
@@ -35,10 +35,16 @@ impl CompilerError {
         self
     }
 
-
     pub fn with_location(mut self, line: usize, column: usize) -> Self {
-        let location = Position { line, column, offset: 0 };
-        self.span = Some(Span { start: location, end: location });
+        let location = Position {
+            line,
+            column,
+            offset: 0,
+        };
+        self.span = Some(Span {
+            start: location,
+            end: location,
+        });
         self
     }
 
@@ -148,7 +154,13 @@ impl fmt::Display for CompilerError {
                     write!(
                         f,
                         "{}:{}:{}-{}:{}: {}: {}",
-                        file, span.start.line, span.start.column, span.end.line, span.end.column, error_type_str, self.message
+                        file,
+                        span.start.line,
+                        span.start.column,
+                        span.end.line,
+                        span.end.column,
+                        error_type_str,
+                        self.message
                     )
                 } else {
                     write!(
@@ -163,7 +175,12 @@ impl fmt::Display for CompilerError {
                     write!(
                         f,
                         "{}:{}-{}:{}: {}: {}",
-                        span.start.line, span.start.column, span.end.line, span.end.column, error_type_str, self.message
+                        span.start.line,
+                        span.start.column,
+                        span.end.line,
+                        span.end.column,
+                        error_type_str,
+                        self.message
                     )
                 } else {
                     write!(

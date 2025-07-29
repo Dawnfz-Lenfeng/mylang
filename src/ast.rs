@@ -62,8 +62,10 @@ pub enum BinaryOp {
     LessEqual,
     GreaterThan,
     GreaterEqual,
-    And,
-    Or,
+    BitAnd,
+    BitOr,
+    LogicalAnd,
+    LogicalOr,
     Assign,
 }
 
@@ -78,7 +80,7 @@ pub enum Stmt {
     // Variable declaration
     VarDecl {
         name: String,
-        type_annotation: Option<DataType>,
+        type_annotation: Option<Expr>,
         initializer: Option<Expr>,
     },
 
@@ -86,7 +88,7 @@ pub enum Stmt {
     FuncDecl {
         name: String,
         parameters: Vec<Parameter>,
-        return_type: Option<DataType>,
+        return_type: Option<Expr>,
         body: Vec<Stmt>,
     },
 
@@ -122,7 +124,7 @@ pub enum Stmt {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub name: String,
-    pub param_type: Option<DataType>,
+    pub param_type: Option<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

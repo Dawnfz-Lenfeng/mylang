@@ -18,6 +18,9 @@ pub enum TokenType {
     For,
     In,
     Return,
+    And,
+    Or,
+    Not,
 
     // Operators
     Plus,
@@ -32,12 +35,11 @@ pub enum TokenType {
     LessEqual,
     GreaterThan,
     GreaterEqual,
-    And,
-    Or,
-    Not,
+    Pipe,
+    Ampersand,
+    Arrow,
 
     // Delimiters
-    Arrow,
     LeftParen,
     RightParen,
     LeftBrace,
@@ -77,7 +79,6 @@ impl Lexer {
             if ch.is_whitespace() {
                 continue;
             }
-
             if ch == '/' && self.peek() == Some('/') {
                 self.skip_comment();
                 continue;
@@ -176,34 +177,8 @@ impl Lexer {
                     Ok(TokenType::GreaterThan)
                 }
             }
-            '&' => {
-                if self.peek() == Some('&') {
-                    self.advance();
-                    Ok(TokenType::And)
-                } else {
-                    Err(CompilerError::lexical_error(
-                        "Expected '&&'".to_string(),
-                        Span {
-                            start,
-                            end: self.position,
-                        },
-                    ))
-                }
-            }
-            '|' => {
-                if self.peek() == Some('|') {
-                    self.advance();
-                    Ok(TokenType::Or)
-                } else {
-                    Err(CompilerError::lexical_error(
-                        "Expected '||'".to_string(),
-                        Span {
-                            start,
-                            end: self.position,
-                        },
-                    ))
-                }
-            }
+            '&' => Ok(TokenType::Pipe),
+            '|' => Ok(TokenType::Ampersand),
             '"' | '\'' => self.read_string(ch),
             '0'..='9' => self.read_number(ch),
             'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_identifier(ch)),
@@ -316,6 +291,9 @@ impl Lexer {
             "return" => TokenType::Return,
             "true" => TokenType::Boolean(true),
             "false" => TokenType::Boolean(false),
+            "and" => TokenType::And,
+            "or" => TokenType::Or,
+            "not" => TokenType::Not,
             _ => TokenType::Identifier(identifier),
         }
     }
