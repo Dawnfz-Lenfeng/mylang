@@ -240,6 +240,7 @@ mod parser_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 initializer: Some(Expr::Number(42.0)),
+                is_mutable: true,
             }],
         };
         assert_eq!(program, expected);
@@ -253,6 +254,21 @@ mod parser_tests {
                 name: "x".to_string(),
                 type_annotation: Some(Expr::Identifier("number".to_string())),
                 initializer: Some(Expr::Number(42.0)),
+                is_mutable: true,
+            }],
+        };
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn test_const_statement_structure() {
+        let program = parse_program("const x = 42;").unwrap();
+        let expected = Program {
+            statements: vec![Stmt::VarDecl {
+                name: "x".to_string(),
+                type_annotation: None,
+                initializer: Some(Expr::Number(42.0)),
+                is_mutable: false,
             }],
         };
         assert_eq!(program, expected);
@@ -606,6 +622,7 @@ mod parser_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 initializer: Some(Expr::Number(42.0)),
+                is_mutable: true,
             }],
         };
         assert_eq!(result, expected);
@@ -621,6 +638,7 @@ mod parser_tests {
                         name: "x".to_string(),
                         type_annotation: Some(Expr::Identifier("number".to_string())),
                         initializer: Some(Expr::Number(42.0)),
+                        is_mutable: true,
                     }],
                 },
             ),
@@ -631,6 +649,7 @@ mod parser_tests {
                         name: "name".to_string(),
                         type_annotation: Some(Expr::Identifier("str".to_string())),
                         initializer: Some(Expr::String("hello".to_string())),
+                        is_mutable: true,
                     }],
                 },
             ),
@@ -641,6 +660,7 @@ mod parser_tests {
                         name: "flag".to_string(),
                         type_annotation: Some(Expr::Identifier("bool".to_string())),
                         initializer: Some(Expr::Boolean(true)),
+                        is_mutable: true,
                     }],
                 },
             ),
@@ -654,6 +674,7 @@ mod parser_tests {
                             index: Box::new(Expr::Identifier("number".to_string())),
                         }),
                         initializer: None,
+                        is_mutable: true,
                     }],
                 },
             ),
@@ -673,6 +694,7 @@ mod parser_tests {
                 name: "x".to_string(),
                 type_annotation: Some(Expr::Identifier("number".to_string())),
                 initializer: None,
+                is_mutable: true,
             }],
         };
         assert_eq!(program, expected);
@@ -1064,6 +1086,7 @@ mod parser_tests {
                     name: "x".to_string(),
                     type_annotation: None,
                     initializer: Some(Expr::Number(1.0)),
+                    is_mutable: true,
                 },
                 Stmt::Expression(Expr::Identifier("x".to_string())),
             ])],
@@ -1089,12 +1112,14 @@ mod parser_tests {
                     name: "x".to_string(),
                     type_annotation: None,
                     initializer: Some(Expr::Number(1.0)),
+                    is_mutable: true,
                 },
                 Stmt::Block(vec![
                     Stmt::VarDecl {
                         name: "y".to_string(),
                         type_annotation: None,
                         initializer: Some(Expr::Number(2.0)),
+                        is_mutable: true,
                     },
                     Stmt::Expression(Expr::Binary {
                         left: Box::new(Expr::Identifier("x".to_string())),
@@ -1270,6 +1295,7 @@ mod parser_tests {
                     name: "x".to_string(),
                     type_annotation: None,
                     initializer: Some(Expr::Number(42.0)),
+                    is_mutable: true,
                 },
                 Stmt::FuncDecl {
                     name: "test".to_string(),

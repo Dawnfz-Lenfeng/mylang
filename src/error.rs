@@ -98,11 +98,11 @@ impl CompilerError {
         }
     }
 
-    pub fn type_error(message: String, span: Span) -> Self {
+    pub fn type_error(message: String) -> Self {
         Self {
             message,
             error_type: ErrorType::TypeError,
-            span: Some(span),
+            span: None,
             file: None,
         }
     }

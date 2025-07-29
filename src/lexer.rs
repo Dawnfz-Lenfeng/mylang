@@ -11,6 +11,7 @@ pub enum TokenType {
 
     // Keywords
     Let,
+    Const,
     Fn,
     If,
     Else,
@@ -282,6 +283,7 @@ impl Lexer {
 
         match identifier.as_str() {
             "let" => TokenType::Let,
+            "const" => TokenType::Const,
             "fn" => TokenType::Fn,
             "if" => TokenType::If,
             "else" => TokenType::Else,

@@ -25,7 +25,7 @@ impl Parser {
     /// Grammar: var_declaration | function_declaration | if_statement | while_statement | for_statement | return_statement | block_statement | expression_statement
     fn parse_statement(&mut self) -> Result<Stmt, CompilerError> {
         match self.peek().token_type {
-            TokenType::Let => self.parse_var_declaration(),
+            TokenType::Let | TokenType::Const => self.parse_var_declaration(),
             TokenType::Fn => self.parse_function_declaration(),
             TokenType::If => self.parse_if_statement(),
             TokenType::While => self.parse_while_statement(),
@@ -38,7 +38,7 @@ impl Parser {
 
     /// Grammar: 'let' IDENTIFIER [':' TYPE] ['=' EXPRESSION] ';'
     fn parse_var_declaration(&mut self) -> Result<Stmt, CompilerError> {
-        self.advance(); // consume 'let'
+        let is_mutable = self.advance().token_type == TokenType::Let;
         let name = self.consume_identifier()?;
         let type_annotation = self
             .check(&TokenType::Colon)
@@ -59,6 +59,7 @@ impl Parser {
             name,
             type_annotation,
             initializer,
+            is_mutable,
         })
     }
 

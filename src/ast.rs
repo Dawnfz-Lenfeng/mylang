@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum DataType {
     Any,
     Number,
@@ -7,6 +7,19 @@ pub enum DataType {
     Array(Box<DataType>),
     Function(Vec<DataType>, Box<DataType>), // (parameters, return_type)
     Void,
+}
+
+impl PartialEq for DataType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (DataType::Any, _) | (_, DataType::Any) => true,
+            (DataType::Array(a), DataType::Array(b)) => a == b,
+            (DataType::Function(params_a, ret_a), DataType::Function(params_b, ret_b)) => {
+                params_a == params_b && ret_a == ret_b
+            }
+            _ => std::mem::discriminant(self) == std::mem::discriminant(other),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -82,6 +95,7 @@ pub enum Stmt {
         name: String,
         type_annotation: Option<Expr>,
         initializer: Option<Expr>,
+        is_mutable: bool,
     },
 
     // Function declaration

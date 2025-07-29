@@ -209,6 +209,7 @@ pub mod debug_utils {
                 name,
                 type_annotation,
                 initializer,
+                is_mutable,
             } => {
                 let mut result = format!("VarDecl {{ name: {}", name);
                 if let Some(typ) = type_annotation {
@@ -217,6 +218,7 @@ pub mod debug_utils {
                 if let Some(init) = initializer {
                     result.push_str(&format!(", init: {}", pretty_print_expr(init, indent + 1)));
                 }
+                result.push_str(&format!(", is_mutable: {}", is_mutable));
                 result.push_str(" }");
                 result
             }
