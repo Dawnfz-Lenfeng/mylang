@@ -41,14 +41,14 @@ impl Parser {
         let is_mutable = self.advance().token_type == TokenType::Let;
         let name = self.consume_identifier()?;
         let type_annotation = self
-            .check(&TokenType::Colon)
+            .check(TokenType::Colon)
             .then(|| {
                 self.advance();
                 self.parse_value_expression()
             })
             .transpose()?;
         let initializer = self
-            .check(&TokenType::Assign)
+            .check(TokenType::Assign)
             .then(|| {
                 self.advance();
                 self.parse_expression()
@@ -70,7 +70,7 @@ impl Parser {
         let name = self.consume_identifier()?;
         let parameters = self.parse_parameters()?;
         let return_type = self
-            .check(&TokenType::Arrow)
+            .check(TokenType::Arrow)
             .then(|| {
                 self.advance();
                 self.parse_value_expression()
@@ -92,7 +92,7 @@ impl Parser {
         let condition = self.parse_expression()?;
         let then_branch = self.parse_block_statement_inner()?;
         let else_branch = self
-            .check(&TokenType::Else)
+            .check(TokenType::Else)
             .then(|| {
                 self.advance();
                 self.parse_block_statement_inner()
@@ -130,7 +130,7 @@ impl Parser {
     /// Grammar: 'return' [EXPRESSION] ';'
     fn parse_return_statement(&mut self) -> Result<Stmt, CompilerError> {
         self.advance();
-        let value = if !self.check(&TokenType::Semicolon) {
+        let value = if !self.check(TokenType::Semicolon) {
             Some(self.parse_expression()?)
         } else {
             None
@@ -155,7 +155,7 @@ impl Parser {
     fn parse_block_statement_inner(&mut self) -> Result<Vec<Stmt>, CompilerError> {
         self.consume(TokenType::LeftBrace, "Expected '{' at start of block")?;
         let mut statements = Vec::new();
-        while !self.check(&TokenType::RightBrace) {
+        while !self.check(TokenType::RightBrace) {
             statements.push(self.parse_statement()?);
         }
         self.consume(TokenType::RightBrace, "Expected '}' at end of block")?;
@@ -166,13 +166,13 @@ impl Parser {
         self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
 
         let mut parameters = Vec::new();
-        if self.check(&TokenType::RightParen) {
+        if self.check(TokenType::RightParen) {
             self.consume(TokenType::RightParen, "Expected ')' after parameters")?;
             return Ok(parameters);
         }
         parameters.push(self.parse_parameter()?);
 
-        while self.check(&TokenType::Comma) {
+        while self.check(TokenType::Comma) {
             self.advance();
             parameters.push(self.parse_parameter()?);
         }
@@ -184,7 +184,7 @@ impl Parser {
     fn parse_parameter(&mut self) -> Result<Parameter, CompilerError> {
         let name = self.consume_identifier()?;
         let param_type = self
-            .check(&TokenType::Colon)
+            .check(TokenType::Colon)
             .then(|| {
                 self.advance();
                 self.parse_value_expression()
@@ -193,9 +193,14 @@ impl Parser {
         Ok(Parameter { name, param_type })
     }
 
-    /// Grammar: assignment
+    /// Grammar: assignment | or
     fn parse_expression(&mut self) -> Result<Expr, CompilerError> {
-        self.parse_assignment()
+        if self.check_identifier() && self.check_next(TokenType::Assign)
+        {
+            self.parse_assignment()
+        } else {
+            self.parse_or()
+        }
     }
 
     /// Grammar: or
@@ -203,27 +208,27 @@ impl Parser {
         self.parse_or()
     }
 
-    /// Grammar: or ('=' or)*
+    /// Grammar: IDENTIFIER ('=' or)*
     fn parse_assignment(&mut self) -> Result<Expr, CompilerError> {
-        let mut expr = self.parse_or()?;
-        if self.check(&TokenType::Assign) {
-            let op = match self.advance().token_type {
-                TokenType::Assign => BinaryOp::Assign,
-                _ => unreachable!(),
-            };
-            expr = Expr::Binary {
-                left: Box::new(expr),
-                operator: op,
-                right: Box::new(self.parse_assignment()?),
-            };
-        }
-        Ok(expr)
+        let name = self.consume_identifier()?;
+        self.consume(TokenType::Assign, "Expected '=' after identifier")?;
+
+        let value = if self.check_identifier() && self.check_next(TokenType::Assign) {
+            self.parse_assignment()
+        } else {
+            self.parse_or()
+        }?;
+
+        Ok(Expr::Assign {
+            name,
+            value: Box::new(value),
+        })
     }
 
     /// Grammar: and ('||' and)*
     fn parse_or(&mut self) -> Result<Expr, CompilerError> {
         let mut expr = self.parse_and()?;
-        while matches!(self.peek().token_type, TokenType::Or) {
+        if matches!(self.peek().token_type, TokenType::Or) {
             let op = match self.advance().token_type {
                 TokenType::Or => BinaryOp::LogicalOr,
                 _ => unreachable!(),
@@ -386,7 +391,7 @@ impl Parser {
             self.peek().token_type,
             TokenType::LeftParen | TokenType::LeftBracket
         ) {
-            expr = if self.check(&TokenType::LeftParen) {
+            expr = if self.check(TokenType::LeftParen) {
                 Expr::Call {
                     callee: Box::new(expr),
                     arguments: self.parse_arguments()?,
@@ -408,12 +413,12 @@ impl Parser {
     fn parse_arguments(&mut self) -> Result<Vec<Expr>, CompilerError> {
         self.advance(); // consume '('
         let mut arguments = Vec::new();
-        if self.check(&TokenType::RightParen) {
+        if self.check(TokenType::RightParen) {
             self.advance(); // consume ')'
             return Ok(arguments);
         }
         arguments.push(self.parse_expression()?);
-        while self.check(&TokenType::Comma) {
+        while self.check(TokenType::Comma) {
             self.advance();
             arguments.push(self.parse_expression()?);
         }
@@ -458,6 +463,14 @@ impl Parser {
         &self.tokens[self.current]
     }
 
+    fn peek_next(&self) -> &Token {
+        if self.is_at_end() {
+            &self.tokens[self.current]
+        } else {
+            &self.tokens[self.current + 1]
+        }
+    }
+
     fn previous(&self) -> &Token {
         &self.tokens[self.current - 1]
     }
@@ -473,16 +486,28 @@ impl Parser {
         self.previous()
     }
 
-    fn check(&self, token_type: &TokenType) -> bool {
+    fn check(&self, token_type: TokenType) -> bool {
         if self.is_at_end() {
             false
         } else {
-            self.peek().token_type == *token_type
+            self.peek().token_type == token_type
+        }
+    }
+
+    fn check_identifier(&self) -> bool {
+        matches!(self.peek().token_type, TokenType::Identifier(_))
+    }
+
+    fn check_next(&self, token_type: TokenType) -> bool {
+        if self.is_at_end() {
+            false
+        } else {
+            self.peek_next().token_type == token_type
         }
     }
 
     fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, CompilerError> {
-        if self.check(&token_type) {
+        if self.check(token_type) {
             Ok(self.advance())
         } else {
             Err(self.syntax_error(message.to_string()))

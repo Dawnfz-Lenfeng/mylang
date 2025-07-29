@@ -331,10 +331,9 @@ mod parser_tests {
                     operator: BinaryOp::GreaterThan,
                     right: Box::new(Expr::Number(0.0)),
                 },
-                body: vec![Stmt::Expression(Expr::Binary {
-                    left: Box::new(Expr::Identifier("x".to_string())),
-                    operator: BinaryOp::Assign,
-                    right: Box::new(Expr::Binary {
+                body: vec![Stmt::Expression(Expr::Assign {
+                    name: "x".to_string(),
+                    value: Box::new(Expr::Binary {
                         left: Box::new(Expr::Identifier("x".to_string())),
                         operator: BinaryOp::Subtract,
                         right: Box::new(Expr::Number(1.0)),
@@ -704,10 +703,9 @@ mod parser_tests {
     fn test_assignment_statement() {
         let result = parse_program("x = 42;").unwrap();
         let expected = Program {
-            statements: vec![Stmt::Expression(Expr::Binary {
-                left: Box::new(Expr::Identifier("x".to_string())),
-                operator: BinaryOp::Assign,
-                right: Box::new(Expr::Number(42.0)),
+            statements: vec![Stmt::Expression(Expr::Assign {
+                name: "x".to_string(),
+                value: Box::new(Expr::Number(42.0)),
             })],
         };
         assert_eq!(result, expected);
@@ -719,13 +717,11 @@ mod parser_tests {
             (
                 "x = y = z;",
                 Program {
-                    statements: vec![Stmt::Expression(Expr::Binary {
-                        left: Box::new(Expr::Identifier("x".to_string())),
-                        operator: BinaryOp::Assign,
-                        right: Box::new(Expr::Binary {
-                            left: Box::new(Expr::Identifier("y".to_string())),
-                            operator: BinaryOp::Assign,
-                            right: Box::new(Expr::Identifier("z".to_string())),
+                    statements: vec![Stmt::Expression(Expr::Assign {
+                        name: "x".to_string(),
+                        value: Box::new(Expr::Assign {
+                            name: "y".to_string(),
+                            value: Box::new(Expr::Identifier("z".to_string())),
                         }),
                     })],
                 },
@@ -733,10 +729,9 @@ mod parser_tests {
             (
                 "a = b + c;",
                 Program {
-                    statements: vec![Stmt::Expression(Expr::Binary {
-                        left: Box::new(Expr::Identifier("a".to_string())),
-                        operator: BinaryOp::Assign,
-                        right: Box::new(Expr::Binary {
+                    statements: vec![Stmt::Expression(Expr::Assign {
+                        name: "a".to_string(),
+                        value: Box::new(Expr::Binary {
                             left: Box::new(Expr::Identifier("b".to_string())),
                             operator: BinaryOp::Add,
                             right: Box::new(Expr::Identifier("c".to_string())),
@@ -838,10 +833,9 @@ mod parser_tests {
                     operator: BinaryOp::GreaterThan,
                     right: Box::new(Expr::Number(0.0)),
                 },
-                body: vec![Stmt::Expression(Expr::Binary {
-                    left: Box::new(Expr::Identifier("x".to_string())),
-                    operator: BinaryOp::Assign,
-                    right: Box::new(Expr::Binary {
+                body: vec![Stmt::Expression(Expr::Assign {
+                    name: "x".to_string(),
+                    value: Box::new(Expr::Binary {
                         left: Box::new(Expr::Identifier("x".to_string())),
                         operator: BinaryOp::Subtract,
                         right: Box::new(Expr::Number(1.0)),
@@ -877,10 +871,9 @@ mod parser_tests {
                             callee: Box::new(Expr::Identifier("range".to_string())),
                             arguments: vec![Expr::Number(10.0)],
                         },
-                        body: vec![Stmt::Expression(Expr::Binary {
-                            left: Box::new(Expr::Identifier("sum".to_string())),
-                            operator: BinaryOp::Assign,
-                            right: Box::new(Expr::Binary {
+                        body: vec![Stmt::Expression(Expr::Assign {
+                            name: "sum".to_string(),
+                            value: Box::new(Expr::Binary {
                                 left: Box::new(Expr::Identifier("sum".to_string())),
                                 operator: BinaryOp::Add,
                                 right: Box::new(Expr::Identifier("i".to_string())),
@@ -1331,10 +1324,9 @@ mod parser_tests {
         let input = "x = a + b * c;";
         let result = parse_program(input).unwrap();
         let expected = Program {
-            statements: vec![Stmt::Expression(Expr::Binary {
-                left: Box::new(Expr::Identifier("x".to_string())),
-                operator: BinaryOp::Assign,
-                right: Box::new(Expr::Binary {
+            statements: vec![Stmt::Expression(Expr::Assign {
+                name: "x".to_string(),
+                value: Box::new(Expr::Binary {
                     left: Box::new(Expr::Identifier("a".to_string())),
                     operator: BinaryOp::Add,
                     right: Box::new(Expr::Binary {
