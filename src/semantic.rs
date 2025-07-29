@@ -442,7 +442,10 @@ impl SemanticAnalyzer {
                     Ok(DataType::Number)
                 } else {
                     Err(CompilerError::semantic_error(
-                        "Arithmetic operations require numeric operands".to_string(),
+                        format!(
+                            "Arithmetic operations require numeric operands, found {:?} and {:?}",
+                            left_type, right_type
+                        ),
                     ))
                 }
             }
@@ -451,7 +454,10 @@ impl SemanticAnalyzer {
                     Ok(DataType::Boolean)
                 } else {
                     Err(CompilerError::semantic_error(
-                        "Comparison requires operands of same type".to_string(),
+                        format!(
+                            "Comparison requires operands of same type, found {:?} and {:?}",
+                            left_type, right_type
+                        ),
                     ))
                 }
             }
@@ -463,7 +469,10 @@ impl SemanticAnalyzer {
                     Ok(DataType::Boolean)
                 } else {
                     Err(CompilerError::semantic_error(
-                        "Comparison operations require numeric operands".to_string(),
+                        format!(
+                            "Comparison operations require numeric operands, found {:?} and {:?}",
+                            left_type, right_type
+                        ),
                     ))
                 }
             }
@@ -481,7 +490,10 @@ impl SemanticAnalyzer {
                     Ok(left_type)
                 } else {
                     Err(CompilerError::semantic_error(
-                        "Assignment requires operands of same type".to_string(),
+                        format!(
+                            "Assignment requires operands of same type, found {:?} and {:?}",
+                            left_type, right_type
+                        ),
                     ))
                 }
             }
