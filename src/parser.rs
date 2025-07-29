@@ -195,8 +195,7 @@ impl Parser {
 
     /// Grammar: assignment | or
     fn parse_expression(&mut self) -> Result<Expr, CompilerError> {
-        if self.check_identifier() && self.check_next(TokenType::Assign)
-        {
+        if self.check_identifier() && self.check_next(TokenType::Assign) {
             self.parse_assignment()
         } else {
             self.parse_or()

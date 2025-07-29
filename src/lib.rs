@@ -5,6 +5,7 @@
 pub mod ast;
 pub mod codegen;
 pub mod error;
+pub mod interpreter;
 pub mod lexer;
 pub mod parser;
 pub mod semantic;
@@ -14,6 +15,7 @@ pub mod utils;
 pub use ast::{DataType, Expr, Program, Stmt};
 pub use codegen::{CodeGenerator, TargetPlatform};
 pub use error::{CompilerError, ErrorReporter, ErrorType};
+pub use interpreter::{Environment, Interpreter, Value};
 pub use lexer::{Lexer, Token, TokenType};
 pub use parser::Parser;
 pub use semantic::{SemanticAnalyzer, Symbol, SymbolTable};

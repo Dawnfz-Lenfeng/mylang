@@ -125,6 +125,15 @@ impl CompilerError {
         }
     }
 
+    pub fn runtime_error(message: String) -> Self {
+        Self {
+            message,
+            error_type: ErrorType::InternalError, // or add a RuntimeError variant
+            span: None,
+            file: None,
+        }
+    }
+
     // Convenience methods for backward compatibility
     pub fn line(&self) -> Option<usize> {
         self.span.map(|s| s.start.line)

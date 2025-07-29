@@ -441,24 +441,20 @@ impl SemanticAnalyzer {
                 if left_type == DataType::Number && right_type == DataType::Number {
                     Ok(DataType::Number)
                 } else {
-                    Err(CompilerError::semantic_error(
-                        format!(
-                            "Arithmetic operations require numeric operands, found {:?} and {:?}",
-                            left_type, right_type
-                        ),
-                    ))
+                    Err(CompilerError::semantic_error(format!(
+                        "Arithmetic operations require numeric operands, found {:?} and {:?}",
+                        left_type, right_type
+                    )))
                 }
             }
             BinaryOp::Equal | BinaryOp::NotEqual => {
                 if left_type == right_type {
                     Ok(DataType::Boolean)
                 } else {
-                    Err(CompilerError::semantic_error(
-                        format!(
-                            "Comparison requires operands of same type, found {:?} and {:?}",
-                            left_type, right_type
-                        ),
-                    ))
+                    Err(CompilerError::semantic_error(format!(
+                        "Comparison requires operands of same type, found {:?} and {:?}",
+                        left_type, right_type
+                    )))
                 }
             }
             BinaryOp::LessThan
@@ -468,12 +464,10 @@ impl SemanticAnalyzer {
                 if left_type == DataType::Number && right_type == DataType::Number {
                     Ok(DataType::Boolean)
                 } else {
-                    Err(CompilerError::semantic_error(
-                        format!(
-                            "Comparison operations require numeric operands, found {:?} and {:?}",
-                            left_type, right_type
-                        ),
-                    ))
+                    Err(CompilerError::semantic_error(format!(
+                        "Comparison operations require numeric operands, found {:?} and {:?}",
+                        left_type, right_type
+                    )))
                 }
             }
             BinaryOp::LogicalAnd | BinaryOp::LogicalOr => {
@@ -489,12 +483,10 @@ impl SemanticAnalyzer {
                 if left_type == right_type {
                     Ok(left_type)
                 } else {
-                    Err(CompilerError::semantic_error(
-                        format!(
-                            "Assignment requires operands of same type, found {:?} and {:?}",
-                            left_type, right_type
-                        ),
-                    ))
+                    Err(CompilerError::semantic_error(format!(
+                        "Assignment requires operands of same type, found {:?} and {:?}",
+                        left_type, right_type
+                    )))
                 }
             }
         }
