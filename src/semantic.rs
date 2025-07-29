@@ -405,6 +405,19 @@ impl SemanticAnalyzer {
                 self.symbol_table.assign(name, value_type.clone())?;
                 Ok(value_type)
             }
+            Expr::Array { elements } => {
+                let element_type = self.analyze_expression(elements.first().unwrap())?;
+                for element in elements {
+                    let element_type = self.analyze_expression(element)?;
+                    if element_type != element_type {
+                        return Err(CompilerError::semantic_error(format!(
+                            "All elements of array must be of the same type, found {:?}",
+                            element_type
+                        )));
+                    }
+                }
+                Ok(DataType::Array(Box::new(element_type)))
+            }
         }
     }
 

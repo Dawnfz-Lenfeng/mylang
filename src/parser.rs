@@ -394,7 +394,7 @@ impl Parser {
             expr = if self.check(TokenType::LeftParen) {
                 Expr::Call {
                     callee: Box::new(expr),
-                    arguments: self.parse_arguments()?,
+                    arguments: self.parse_arguments(TokenType::RightParen)?,
                 }
             } else {
                 self.advance();
@@ -410,11 +410,11 @@ impl Parser {
     }
 
     /// Grammar: expression ( ',' expression )*
-    fn parse_arguments(&mut self) -> Result<Vec<Expr>, CompilerError> {
-        self.advance(); // consume '('
+    fn parse_arguments(&mut self, close_token: TokenType) -> Result<Vec<Expr>, CompilerError> {
+        self.advance(); // consume '(' or '['
         let mut arguments = Vec::new();
-        if self.check(TokenType::RightParen) {
-            self.advance(); // consume ')'
+        if self.check(close_token.clone()) {
+            self.advance(); // consume ')' or ']'
             return Ok(arguments);
         }
         arguments.push(self.parse_expression()?);
@@ -422,7 +422,7 @@ impl Parser {
             self.advance();
             arguments.push(self.parse_expression()?);
         }
-        self.consume(TokenType::RightParen, "Expected ')' after arguments")?;
+        self.consume(close_token, "Expected ')' after arguments")?;
         Ok(arguments)
     }
 
@@ -452,6 +452,12 @@ impl Parser {
                 self.advance(); // consume '('
                 let expr = self.parse_expression()?;
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
+                Ok(expr)
+            }
+            TokenType::LeftBracket => {
+                let expr = Expr::Array {
+                    elements: self.parse_arguments(TokenType::RightBracket)?,
+                };
                 Ok(expr)
             }
             _ => Err(self.syntax_error("Expected expression".to_string())),

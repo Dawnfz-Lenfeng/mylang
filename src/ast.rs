@@ -60,6 +60,10 @@ pub enum Expr {
         name: String,
         value: Box<Expr>,
     },
+
+    Array {
+        elements: Vec<Expr>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -180,7 +180,7 @@ mod semantic_tests {
         let result = analyze_program(input);
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("Assignment requires operands of same type"));
+            assert!(error.message.contains("Type mismatch"));
         }
     }
 
