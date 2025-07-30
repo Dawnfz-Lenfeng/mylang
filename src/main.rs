@@ -1,4 +1,4 @@
-use my::{Interpreter, Lexer, Parser, Value, CompilerError};
+use my::{CompilerError, Interpreter, Lexer, Parser, Value};
 use std::env;
 use std::fs;
 use std::io::{self, Write};

@@ -18,4 +18,3 @@ pub use interpreter::utils::{Environment, Value};
 pub use lexer::{Lexer, Token, TokenType};
 pub use parser::Parser;
 pub use semantic::{SemanticAnalyzer, Symbol, SymbolTable};
-

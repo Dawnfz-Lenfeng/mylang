@@ -1,6 +1,6 @@
 use my::{
-    CompilerError, Expr, Lexer, Parser, Program, Stmt,
     ast::{BinaryOp, Parameter, UnaryOp},
+    CompilerError, Expr, Lexer, Parser, Program, Stmt,
 };
 
 #[cfg(test)]

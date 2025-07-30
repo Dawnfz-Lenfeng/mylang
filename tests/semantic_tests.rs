@@ -87,11 +87,9 @@ mod semantic_tests {
         let result = analyze_program(input);
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(
-                error
-                    .message
-                    .contains("Arithmetic operations require numeric operands")
-            );
+            assert!(error
+                .message
+                .contains("Arithmetic operations require numeric operands"));
         }
     }
 
@@ -111,11 +109,9 @@ mod semantic_tests {
         let result = analyze_program(input);
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(
-                error
-                    .message
-                    .contains("Function expects 2 arguments, got 1")
-            );
+            assert!(error
+                .message
+                .contains("Function expects 2 arguments, got 1"));
         }
     }
 
@@ -280,11 +276,9 @@ mod semantic_tests {
         let result = analyze_program(input);
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(
-                error
-                    .message
-                    .contains("Cannot assign to immutable variable")
-            );
+            assert!(error
+                .message
+                .contains("Cannot assign to immutable variable"));
         }
     }
 
