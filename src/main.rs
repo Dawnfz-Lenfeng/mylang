@@ -6,26 +6,35 @@ use std::io::{self, Write};
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 2 {
-        println!("Usage:");
-        println!("  {} <file>              - Compile file", args[0]);
-        println!("  {} --repl              - Start REPL", args[0]);
-        return;
-    }
-
-    match args[1].as_str() {
-        "--repl" => {
+    match args.len() {
+        1 => {
             start_repl();
         }
-        file => {
-            interpret_file(file);
+        2 => {
+            match args[1].as_str() {
+                "--help" | "-h" => {
+                    // 显示用法信息
+                    print_usage(&args[0]);
+                }
+                file => {
+                    // 解释执行文件
+                    interpret_file(file);
+                }
+            }
+        }
+        _ => {
+            // 参数过多时显示错误并退出
+            eprintln!("错误：参数过多\n");
+            print_usage(&args[0]);
+            std::process::exit(1);
         }
     }
 }
 
 fn interpret_file(filename: &str) {
+    let mut interpreter = Interpreter::new();
     match fs::read_to_string(filename) {
-        Ok(source) => match run_interpreter(&source) {
+        Ok(source) => match run_interpreter(&source, &mut interpreter) {
             Ok(result) => {
                 if !matches!(result, my::Value::Null) {
                     println!("{}", result);
@@ -41,20 +50,25 @@ fn interpret_file(filename: &str) {
     }
 }
 
-fn run_interpreter(source: &str) -> Result<Value, CompilerError> {
+fn run_interpreter(source: &str, interpreter: &mut Interpreter) -> Result<Value, CompilerError> {
     let mut lexer = Lexer::new(source.to_string());
     let tokens = lexer.tokenize()?;
 
     let mut parser = Parser::new(tokens);
     let program = parser.parse()?;
 
-    let mut interpreter = Interpreter::new();
     interpreter.interpret(&program)
+}
+
+fn print_usage(program_name: &str) {
+    println!("Usage:");
+    println!("  {} <file>              - Compile file", program_name);
+    println!("  {} -                   - Start REPL", program_name);
 }
 
 fn start_repl() {
     println!("Interactive Interpreter - Type 'exit' to quit");
-
+    let mut interpreter = Interpreter::new();
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
@@ -73,7 +87,7 @@ fn start_repl() {
             continue;
         }
 
-        match run_interpreter(input) {
+        match run_interpreter(input, &mut interpreter) {
             Ok(result) => {
                 if !matches!(result, Value::Null) {
                     println!("{}", result);

@@ -250,11 +250,11 @@ mod parser_tests {
 
     #[test]
     fn test_let_statement_with_type_structure() {
-        let program = parse_program("let x: num = 42;").unwrap();
+        let program = parse_program("let x: number = 42;").unwrap();
         let expected = Program {
             statements: vec![Stmt::VarDecl {
                 name: "x".to_string(),
-                type_annotation: Some(Expr::Identifier("num".to_string())),
+                type_annotation: Some(Expr::Identifier("number".to_string())),
                 initializer: Some(Expr::Number(42.0)),
                 is_mutable: true,
             }],
@@ -279,21 +279,21 @@ mod parser_tests {
     #[test]
     fn test_function_declaration_structure() {
         let program =
-            parse_program("fn add(a: num, b: num) -> num { return a + b; }").unwrap();
+            parse_program("fn add(a: number, b: number) -> number { return a + b; }").unwrap();
         let expected = Program {
             statements: vec![Stmt::FuncDecl {
                 name: "add".to_string(),
                 parameters: vec![
                     Parameter {
                         name: "a".to_string(),
-                        param_type: Some(Expr::Identifier("num".to_string())),
+                        param_type: Some(Expr::Identifier("number".to_string())),
                     },
                     Parameter {
                         name: "b".to_string(),
-                        param_type: Some(Expr::Identifier("num".to_string())),
+                        param_type: Some(Expr::Identifier("number".to_string())),
                     },
                 ],
-                return_type: Some(Expr::Identifier("num".to_string())),
+                return_type: Some(Expr::Identifier("number".to_string())),
                 body: vec![Stmt::Return {
                     value: Some(Expr::Binary {
                         left: Box::new(Expr::Identifier("a".to_string())),
@@ -633,11 +633,11 @@ mod parser_tests {
     fn test_let_statement_with_type() {
         let test_cases = vec![
             (
-                "let x: num = 42;",
+                "let x: number = 42;",
                 Program {
                     statements: vec![Stmt::VarDecl {
                         name: "x".to_string(),
-                        type_annotation: Some(Expr::Identifier("num".to_string())),
+                        type_annotation: Some(Expr::Identifier("number".to_string())),
                         initializer: Some(Expr::Number(42.0)),
                         is_mutable: true,
                     }],
@@ -666,13 +666,13 @@ mod parser_tests {
                 },
             ),
             (
-                "let numbers: array[num];",
+                "let numbers: array[number];",
                 Program {
                     statements: vec![Stmt::VarDecl {
                         name: "numbers".to_string(),
                         type_annotation: Some(Expr::Index {
                             array: Box::new(Expr::Identifier("array".to_string())),
-                            index: Box::new(Expr::Identifier("num".to_string())),
+                            index: Box::new(Expr::Identifier("number".to_string())),
                         }),
                         initializer: None,
                         is_mutable: true,
@@ -689,11 +689,11 @@ mod parser_tests {
 
     #[test]
     fn test_let_statement_no_initializer() {
-        let program = parse_program("let x: num;").unwrap();
+        let program = parse_program("let x: number;").unwrap();
         let expected = Program {
             statements: vec![Stmt::VarDecl {
                 name: "x".to_string(),
-                type_annotation: Some(Expr::Identifier("num".to_string())),
+                type_annotation: Some(Expr::Identifier("number".to_string())),
                 initializer: None,
                 is_mutable: true,
             }],
@@ -925,21 +925,21 @@ mod parser_tests {
     fn test_function_declaration_with_types() {
         let test_cases = vec![
             (
-                "fn add(a: num, b: num) -> num { return a + b; }",
+                "fn add(a: number, b: number) -> number { return a + b; }",
                 Program {
                     statements: vec![Stmt::FuncDecl {
                         name: "add".to_string(),
                         parameters: vec![
                             Parameter {
                                 name: "a".to_string(),
-                                param_type: Some(Expr::Identifier("num".to_string())),
+                                param_type: Some(Expr::Identifier("number".to_string())),
                             },
                             Parameter {
                                 name: "b".to_string(),
-                                param_type: Some(Expr::Identifier("num".to_string())),
+                                param_type: Some(Expr::Identifier("number".to_string())),
                             },
                         ],
-                        return_type: Some(Expr::Identifier("num".to_string())),
+                        return_type: Some(Expr::Identifier("number".to_string())),
                         body: vec![Stmt::Return {
                             value: Some(Expr::Binary {
                                 left: Box::new(Expr::Identifier("a".to_string())),
@@ -990,7 +990,7 @@ mod parser_tests {
                 },
             ),
             (
-                "fn process(items: array[num]) -> num { return items[0]; }",
+                "fn process(items: array[number]) -> number { return items[0]; }",
                 Program {
                     statements: vec![Stmt::FuncDecl {
                         name: "process".to_string(),
@@ -998,10 +998,10 @@ mod parser_tests {
                             name: "items".to_string(),
                             param_type: Some(Expr::Index {
                                 array: Box::new(Expr::Identifier("array".to_string())),
-                                index: Box::new(Expr::Identifier("num".to_string())),
+                                index: Box::new(Expr::Identifier("number".to_string())),
                             }),
                         }],
-                        return_type: Some(Expr::Identifier("num".to_string())),
+                        return_type: Some(Expr::Identifier("number".to_string())),
                         body: vec![Stmt::Return {
                             value: Some(Expr::Index {
                                 array: Box::new(Expr::Identifier("items".to_string())),
@@ -1150,7 +1150,7 @@ mod parser_tests {
     #[test]
     fn test_fibonacci_example() {
         let input = r#"
-            fn fibonacci(n: num) -> num {
+            fn fibonacci(n: number) -> number {
                 if n <= 1 {
                     return n;
                 }
@@ -1173,7 +1173,7 @@ mod parser_tests {
     #[test]
     fn test_array_example() {
         let input = r#"
-            fn process_array(arr: array[num]) -> num {
+            fn process_array(arr: array[number]) -> number {
                 let sum = 0;
                 for item in arr {
                     sum = sum + item;

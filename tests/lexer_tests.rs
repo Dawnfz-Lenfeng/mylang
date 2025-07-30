@@ -198,11 +198,11 @@ mod lexer_tests {
             tokens
         );
         for (i, expected_num) in expected_numbers.iter().enumerate() {
-            if let TokenType::Number(num) = number_tokens[i].token_type {
+            if let TokenType::Number(number) = number_tokens[i].token_type {
                 assert_eq!(
-                    num, *expected_num,
+                    number, *expected_num,
                     "Number mismatch at position {}!\nActual: {}\nExpected: {}",
-                    i, num, expected_num
+                    i, number, expected_num
                 );
             } else {
                 panic!(
@@ -465,7 +465,7 @@ mod lexer_tests {
 
     #[test]
     fn test_function_definition() {
-        let input = "fn add(a: num, b: num) -> num { return a + b; }";
+        let input = "fn add(a: number, b: number) -> number { return a + b; }";
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
 
@@ -475,14 +475,14 @@ mod lexer_tests {
             TokenType::LeftParen,
             TokenType::Identifier("a".to_string()),
             TokenType::Colon,
-            TokenType::Identifier("num".to_string()),
+            TokenType::Identifier("number".to_string()),
             TokenType::Comma,
             TokenType::Identifier("b".to_string()),
             TokenType::Colon,
-            TokenType::Identifier("num".to_string()),
+            TokenType::Identifier("number".to_string()),
             TokenType::RightParen,
             TokenType::Arrow,
-            TokenType::Identifier("num".to_string()),
+            TokenType::Identifier("number".to_string()),
             TokenType::LeftBrace,
             TokenType::Return,
             TokenType::Identifier("a".to_string()),

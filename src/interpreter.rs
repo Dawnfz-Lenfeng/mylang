@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOp, Expr, Program, Stmt, UnaryOp};
+use crate::ast::{BinaryOp, Expr, Parameter, Program, Stmt, UnaryOp};
 use crate::error::CompilerError;
 use std::collections::HashMap;
 use std::fmt;
@@ -98,18 +98,22 @@ impl Environment {
 
     /// Exit current scope
     pub fn exit_scope(&mut self) {
-        // TODO: Implement scope exit
+        self.scopes.pop();
     }
 
     /// Define a variable in current scope
     pub fn define(&mut self, name: String, value: Value) -> Result<(), CompilerError> {
-        // TODO: Implement variable definition
+        self.scopes.last_mut().unwrap().insert(name, value);
         Ok(())
     }
 
     /// Get variable value from any accessible scope
     pub fn get(&self, name: &str) -> Result<Value, CompilerError> {
-        // TODO: Implement variable lookup
+        for scope in self.scopes.iter().rev() {
+            if let Some(value) = scope.get(name) {
+                return Ok(value.clone());
+            }
+        }
         Err(CompilerError::runtime_error(format!(
             "Undefined variable '{}'",
             name
@@ -118,7 +122,12 @@ impl Environment {
 
     /// Set variable value (must already exist)
     pub fn set(&mut self, name: &str, value: Value) -> Result<(), CompilerError> {
-        // TODO: Implement variable assignment
+        for scope in self.scopes.iter_mut().rev() {
+            if scope.contains_key(name) {
+                scope.insert(name.to_string(), value);
+                return Ok(());
+            }
+        }
         Err(CompilerError::runtime_error(format!(
             "Undefined variable '{}'",
             name
@@ -148,7 +157,6 @@ impl Interpreter {
 
     /// Register built-in functions
     fn register_builtins(&mut self) {
-        // TODO: Register built-in functions like print, len, etc.
         self.builtins.insert("print".to_string(), builtin_print);
         self.builtins.insert("len".to_string(), builtin_len);
         self.builtins.insert("type".to_string(), builtin_type);
@@ -173,53 +181,95 @@ impl Interpreter {
                 type_annotation: _,
                 initializer,
                 is_mutable: _,
-            } => {
-                // TODO: Implement variable declaration
-                Ok(Value::Null)
-            }
+            } => self.evaluate_var_declaration(name, initializer),
             Stmt::FuncDecl {
                 name,
                 parameters,
                 return_type: _,
                 body,
-            } => {
-                // TODO: Implement function declaration
-                Ok(Value::Null)
-            }
+            } => self.evaluate_function_declaration(name, parameters, body),
             Stmt::If {
                 condition,
                 then_branch,
                 else_branch,
-            } => {
-                // TODO: Implement if statement
-                Ok(Value::Null)
-            }
-            Stmt::While { condition, body } => {
-                // TODO: Implement while loop
-                Ok(Value::Null)
-            }
+            } => self.evaluate_if_statement(condition, then_branch, else_branch),
+            Stmt::While { condition, body } => self.evaluate_while_statement(condition, body),
             Stmt::For {
                 name,
                 collection,
                 body,
-            } => {
-                // TODO: Implement for loop
-                Ok(Value::Null)
-            }
-            Stmt::Return { value } => {
-                // TODO: Implement return statement
-                // You might want to use a special exception/error type for early returns
-                Ok(Value::Null)
-            }
-            Stmt::Expression(expr) => {
-                // Execute expression and return its value
-                self.evaluate_expression(expr)
-            }
-            Stmt::Block(statements) => {
-                // TODO: Implement block execution with new scope
-                Ok(Value::Null)
-            }
+            } => self.evaluate_for_statement(name, collection, body),
+            Stmt::Return { value } => self.evaluate_return_statement(value),
+            Stmt::Expression(expr) => self.evaluate_expression_statement(expr),
+            Stmt::Block(statements) => self.evaluate_block_statement(statements),
         }
+    }
+
+    fn evaluate_var_declaration(
+        &mut self,
+        name: &str,
+        initializer: &Option<Expr>,
+    ) -> Result<Value, CompilerError> {
+        if let Some(initializer) = initializer {
+            let value = self.evaluate_expression(initializer)?;
+            self.environment.define(name.to_string(), value.clone())?;
+        } else {
+            self.environment.define(name.to_string(), Value::Null)?;
+        }
+        Ok(Value::Null)
+    }
+
+    fn evaluate_function_declaration(
+        &mut self,
+        name: &str,
+        parameters: &[Parameter],
+        body: &[Stmt],
+    ) -> Result<Value, CompilerError> {
+        // TODO: Implement function declaration
+        Ok(Value::Null)
+    }
+
+    fn evaluate_if_statement(
+        &mut self,
+        condition: &Expr,
+        then_branch: &[Stmt],
+        else_branch: &Option<Vec<Stmt>>,
+    ) -> Result<Value, CompilerError> {
+        // TODO: Implement if statement
+        Ok(Value::Null)
+    }
+
+    fn evaluate_while_statement(
+        &mut self,
+        condition: &Expr,
+        body: &[Stmt],
+    ) -> Result<Value, CompilerError> {
+        // TODO: Implement while statement
+        Ok(Value::Null)
+    }
+
+    fn evaluate_for_statement(
+        &mut self,
+        name: &str,
+        collection: &Expr,
+        body: &[Stmt],
+    ) -> Result<Value, CompilerError> {
+        // TODO: Implement for statement
+        Ok(Value::Null)
+    }
+
+    fn evaluate_return_statement(&mut self, value: &Option<Expr>) -> Result<Value, CompilerError> {
+        // TODO: Implement return statement
+        Ok(Value::Null)
+    }
+
+    fn evaluate_block_statement(&mut self, statements: &[Stmt]) -> Result<Value, CompilerError> {
+        // TODO: Implement block statement
+        Ok(Value::Null)
+    }
+
+    fn evaluate_expression_statement(&mut self, expr: &Expr) -> Result<Value, CompilerError> {
+        self.evaluate_expression(expr)
     }
 
     /// Evaluate an expression and return its value
@@ -228,43 +278,17 @@ impl Interpreter {
             Expr::Number(n) => Ok(Value::Number(*n)),
             Expr::String(s) => Ok(Value::String(s.clone())),
             Expr::Boolean(b) => Ok(Value::Boolean(*b)),
-            Expr::Identifier(name) => {
-                // TODO: Look up variable in environment
-                self.environment.get(name)
-            }
+            Expr::Identifier(name) => self.environment.get(name),
             Expr::Binary {
                 left,
                 operator,
                 right,
-            } => {
-                // TODO: Implement binary operations
-                self.evaluate_binary_expression(left, operator, right)
-            }
-            Expr::Unary { operator, operand } => {
-                // TODO: Implement unary operations
-                self.evaluate_unary_expression(operator, operand)
-            }
-            Expr::Call { callee, arguments } => {
-                // TODO: Implement function calls
-                self.evaluate_call_expression(callee, arguments)
-            }
-            Expr::Index { array, index } => {
-                // TODO: Implement array indexing
-                self.evaluate_index_expression(array, index)
-            }
-            Expr::Assign { name, value } => {
-                // TODO: Implement assignment
-                self.evaluate_assignment(name, value)
-            }
-            Expr::Array { elements } => {
-                // TODO: Implement array creation
-                Ok(Value::Array(
-                    elements
-                        .iter()
-                        .map(|e| self.evaluate_expression(e))
-                        .collect::<Result<Vec<Value>, CompilerError>>()?,
-                ))
-            }
+            } => self.evaluate_binary_expression(left, operator, right),
+            Expr::Unary { operator, operand } => self.evaluate_unary_expression(operator, operand),
+            Expr::Call { callee, arguments } => self.evaluate_call_expression(callee, arguments),
+            Expr::Index { array, index } => self.evaluate_index_expression(array, index),
+            Expr::Assign { name, value } => self.evaluate_assignment(name, value),
+            Expr::Array { elements } => self.evaluate_array_expression(elements),
         }
     }
 
@@ -335,6 +359,15 @@ impl Interpreter {
 
         Err(CompilerError::runtime_error(
             "Assignment not implemented".to_string(),
+        ))
+    }
+
+    /// Evaluate array expressions
+    fn evaluate_array_expression(&mut self, elements: &[Expr]) -> Result<Value, CompilerError> {
+        // TODO: Implement array expressions
+
+        Err(CompilerError::runtime_error(
+            "Array expressions not implemented".to_string(),
         ))
     }
 }

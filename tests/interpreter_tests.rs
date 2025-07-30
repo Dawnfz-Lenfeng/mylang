@@ -162,7 +162,7 @@ mod interpreter_tests {
     #[test]
     fn test_function_declaration_and_call() {
         let input = r#"
-            fn add(a: num, b: num) -> num {
+            fn add(a: number, b: number) -> number {
                 return a + b;
             }
             
@@ -188,7 +188,7 @@ mod interpreter_tests {
     #[test]
     fn test_recursive_function() {
         let input = r#"
-            fn factorial(n: num) -> num {
+            fn factorial(n: number) -> number {
                 if n <= 1 {
                     return 1;
                 } else {
@@ -212,7 +212,7 @@ mod interpreter_tests {
         assert_eq!(result, Value::Number(5.0));
 
         let result = run_program("type(42);").unwrap();
-        assert_eq!(result, Value::String("num".to_string()));
+        assert_eq!(result, Value::String("number".to_string()));
     }
 
     #[test]
@@ -272,7 +272,7 @@ mod interpreter_tests {
     #[test]
     fn test_error_wrong_argument_count() {
         let input = r#"
-            fn test(a: num) -> num {
+            fn test(a: number) -> number {
                 return a * 2;
             }
             test(1, 2);
@@ -296,11 +296,11 @@ mod interpreter_tests {
     #[test]
     fn test_nested_function_calls() {
         let input = r#"
-            fn double(x: num) -> num {
+            fn double(x: number) -> number {
                 return x * 2;
             }
             
-            fn add_one(x: num) -> num {
+            fn add_one(x: number) -> number {
                 return x + 1;
             }
             
@@ -314,8 +314,8 @@ mod interpreter_tests {
     fn test_closures() {
         // This is an advanced feature - closures capturing variables
         let input = r#"
-            fn make_adder(x: num) -> fn {
-                fn adder(y: num) -> num {
+            fn make_adder(x: number) -> fn {
+                fn adder(y: number) -> number {
                     return x + y;
                 }
                 return adder;

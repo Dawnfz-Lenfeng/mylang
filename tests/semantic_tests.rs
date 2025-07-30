@@ -31,7 +31,7 @@ mod semantic_tests {
     #[test]
     fn test_function_declaration() {
         let input = r#"
-            fn add(a: num, b: num) -> num {
+            fn add(a: number, b: number) -> number {
                 return a + b;
             }
             
@@ -78,7 +78,7 @@ mod semantic_tests {
     fn test_type_mismatch_error() {
         let input = r#"
             fn main() {
-                let x: num = 42;
+                let x: number = 42;
                 let y: str = "hello";
                 let z = x + y;
             }
@@ -98,7 +98,7 @@ mod semantic_tests {
     #[test]
     fn test_function_call_validation() {
         let input = r#"
-            fn add(a: num, b: num) -> num {
+            fn add(a: number, b: number) -> number {
                 return a + b;
             }
             
@@ -139,7 +139,7 @@ mod semantic_tests {
     #[test]
     fn test_recursive_function() {
         let input = r#"
-            fn factorial(n: num) -> num {
+            fn factorial(n: number) -> number {
                 if n <= 1 {
                     return 1;
                 } else {
@@ -211,7 +211,7 @@ mod semantic_tests {
     #[test]
     fn test_function_parameter_scoping() {
         let input = r#"
-            fn test(param: num) -> num {
+            fn test(param: number) -> number {
                 let local = param + 1;
                 return local;
             }
@@ -250,11 +250,11 @@ mod semantic_tests {
     #[test]
     fn test_multiple_functions() {
         let input = r#"
-            fn helper1() -> num {
+            fn helper1() -> number {
                 return 42;
             }
             
-            fn helper2(x: num) -> num {
+            fn helper2(x: number) -> number {
                 return x * 2;
             }
             
@@ -305,7 +305,7 @@ mod semantic_tests {
     fn test_array_type_checking() {
         let input = r#"
             fn main() {
-                let arr: array[num] = [1, 2, 3];
+                let arr: array[number] = [1, 2, 3];
                 let element = arr[0];
             }
         "#;
@@ -319,7 +319,7 @@ mod semantic_tests {
         let input = r#"
             fn main() {
                 let arr = [1, 2, 3];
-                let element = arr["invalid"];  // Should fail - index must be num
+                let element = arr["invalid"];  // Should fail - index must be number
             }
         "#;
 
@@ -333,7 +333,7 @@ mod semantic_tests {
     #[test]
     fn test_return_type_mismatch() {
         let input = r#"
-            fn test() -> num {
+            fn test() -> number {
                 return "string";  // Should fail - return type mismatch
             }
         "#;
@@ -354,7 +354,7 @@ mod semantic_tests {
                     let x = "shadow";  // Should be allowed - different scope
                     let y = x;  // y should be string type
                 }
-                let z = x;  // z should be num type
+                let z = x;  // z should be number type
             }
         "#;
 
@@ -366,7 +366,7 @@ mod semantic_tests {
     fn test_uninitialized_variable_usage() {
         let input = r#"
             fn main() {
-                let x: num;
+                let x: number;
                 let y = x + 1;  // Should fail - x not initialized
             }
         "#;
