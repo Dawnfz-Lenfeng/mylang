@@ -1,20 +1,79 @@
-// Rust Compiler/Interpreter Library
-// This crate provides the core functionality for lexical analysis, parsing,
-// semantic analysis, and code generation.
 
-pub mod ast;
 pub mod error;
 pub mod interpreter;
 pub mod lexer;
 pub mod parser;
-pub mod semantic;
 pub mod utils;
 
-// Re-export commonly used types for convenience
-pub use ast::{DataType, Expr, Program, Stmt};
-pub use error::{CompilerError, ErrorReporter, ErrorType};
-pub use interpreter::interpreter::Interpreter;
-pub use interpreter::utils::{Environment, Value};
-pub use lexer::{Lexer, Token, TokenType};
-pub use parser::Parser;
-pub use semantic::{SemanticAnalyzer, Symbol, SymbolTable};
+
+use error::error::CompilerError;
+use interpreter::interpreter::Interpreter;
+use interpreter::value::Value;
+use lexer::lexer::Lexer;
+use parser::parser::Parser;
+
+use std::fs;
+use std::io::{self, Write};
+
+pub fn run_file(filename: &str) {
+    let mut interpreter = Interpreter::new();
+    match fs::read_to_string(filename) {
+        Ok(source) => match run(source, &mut interpreter) {
+            Ok(result) => {
+                if !matches!(result, Value::Null) {
+                    println!("{}", result);
+                }
+            }
+            Err(error) => {
+                eprintln!("Runtime Error: {}", error);
+            }
+        },
+        Err(error) => {
+            eprintln!("Error reading file '{}': {}", filename, error);
+        }
+    }
+}
+
+pub fn run_prompt() {
+    println!("Interactive Interpreter - Type 'exit' to quit");
+    let mut interpreter = Interpreter::new();
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("valid user input");
+
+        let input = input.trim();
+        if input == "exit" {
+            break;
+        }
+
+        match run(input.to_string(), &mut interpreter) {
+            Ok(result) => {
+                if !matches!(result, Value::Null) {
+                    println!("{}", result);
+                }
+            }
+            Err(error) => {
+                eprintln!("Error: {}", error);
+            }
+        }
+    }
+
+    println!("Goodbye!");
+}
+
+pub fn print_usage(program_name: &str) {
+    println!("Usage: {program_name} [script]");
+}
+
+fn run(source: String, interpreter: &mut Interpreter) -> Result<Value, CompilerError> {
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize()?;
+
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse()?;
+
+    interpreter.interpret(&program)
+}

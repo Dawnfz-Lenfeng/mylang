@@ -1,3 +1,3 @@
-pub mod error;
 pub mod interpreter;
-pub mod utils;
+pub mod environment;
+pub mod value;

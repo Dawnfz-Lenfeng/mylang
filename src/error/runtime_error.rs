@@ -1,4 +1,4 @@
-use crate::interpreter::utils::Value;
+use crate::interpreter::value::Value;
 use std::fmt;
 
 /// Runtime errors and control flow for the interpreter

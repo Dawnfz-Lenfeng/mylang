@@ -1,7 +1,4 @@
-use my::{
-    ast::{BinaryOp, Parameter, UnaryOp},
-    CompilerError, Expr, Lexer, Parser, Program, Stmt,
-};
+use mylang::{error::error::CompilerError, lexer::lexer::Lexer, parser::parser::Parser, parser::{expr::{BinaryOp, Expr, UnaryOp}, stmt::{Parameter, Program, Stmt}}};
 
 #[cfg(test)]
 mod parser_tests {

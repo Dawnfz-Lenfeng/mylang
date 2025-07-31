@@ -1,7 +1,8 @@
-use crate::ast::{BinaryOp, Expr, Parameter, Program, Stmt, UnaryOp};
-use crate::error::CompilerError;
-use crate::interpreter::error::RuntimeError;
-use crate::interpreter::utils::{EnvRef, Environment, Value, NULL};
+use crate::error::error::CompilerError;
+use crate::error::runtime_error::RuntimeError;
+use crate::interpreter::environment::{EnvRef, Environment};
+use crate::interpreter::value::{Value, NULL};
+use crate::parser::{expr::{BinaryOp, Expr, UnaryOp}, stmt::{Parameter, Program, Stmt}};
 use std::rc::Rc;
 
 /// Main interpreter that executes the AST
@@ -261,14 +262,100 @@ impl Interpreter {
         operator: &BinaryOp,
         right: &Expr,
     ) -> Result<Value, RuntimeError> {
-        // TODO: Implement binary operations
-        // 1. Evaluate left and right operands
-        // 2. Check types are compatible for the operation
-        // 3. Perform the operation and return result
+        let left_value = self.evaluate_expression(left)?;
+        let right_value = self.evaluate_expression(right)?;
 
-        Err(RuntimeError::error(
-            "Binary operations not implemented".to_string(),
-        ))
+        match operator {
+            BinaryOp::Add => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left + right)),
+                    (Value::String(left), Value::String(right)) => Ok(Value::String(left.clone() + &right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for addition: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::Subtract => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left - right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for subtraction: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::Multiply => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left * right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for multiplication: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::Divide => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left / right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for division: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::Modulo => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left % right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for modulo: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::Equal => {
+                Ok(Value::Boolean(left_value == right_value))
+            }
+            BinaryOp::LessThan => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left < right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for less than: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::LessEqual => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left <= right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for less than or equal: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::GreaterThan => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left > right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for greater than: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            BinaryOp::GreaterEqual => {
+                match (&left_value, &right_value) {
+                    (Value::Number(left), Value::Number(right)) => Ok(Value::Boolean(left >= right)),
+                    _ => Err(RuntimeError::error(format!(
+                        "Invalid types for greater than or equal: {:?} and {:?}",
+                        left_value, right_value
+                    ))),
+                }
+            }
+            _ => Err(RuntimeError::error(format!(
+                "Binary operation not implemented: {:?}",
+                operator
+            ))),
+        }
     }
 
     /// Evaluate unary expressions (-, not)

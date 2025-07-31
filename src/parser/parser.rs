@@ -1,6 +1,6 @@
-use crate::ast::{BinaryOp, Expr, Parameter, Program, Stmt, UnaryOp};
-use crate::error::CompilerError;
-use crate::lexer::{Token, TokenType};
+use crate::error::error::CompilerError;
+use crate::lexer::token::{Token, TokenType};
+use super::{expr::{BinaryOp, Expr, UnaryOp}, stmt::{Parameter, Program, Stmt}};
 
 pub struct Parser {
     tokens: Vec<Token>,

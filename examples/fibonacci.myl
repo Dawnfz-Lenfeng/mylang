@@ -6,11 +6,9 @@ fn fibonacci(n) {
     }
 }
 
-fn main() {
-    let i = 0;
-    while i < 10 {
-        let fib = fibonacci(i);
-        print(fib);
-        i = i + 1;
-    }
+let i = 0;
+while i < 10 {
+    let fib = fibonacci(i);
+    print(fib);
+    i = i + 1;
 }

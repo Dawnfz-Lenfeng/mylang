@@ -8,7 +8,7 @@ name = "mylang"
 path = "src/main.rs"
 
 [lib]
-name = "my"
+name = "mylang"
 path = "src/lib.rs"
 
 [dependencies]
