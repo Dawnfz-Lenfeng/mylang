@@ -22,10 +22,7 @@ pub fn run_file(filename: &str) {
             }
         },
         Err(error) => {
-            eprintln!(
-                "{}",
-                Error::io(format!("Error reading file '{filename}: {error}"))
-            );
+            eprintln!("{}", Error::from(error));
         }
     }
 }

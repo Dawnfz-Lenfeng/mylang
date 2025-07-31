@@ -28,7 +28,7 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt> {
-        match self.advance().token_type {
+        match self.peek().token_type {
             TokenType::Let => self.var_declaration(),
             TokenType::Fn => self.function_declaration(),
             TokenType::If => self.if_statement(),
@@ -42,6 +42,7 @@ impl Parser {
     }
 
     fn var_declaration(&mut self) -> Result<Stmt> {
+        self.advance();
         let name = self.consume_identifier()?;
         let initializer = self
             .try_consume(TokenType::Equal)
@@ -52,6 +53,7 @@ impl Parser {
     }
 
     fn function_declaration(&mut self) -> Result<Stmt> {
+        self.advance();
         let name = self.consume_identifier()?;
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
@@ -68,6 +70,7 @@ impl Parser {
     }
 
     fn if_statement(&mut self) -> Result<Stmt> {
+        self.advance();
         let condition = self.expression()?;
         let then_branch = Box::new(self.block_statement()?);
         let else_branch = self
@@ -83,12 +86,14 @@ impl Parser {
     }
 
     fn while_statement(&mut self) -> Result<Stmt> {
+        self.advance();
         let condition = self.expression()?;
         let body = Box::new(self.block_statement()?);
         Ok(Stmt::While { condition, body })
     }
 
     fn for_statement(&mut self) -> Result<Stmt> {
+        self.advance();
         let initializer = match () {
             _ if self.try_consume(TokenType::Let) => Some(self.var_declaration()?),
             _ if self.try_consume(TokenType::Semicolon) => None,
@@ -131,6 +136,7 @@ impl Parser {
     }
 
     fn block_statement(&mut self) -> Result<Stmt> {
+        self.advance();
         self.consume(TokenType::LeftBrace, "Expected '{' at start of block")?;
         let mut statements = Vec::new();
         while !self.check(TokenType::RightBrace) {
@@ -141,6 +147,7 @@ impl Parser {
     }
 
     fn print_statement(&mut self) -> Result<Stmt> {
+        self.advance();
         let expr = self.expression()?;
         self.consume_semicolon()?;
         Ok(Stmt::Print(expr))
@@ -254,20 +261,25 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr> {
-        match self.advance().token_type.clone() {
-            TokenType::Number(n) => Ok(Expr::Number(n)),
-            TokenType::String(s) => Ok(Expr::String(s)),
-            TokenType::Boolean(b) => Ok(Expr::Boolean(b)),
-            TokenType::Identifier(name) => Ok(Expr::Variable(name)),
+        let token = self.advance();
+
+        match &token.token_type {
+            TokenType::Number(n) => Ok(Expr::Number(*n)),
+            TokenType::String(s) => Ok(Expr::String(s.clone())),
+            TokenType::Boolean(b) => Ok(Expr::Boolean(*b)),
+            TokenType::Identifier(name) => Ok(Expr::Variable(name.clone())),
             TokenType::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
-            _ => Err(self.error(format!(
-                "Expected expression, found {:#?}",
-                self.previous().token_type
-            ))),
+            _ => {
+                let expected = "number, string, boolean, identifier or '('";
+                Err(Error::syntax(
+                    format!("Expected {}, found {:?}", expected, token.token_type),
+                    token.location,
+                ))
+            }
         }
     }
 

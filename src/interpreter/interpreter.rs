@@ -6,7 +6,7 @@ use crate::{
     error::{Error, Result},
     parser::{
         expr::{self, Expr},
-        stmt::{self, Stmt, Visitor},
+        stmt::{self, Stmt},
         BinaryOp, UnaryOp,
     },
 };
@@ -34,6 +34,7 @@ impl Interpreter {
 
 impl stmt::Visitor<Result<()>> for Interpreter {
     fn visit_expr(&mut self, expr: &Expr) -> Result<()> {
+        expr.accept(self)?;
         Ok(())
     }
 
