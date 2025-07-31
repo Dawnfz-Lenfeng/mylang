@@ -19,14 +19,53 @@ pub enum Stmt {
     Block(Vec<Stmt>),
     If {
         condition: Expr,
-        then_branch: Vec<Stmt>,
-        else_branch: Option<Vec<Stmt>>,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
     },
     While {
         condition: Expr,
-        body: Vec<Stmt>,
+        body: Box<Stmt>,
     },
     Return {
         value: Option<Expr>,
     },
+}
+
+pub trait Visitor<T> {
+    fn visit_expression(&mut self, expr: &Expr) -> T;
+    fn visit_print(&mut self, expr: &Expr) -> T;
+    fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> T;
+    fn visit_func_decl(&mut self, name: &str, parameters: &[String], body: &[Stmt]) -> T;
+    fn visit_if(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Stmt,
+        else_branch: Option<&Stmt>,
+    ) -> T;
+    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> T;
+    fn visit_return(&mut self, value: Option<&Expr>) -> T;
+    fn visit_block(&mut self, statements: &[Stmt]) -> T;
+}
+
+impl Stmt {
+    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
+        match self {
+            Stmt::Expression(expr) => visitor.visit_expression(expr),
+            Stmt::Print(expr) => visitor.visit_print(expr),
+            Stmt::Block(statements) => visitor.visit_block(statements),
+            Stmt::VarDecl { name, initializer } => visitor.visit_var_decl(name, initializer.as_ref()),
+            Stmt::FuncDecl {
+                name,
+                parameters,
+                body,
+            } => visitor.visit_func_decl(name, parameters, body),
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => visitor.visit_if(condition, then_branch, else_branch.as_deref()),
+            Stmt::While { condition, body } => visitor.visit_while(condition, body),
+            Stmt::Return { value } => visitor.visit_return(value.as_ref()),
+        }
+    }
 }
