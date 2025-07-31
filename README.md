@@ -1,153 +1,87 @@
-# Rust Compiler/Interpreter
+# Rust Interpreter
 
-A simple compiler and interpreter built in Rust, supporting multiple target platforms.
-
-## Project Structure
-
-```
-interpreter/
-├── src/
-│   ├── main.rs          # Entry point & CLI
-│   ├── lib.rs           # Library interface
-│   ├── lexer.rs         # Lexical analysis (tokenization)
-│   ├── parser.rs        # Syntax analysis (parsing)
-│   ├── ast.rs           # Abstract Syntax Tree definitions
-│   ├── semantic.rs      # Semantic analysis & type checking
-│   ├── codegen.rs       # Code generation for multiple targets
-│   ├── error.rs         # Error handling & reporting
-│   └── utils.rs         # Utility functions & helpers
-├── examples/            # Example source code files
-│   ├── hello.lang       # Basic hello world example
-│   └── loops.lang       # Loop examples
-├── Cargo.toml          # Project configuration
-└── README.md           # This file
-```
-
-## Features
-
-### Compilation Pipeline
-1. **Lexical Analysis** - Tokenizes source code into meaningful tokens
-2. **Syntax Analysis** - Parses tokens into an Abstract Syntax Tree (AST)
-3. **Semantic Analysis** - Type checking and symbol table management
-4. **Code Generation** - Generates target code for multiple platforms
-
-### Target Platforms
-- **Bytecode** - Custom stack-based bytecode
-- **JavaScript** - Transpiles to JavaScript
-- **LLVM IR** - LLVM Intermediate Representation (planned)
-- **Assembly** - Native assembly code (planned)
-
-### Language Features
-- Variables with type inference
-- Functions with parameters and return types
-- Control flow (if/else, while, for loops)
-- Basic data types (Number, String, Boolean)
-- Arithmetic and logical operations
-- Function calls and recursion
+A simple interpreter built in Rust, reference from https://craftinginterpreters.com/.
 
 ## Usage
 
-### Building the Project
 ```bash
-cargo build --release
+# Run the interpreter with the example script
+cargo run examples/hello.myl
+# Run the interpreter with the interactive mode
+cargo run
 ```
 
-### Running the Compiler
+## Tests
+
+There are three main test suites in this project, each targeting a core component:
+
 ```bash
-# Compile to JavaScript (default)
-cargo run examples/hello.lang
-
-# Compile to specific target
-cargo run examples/hello.lang javascript
-cargo run examples/hello.lang bytecode
+cargo test lexer_tests
+cargo test parser_tests
+cargo test interpreter_tests
 ```
 
-### Example Source Code
+## Language Grammar
 
-```rust
-// variables_example.lang
-fn main() {
-    let x = 42;
-    let message = "Hello, World!";
-    let is_valid = true;
-    
-    if is_valid {
-        print(message);
-        print(x);
-    }
-}
+### Declarations
+
+```
+declaration -> varDecl 
+            | functionDecl
+            | statement
+
+varDecl     -> 'let' Identifier ( '=' expression )? ';'
+fnDecl      -> 'fn' Identifier '(' parameters? ')' block
 ```
 
-## Development Roadmap
+### Statements
 
-### Phase 1: Basic Infrastructure (Current)
-- [x] Project structure setup
-- [x] Basic AST definitions
-- [x] Error handling framework
-- [x] Lexer skeleton
-- [x] Parser skeleton
-- [x] Semantic analyzer skeleton
-- [x] Code generator skeleton
+```
+statement -> exprStmt
+            | forStmt
+            | ifStmt
+            | printStmt
+            | returnStmt
+            | varStmt
+            | whileStmt
+            | block
 
-### Phase 2: Core Functionality
-- [ ] Complete lexer implementation
-- [ ] Complete parser implementation
-- [ ] Basic semantic analysis
-- [ ] JavaScript code generation
-- [ ] Standard library functions
+exprStmt   -> expression ';'
+forStmt    -> 'for' '(' ( varStmt | exprStmt | ';' )  expression? ';' ( expression )? ')' statement
+ifStmt     -> 'if' '(' expression ')' statement ( 'else' statement )?
+printStmt  -> 'print' expression ';'
+returnStmt -> 'return' expression? ';'
+varStmt    -> 'let' Identifier ( '=' expression )? ';'
+whileStmt  -> 'while' '(' expression ')' statement
+block      -> '{' declaration* '}'
+```
 
-### Phase 3: Advanced Features
-- [ ] Advanced type system
-- [ ] Optimizations
-- [ ] LLVM backend
-- [ ] Native compilation
-- [ ] Standard library expansion
+### Expressions
 
-### Phase 4: Language Extensions
-- [ ] Modules and imports
-- [ ] Object-oriented features
-- [ ] Generics/templates
-- [ ] Memory management
-- [ ] Concurrent programming
+```
+expression -> assignment
 
-## Contributing
+assignment -> Identifier '=' assignment | logic_or
+logic_or   -> logic_and ( 'or' logic_and )*
+logic_and  -> equality ( 'and' equality )*
+equality   -> comparison ( ( '==' | '!=' ) comparison )*
+comparison -> term ( ( '<' | '>' | '<=' | '>=' ) term )*
+term       -> factor ( ( '-' | '+' ) factor )*
+factor     -> unary ( ( '/' | '*' ) unary )*
+unary      -> ( ( '!' | '-' ) )* call
+call       -> primary ( '(' arguments? ')' )*
+primary    -> 'true' 
+            | 'false'
+            | 'nil' 
+            | Number 
+            | String 
+            | Identifier 
+            | '(' expression ')'
+```
 
-This is a learning project for understanding compiler design and implementation. Contributions and improvements are welcome!
+### Utils
 
-## Architecture Notes
-
-### Lexer (`lexer.rs`)
-- Converts source text into tokens
-- Handles keywords, operators, literals, identifiers
-- Tracks position information for error reporting
-
-### Parser (`parser.rs`)
-- Implements recursive descent parsing
-- Builds Abstract Syntax Tree from tokens
-- Handles operator precedence and associativity
-
-### AST (`ast.rs`)
-- Defines all node types for expressions and statements
-- Includes type annotations and metadata
-- Designed for easy traversal and transformation
-
-### Semantic Analyzer (`semantic.rs`)
-- Symbol table management with scoping
-- Type checking and inference
-- Variable initialization tracking
-- Function signature validation
-
-### Code Generator (`codegen.rs`)
-- Multi-target code generation
-- Platform-specific optimizations
-- Extensible architecture for new targets
-
-### Error Handling (`error.rs`)
-- Comprehensive error reporting
-- Source location tracking
-- Warning and error categorization
-- User-friendly error messages
-
-## License
-
-MIT License - see LICENSE file for details. 
+```
+arguments    -> expression ( ',' expression )*
+parameters   -> Identifier ( ',' Identifier )*
+```
