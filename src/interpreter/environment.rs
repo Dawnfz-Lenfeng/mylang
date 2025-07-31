@@ -1,5 +1,5 @@
-use crate::error::runtime_error::RuntimeError;
 use super::value::Value;
+use crate::error::runtime_error::RuntimeError;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub type EnvRef = Rc<RefCell<Environment>>;

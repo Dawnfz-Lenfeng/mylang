@@ -2,7 +2,6 @@ use super::environment::EnvRef;
 use crate::parser::stmt::Stmt;
 use std::{fmt, rc::Rc};
 
-
 pub const NULL: Value = Value::Null;
 
 /// Runtime value types that the interpreter can work with

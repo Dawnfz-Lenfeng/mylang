@@ -1,4 +1,7 @@
-use mylang::{error::error::CompilerError, interpreter::interpreter::Interpreter, lexer::lexer::Lexer, parser::parser::Parser, interpreter::value::Value};
+use mylang::{
+    error::error::CompilerError, interpreter::interpreter::Interpreter, interpreter::value::Value,
+    lexer::lexer::Lexer, parser::parser::Parser,
+};
 
 #[cfg(test)]
 mod interpreter_tests {

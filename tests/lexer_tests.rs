@@ -35,9 +35,9 @@ mod lexer_tests {
             TokenType::Comma,
             TokenType::Plus,
             TokenType::Minus,
-            TokenType::Asterisk,
+            TokenType::Star,
             TokenType::Slash,
-            TokenType::Assign,
+            TokenType::Equal,
             TokenType::LessThan,
             TokenType::GreaterThan,
             TokenType::Not,
@@ -71,7 +71,7 @@ mod lexer_tests {
         let tokens = lexer.tokenize().unwrap();
 
         let expected = vec![
-            TokenType::Equal,
+            TokenType::EqualEqual,
             TokenType::NotEqual,
             TokenType::LessEqual,
             TokenType::GreaterEqual,
@@ -264,7 +264,7 @@ mod lexer_tests {
         let expected_types = vec![
             TokenType::Let,
             TokenType::Identifier("x".to_string()),
-            TokenType::Assign,
+            TokenType::Equal,
             TokenType::Number(42.0),
             TokenType::Semicolon,
             TokenType::Eof,

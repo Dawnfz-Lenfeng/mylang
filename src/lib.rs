@@ -1,16 +1,13 @@
-
 pub mod error;
 pub mod interpreter;
 pub mod lexer;
 pub mod parser;
 pub mod utils;
 
-
-use error::error::CompilerError;
-use interpreter::interpreter::Interpreter;
-use interpreter::value::Value;
-use lexer::lexer::Lexer;
-use parser::parser::Parser;
+use error::Result;
+use interpreter::{Interpreter, Value};
+use lexer::Lexer;
+use parser::Parser;
 
 use std::fs;
 use std::io::{self, Write};
@@ -21,15 +18,15 @@ pub fn run_file(filename: &str) {
         Ok(source) => match run(source, &mut interpreter) {
             Ok(result) => {
                 if !matches!(result, Value::Null) {
-                    println!("{}", result);
+                    println!("{result}");
                 }
             }
             Err(error) => {
-                eprintln!("Runtime Error: {}", error);
+                eprintln!("{error}");
             }
         },
         Err(error) => {
-            eprintln!("Error reading file '{}': {}", filename, error);
+            eprintln!("Error reading file '{filename}': {error}");
         }
     }
 }
@@ -56,7 +53,7 @@ pub fn run_prompt() {
                 }
             }
             Err(error) => {
-                eprintln!("Error: {}", error);
+                eprintln!("{}", error);
             }
         }
     }
@@ -68,7 +65,7 @@ pub fn print_usage(program_name: &str) {
     println!("Usage: {program_name} [script]");
 }
 
-fn run(source: String, interpreter: &mut Interpreter) -> Result<Value, CompilerError> {
+fn run(source: String, interpreter: &mut Interpreter) -> Result<Value> {
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize()?;
 

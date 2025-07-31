@@ -1,3 +1,4 @@
 pub mod expr;
-pub mod stmt;
 pub mod parser;
+pub mod stmt;
+pub use parser::Parser;

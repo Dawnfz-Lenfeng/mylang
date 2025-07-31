@@ -1,43 +1,44 @@
-use crate::utils::Span;
+use crate::utils::{Position};
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Literal {
+    Number(f64),
+    String(String),
+    Boolean(bool),
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
-    // Literals
-    Number(f64),
-    String(String),
-    Identifier(String),
-    Boolean(bool),
-
     // Keywords
     Let,
-    Const,
     Fn,
     If,
     Else,
     While,
     For,
-    In,
     Return,
     And,
     Or,
     Not,
 
+    // Literals
+    Identifier(String),
+    Number(f64),
+    String(String),
+    Boolean(bool),
+
     // Operators
     Plus,
     Minus,
-    Asterisk,
+    Star,
     Slash,
-    Percent,
-    Assign,
     Equal,
+    EqualEqual,
     NotEqual,
     LessThan,
     LessEqual,
     GreaterThan,
     GreaterEqual,
-    Pipe,
-    Ampersand,
-    Arrow,
 
     // Delimiters
     LeftParen,
@@ -57,5 +58,6 @@ pub enum TokenType {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
-    pub span: Span,
+    pub literal: Option<Literal>,
+    pub position: Position,
 }

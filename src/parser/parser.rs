@@ -1,6 +1,9 @@
+use super::{
+    expr::{BinaryOp, Expr, UnaryOp},
+    stmt::{Parameter, Program, Stmt},
+};
 use crate::error::error::CompilerError;
 use crate::lexer::token::{Token, TokenType};
-use super::{expr::{BinaryOp, Expr, UnaryOp}, stmt::{Parameter, Program, Stmt}};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -48,7 +51,7 @@ impl Parser {
             })
             .transpose()?;
         let initializer = self
-            .check(TokenType::Assign)
+            .check(TokenType::Equal)
             .then(|| {
                 self.advance();
                 self.parse_expression()
@@ -195,7 +198,7 @@ impl Parser {
 
     /// Grammar: assignment | or
     fn parse_expression(&mut self) -> Result<Expr, CompilerError> {
-        if self.check_identifier() && self.check_next(TokenType::Assign) {
+        if self.check_identifier() && self.check_next(TokenType::Equal) {
             self.parse_assignment()
         } else {
             self.parse_or()
@@ -210,9 +213,9 @@ impl Parser {
     /// Grammar: IDENTIFIER ('=' or)*
     fn parse_assignment(&mut self) -> Result<Expr, CompilerError> {
         let name = self.consume_identifier()?;
-        self.consume(TokenType::Assign, "Expected '=' after identifier")?;
+        self.consume(TokenType::Equal, "Expected '=' after identifier")?;
 
-        let value = if self.check_identifier() && self.check_next(TokenType::Assign) {
+        let value = if self.check_identifier() && self.check_next(TokenType::Equal) {
             self.parse_assignment()
         } else {
             self.parse_or()
@@ -263,10 +266,10 @@ impl Parser {
         let mut expr = self.parse_comparison()?;
         while matches!(
             self.peek().token_type,
-            TokenType::Equal | TokenType::NotEqual
+            TokenType::EqualEqual | TokenType::NotEqual
         ) {
             let op = match self.advance().token_type {
-                TokenType::Equal => BinaryOp::Equal,
+                TokenType::EqualEqual => BinaryOp::Equal,
                 TokenType::NotEqual => BinaryOp::NotEqual,
                 _ => unreachable!(),
             };
@@ -349,10 +352,10 @@ impl Parser {
         let mut expr = self.parse_unary()?;
         while matches!(
             self.peek().token_type,
-            TokenType::Asterisk | TokenType::Slash | TokenType::Percent
+            TokenType::Star | TokenType::Slash | TokenType::Percent
         ) {
             let op = match self.advance().token_type {
-                TokenType::Asterisk => BinaryOp::Multiply,
+                TokenType::Star => BinaryOp::Multiply,
                 TokenType::Slash => BinaryOp::Divide,
                 TokenType::Percent => BinaryOp::Modulo,
                 _ => unreachable!(),

@@ -1,6 +1,6 @@
-use crate::error::error::CompilerError;
-use crate::utils::{Position, Span};
-use crate::lexer::token::{Token, TokenType};
+use crate::error::{Error, ErrorType};
+use crate::lexer::token::{Token, TokenType, Literal};
+use crate::utils::Position;
 
 pub struct Lexer {
     input: Vec<char>,
@@ -15,7 +15,7 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, CompilerError> {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, Error> {
         let mut tokens = Vec::new();
         while let Some((ch, position)) = self.consume_char() {
             if ch.is_whitespace() {
@@ -30,10 +30,8 @@ impl Lexer {
 
         tokens.push(Token {
             token_type: TokenType::Eof,
-            span: Span {
-                start: self.position,
-                end: self.position,
-            },
+            literal: None,
+            position: self.position,
         });
 
         Ok(tokens)
@@ -84,15 +82,15 @@ impl Lexer {
                     Ok(TokenType::Minus)
                 }
             }
-            '*' => Ok(TokenType::Asterisk),
+            '*' => Ok(TokenType::Star),
             '/' => Ok(TokenType::Slash),
             '%' => Ok(TokenType::Percent),
             '=' => {
                 if self.peek() == Some('=') {
                     self.advance();
-                    Ok(TokenType::Equal)
+                    Ok(TokenType::EqualEqual)
                 } else {
-                    Ok(TokenType::Assign)
+                    Ok(TokenType::Equal)
                 }
             }
             '!' => {
