@@ -183,6 +183,7 @@ impl Lexer {
             "false" => TokenType::Boolean(false),
             "and" => TokenType::And,
             "or" => TokenType::Or,
+            "print" => TokenType::Print,
             _ => TokenType::Identifier(identifier),
         }
     }

@@ -6,39 +6,24 @@ pub enum Expr {
     Boolean(bool),
     Identifier(String),
 
-    // Binary operations
+    // Expressions
     Binary {
         left: Box<Expr>,
         operator: BinaryOp,
         right: Box<Expr>,
     },
-
-    // Unary operations
     Unary {
         operator: UnaryOp,
         operand: Box<Expr>,
     },
-
-    // Function call
-    Call {
-        callee: Box<Expr>,
-        arguments: Vec<Expr>,
-    },
-
-    // Array access
-    Index {
-        array: Box<Expr>,
-        index: Box<Expr>,
-    },
-
-    // Assignment
+    Grouping(Box<Expr>),
     Assign {
         name: String,
         value: Box<Expr>,
     },
-
-    Array {
-        elements: Vec<Expr>,
+    Call {
+        callee: Box<Expr>,
+        arguments: Vec<Expr>,
     },
 }
 
@@ -48,18 +33,14 @@ pub enum BinaryOp {
     Subtract,
     Multiply,
     Divide,
-    Modulo,
     Equal,
     NotEqual,
     LessThan,
     LessEqual,
     GreaterThan,
     GreaterEqual,
-    BitAnd,
-    BitOr,
     LogicalAnd,
     LogicalOr,
-    Assign,
 }
 
 #[derive(Debug, Clone, PartialEq)]

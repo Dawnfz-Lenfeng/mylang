@@ -18,6 +18,7 @@ pub enum TokenType {
     Return,
     And,
     Or,
+    Print,
 
     // Operators
     Plus,

@@ -1,9 +1,11 @@
 use super::{
     expr::{BinaryOp, Expr, UnaryOp},
-    stmt::{Parameter, Program, Stmt},
+    stmt::Stmt,
 };
-use crate::error::error::CompilerError;
-use crate::lexer::token::{Token, TokenType};
+use crate::{
+    error::{Error, Result},
+    lexer::token::{Token, TokenType},
+};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -15,20 +17,19 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Program, CompilerError> {
-        let mut program = Program::new();
+    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+        let mut statements = Vec::new();
 
         while !self.is_at_end() {
-            program.add_statement(self.parse_statement()?);
+            statements.push(self.parse_statement()?);
         }
 
-        Ok(program)
+        Ok(statements)
     }
 
-    /// Grammar: var_declaration | function_declaration | if_statement | while_statement | for_statement | return_statement | block_statement | expression_statement
-    fn parse_statement(&mut self) -> Result<Stmt, CompilerError> {
-        match self.peek().token_type {
-            TokenType::Let | TokenType::Const => self.parse_var_declaration(),
+    fn parse_statement(&mut self) -> Result<Stmt> {
+        match self.advance().token_type {
+            TokenType::Let => self.parse_var_declaration(),
             TokenType::Fn => self.parse_function_declaration(),
             TokenType::If => self.parse_if_statement(),
             TokenType::While => self.parse_while_statement(),
@@ -39,35 +40,24 @@ impl Parser {
         }
     }
 
-    /// Grammar: 'let' IDENTIFIER [':' TYPE] ['=' EXPRESSION] ';'
-    fn parse_var_declaration(&mut self) -> Result<Stmt, CompilerError> {
-        let is_mutable = self.advance().token_type == TokenType::Let;
+    /// Grammar: 'let' IDENTIFIER '=' EXPRESSION ';'
+    fn parse_var_declaration(&mut self) -> Result<Stmt> {
         let name = self.consume_identifier()?;
-        let type_annotation = self
-            .check(TokenType::Colon)
-            .then(|| {
-                self.advance();
-                self.parse_value_expression()
-            })
-            .transpose()?;
-        let initializer = self
-            .check(TokenType::Equal)
-            .then(|| {
-                self.advance();
-                self.parse_expression()
-            })
-            .transpose()?;
+        let initializer = if self.check(TokenType::Equal) {
+            self.advance();
+            Some(self.parse_expression()?)
+        } else {
+            None
+        };
         self.consume_semicolon()?;
         Ok(Stmt::VarDecl {
             name,
-            type_annotation,
             initializer,
-            is_mutable,
         })
     }
 
     /// Grammar: 'fn' IDENTIFIER '(' [IDENTIFIER ':' TYPE] ')' '->' TYPE '{' STATEMENTS '}'
-    fn parse_function_declaration(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_function_declaration(&mut self) -> Result<Stmt> {
         self.advance(); // consume 'fn'
 
         let name = self.consume_identifier()?;
@@ -90,7 +80,7 @@ impl Parser {
     }
 
     /// Grammar: 'if' EXPRESSION '{' STATEMENTS '}' ['else' '{' STATEMENTS '}']
-    fn parse_if_statement(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_if_statement(&mut self) -> Result<Stmt> {
         self.advance(); // consume 'if'
         let condition = self.parse_expression()?;
         let then_branch = self.parse_block_statement_inner()?;
@@ -109,7 +99,7 @@ impl Parser {
     }
 
     /// Grammar: 'while' EXPRESSION '{' STATEMENTS '}'
-    fn parse_while_statement(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_while_statement(&mut self) -> Result<Stmt> {
         self.advance(); // consume 'while'
         let condition = self.parse_expression()?;
         let body = self.parse_block_statement_inner()?;
@@ -117,7 +107,7 @@ impl Parser {
     }
 
     /// Grammar: 'for' IDENTIFIER 'in' EXPRESSION '{' STATEMENTS '}'
-    fn parse_for_statement(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_for_statement(&mut self) -> Result<Stmt> {
         self.advance(); // consume 'for'
         let name = self.consume_identifier()?;
         self.consume(TokenType::In, "Expected 'in' after for loop variable")?;
@@ -131,7 +121,7 @@ impl Parser {
     }
 
     /// Grammar: 'return' [EXPRESSION] ';'
-    fn parse_return_statement(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_return_statement(&mut self) -> Result<Stmt> {
         self.advance();
         let value = if !self.check(TokenType::Semicolon) {
             Some(self.parse_expression()?)
@@ -143,19 +133,19 @@ impl Parser {
     }
 
     /// Grammar: '{' STATEMENTS '}'
-    fn parse_block_statement(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_block_statement(&mut self) -> Result<Stmt> {
         let statements = self.parse_block_statement_inner()?;
         Ok(Stmt::Block(statements))
     }
 
     /// Grammar: EXPRESSION ';'
-    fn parse_expression_statement(&mut self) -> Result<Stmt, CompilerError> {
+    fn parse_expression_statement(&mut self) -> Result<Stmt> {
         let expr = self.parse_expression()?;
         self.consume_semicolon()?;
         Ok(Stmt::Expression(expr))
     }
 
-    fn parse_block_statement_inner(&mut self) -> Result<Vec<Stmt>, CompilerError> {
+    fn parse_block_statement_inner(&mut self) -> Result<Vec<Stmt>> {
         self.consume(TokenType::LeftBrace, "Expected '{' at start of block")?;
         let mut statements = Vec::new();
         while !self.check(TokenType::RightBrace) {
@@ -165,7 +155,7 @@ impl Parser {
         Ok(statements)
     }
 
-    fn parse_parameters(&mut self) -> Result<Vec<Parameter>, CompilerError> {
+    fn parse_parameters(&mut self) -> Result<Vec<String>> {
         self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
 
         let mut parameters = Vec::new();
@@ -184,7 +174,7 @@ impl Parser {
         Ok(parameters)
     }
 
-    fn parse_parameter(&mut self) -> Result<Parameter, CompilerError> {
+    fn parse_parameter(&mut self) -> Result<String> {
         let name = self.consume_identifier()?;
         let param_type = self
             .check(TokenType::Colon)
@@ -193,11 +183,11 @@ impl Parser {
                 self.parse_value_expression()
             })
             .transpose()?;
-        Ok(Parameter { name, param_type })
+        Ok(String { name, param_type })
     }
 
     /// Grammar: assignment | or
-    fn parse_expression(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_expression(&mut self) -> Result<Expr> {
         if self.check_identifier() && self.check_next(TokenType::Equal) {
             self.parse_assignment()
         } else {
@@ -206,12 +196,12 @@ impl Parser {
     }
 
     /// Grammar: or
-    fn parse_value_expression(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_value_expression(&mut self) -> Result<Expr> {
         self.parse_or()
     }
 
     /// Grammar: IDENTIFIER ('=' or)*
-    fn parse_assignment(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_assignment(&mut self) -> Result<Expr> {
         let name = self.consume_identifier()?;
         self.consume(TokenType::Equal, "Expected '=' after identifier")?;
 
@@ -228,7 +218,7 @@ impl Parser {
     }
 
     /// Grammar: and ('||' and)*
-    fn parse_or(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_or(&mut self) -> Result<Expr> {
         let mut expr = self.parse_and()?;
         if matches!(self.peek().token_type, TokenType::Or) {
             let op = match self.advance().token_type {
@@ -245,7 +235,7 @@ impl Parser {
     }
 
     /// Grammar: equality ('&&' equality)*
-    fn parse_and(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_and(&mut self) -> Result<Expr> {
         let mut expr = self.parse_equality()?;
         while matches!(self.peek().token_type, TokenType::And) {
             let op = match self.advance().token_type {
@@ -262,7 +252,7 @@ impl Parser {
     }
 
     /// Grammar: comparison ('==' comparison | '!=' comparison)*
-    fn parse_equality(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_equality(&mut self) -> Result<Expr> {
         let mut expr = self.parse_comparison()?;
         while matches!(
             self.peek().token_type,
@@ -283,7 +273,7 @@ impl Parser {
     }
 
     /// Grammar: term ('<' term | '>' term | '<=' term | '>=' term)*
-    fn parse_comparison(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_comparison(&mut self) -> Result<Expr> {
         let mut expr = self.parse_bitwise()?;
         while matches!(
             self.peek().token_type,
@@ -309,7 +299,7 @@ impl Parser {
     }
 
     /// Grammar: term '|' bitwise | '&' bitwise
-    fn parse_bitwise(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_bitwise(&mut self) -> Result<Expr> {
         let mut expr = self.parse_term()?;
         while matches!(
             self.peek().token_type,
@@ -330,7 +320,7 @@ impl Parser {
     }
 
     /// Grammar: factor '+' term | '-' term
-    fn parse_term(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_term(&mut self) -> Result<Expr> {
         let mut expr = self.parse_factor()?;
         while matches!(self.peek().token_type, TokenType::Plus | TokenType::Minus) {
             let op = match self.advance().token_type {
@@ -348,7 +338,7 @@ impl Parser {
     }
 
     /// Grammar: unary '*' factor | '/' factor | '%' factor
-    fn parse_factor(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_factor(&mut self) -> Result<Expr> {
         let mut expr = self.parse_unary()?;
         while matches!(
             self.peek().token_type,
@@ -370,7 +360,7 @@ impl Parser {
     }
 
     /// Grammar: '-' unary | '!' unary | call
-    fn parse_unary(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_unary(&mut self) -> Result<Expr> {
         if matches!(self.peek().token_type, TokenType::Minus | TokenType::Not) {
             let op = match self.advance().token_type {
                 TokenType::Minus => UnaryOp::Minus,
@@ -387,7 +377,7 @@ impl Parser {
     }
 
     /// Grammar: primary ( '(' arguments? ')' | '[' expr ']' )*
-    fn parse_call(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_call(&mut self) -> Result<Expr> {
         let mut expr = self.parse_primary()?;
         while matches!(
             self.peek().token_type,
@@ -412,7 +402,7 @@ impl Parser {
     }
 
     /// Grammar: expression ( ',' expression )*
-    fn parse_arguments(&mut self, close_token: TokenType) -> Result<Vec<Expr>, CompilerError> {
+    fn parse_arguments(&mut self, close_token: TokenType) -> Result<Vec<Expr>> {
         self.advance(); // consume '(' or '['
         let mut arguments = Vec::new();
         if self.check(close_token.clone()) {
@@ -428,7 +418,7 @@ impl Parser {
         Ok(arguments)
     }
 
-    fn parse_primary(&mut self) -> Result<Expr, CompilerError> {
+    fn parse_primary(&mut self) -> Result<Expr> {
         match &self.peek().token_type {
             TokenType::Number(n) => {
                 let value = *n;
@@ -456,13 +446,10 @@ impl Parser {
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
-            TokenType::LeftBracket => {
-                let expr = Expr::Array {
-                    elements: self.parse_arguments(TokenType::RightBracket)?,
-                };
-                Ok(expr)
-            }
-            _ => Err(self.syntax_error("Expected expression".to_string())),
+            // TokenType::LeftBracket => {
+
+            // }
+            _ => Err(self.syntax("Expected expression".to_string())),
         }
     }
 
@@ -514,30 +501,30 @@ impl Parser {
         }
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, CompilerError> {
+    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token> {
         if self.check(token_type) {
             Ok(self.advance())
         } else {
-            Err(self.syntax_error(message.to_string()))
+            Err(self.syntax(message.to_string()))
         }
     }
 
-    fn consume_identifier(&mut self) -> Result<String, CompilerError> {
+    fn consume_identifier(&mut self) -> Result<String> {
         if let TokenType::Identifier(name) = &self.peek().token_type {
             let name = name.clone();
             self.advance();
             Ok(name)
         } else {
-            Err(self.syntax_error("Expected identifier".to_string()))
+            Err(self.syntax("Expected identifier".to_string()))
         }
     }
 
-    fn consume_semicolon(&mut self) -> Result<(), CompilerError> {
+    fn consume_semicolon(&mut self) -> Result<()> {
         self.consume(TokenType::Semicolon, "Expected ';' after statement")?;
         Ok(())
     }
 
-    fn syntax_error(&self, message: String) -> CompilerError {
-        CompilerError::syntax_error(message, self.peek().span)
+    fn syntax(&self, message: String) -> Error {
+        Error::syntax(message, self.peek().position)
     }
 }

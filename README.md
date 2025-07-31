@@ -23,15 +23,8 @@ cargo test interpreter_tests
 
 ## Language Grammar
 
-### Declarations
-
 ```
-declaration -> varDecl 
-            | functionDecl
-            | statement
-
-varDecl     -> 'let' Identifier ( '=' expression )? ';'
-fnDecl      -> 'fn' Identifier '(' parameters? ')' block
+program -> statement*
 ```
 
 ### Statements
@@ -42,7 +35,8 @@ statement -> exprStmt
             | ifStmt
             | printStmt
             | returnStmt
-            | varStmt
+            | varDecl
+            | funcDecl
             | whileStmt
             | block
 
@@ -51,7 +45,8 @@ forStmt    -> 'for' '(' ( varStmt | exprStmt | ';' )  expression? ';' ( expressi
 ifStmt     -> 'if' '(' expression ')' statement ( 'else' statement )?
 printStmt  -> 'print' expression ';'
 returnStmt -> 'return' expression? ';'
-varStmt    -> 'let' Identifier ( '=' expression )? ';'
+varDecl    -> 'let' Identifier ( '=' expression )? ';'
+funcDecl     -> 'fn' Identifier '(' parameters? ')' block
 whileStmt  -> 'while' '(' expression ')' statement
 block      -> '{' declaration* '}'
 ```
