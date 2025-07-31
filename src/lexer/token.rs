@@ -1,14 +1,13 @@
-use crate::utils::{Position};
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
-    Number(f64),
-    String(String),
-    Boolean(bool),
-}
+use crate::utils::Position;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
+    // Literals
+    Number(f64),
+    String(String),
+    Boolean(bool),
+    Identifier(String),
+
     // Keywords
     Let,
     Fn,
@@ -19,13 +18,6 @@ pub enum TokenType {
     Return,
     And,
     Or,
-    Not,
-
-    // Literals
-    Identifier(String),
-    Number(f64),
-    String(String),
-    Boolean(bool),
 
     // Operators
     Plus,
@@ -34,7 +26,8 @@ pub enum TokenType {
     Slash,
     Equal,
     EqualEqual,
-    NotEqual,
+    Bang,
+    BangEqual,
     LessThan,
     LessEqual,
     GreaterThan,
@@ -51,13 +44,11 @@ pub enum TokenType {
     Semicolon,
     Colon,
 
-    // Special
     Eof,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
-    pub literal: Option<Literal>,
     pub position: Position,
 }

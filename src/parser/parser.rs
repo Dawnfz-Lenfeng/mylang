@@ -266,11 +266,11 @@ impl Parser {
         let mut expr = self.parse_comparison()?;
         while matches!(
             self.peek().token_type,
-            TokenType::EqualEqual | TokenType::NotEqual
+            TokenType::EqualEqual | TokenType::BangEqual
         ) {
             let op = match self.advance().token_type {
                 TokenType::EqualEqual => BinaryOp::Equal,
-                TokenType::NotEqual => BinaryOp::NotEqual,
+                TokenType::BangEqual => BinaryOp::NotEqual,
                 _ => unreachable!(),
             };
             expr = Expr::Binary {

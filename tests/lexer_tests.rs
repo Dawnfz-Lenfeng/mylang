@@ -1,30 +1,42 @@
-use mylang::{lexer::lexer::Lexer, lexer::token::TokenType};
+use mylang::{
+    lexer::{Lexer, Token, TokenType},
+    utils::Position,
+};
 
 #[cfg(test)]
 mod lexer_tests {
     use super::*;
+    
+    fn get_tokens(input: &str) -> Vec<Token> {
+        let mut lexer = Lexer::new(input.to_string());
+        lexer.tokenize().unwrap()
+    }
+
+    fn token_types(tokens: &[Token]) -> Vec<TokenType> {
+        tokens.iter().map(|t| t.token_type.clone()).collect()
+    }
 
     #[test]
     fn test_empty_input() {
-        let mut lexer = Lexer::new("".to_string());
-        let tokens = lexer.tokenize().unwrap();
-        assert!(tokens.is_empty() || tokens.last().unwrap().token_type == TokenType::Eof);
+        let tokens = get_tokens("");
+        let expected_types = vec![TokenType::Eof];
+
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_whitespace_handling() {
-        let mut lexer = Lexer::new("   \t\n   ".to_string());
-        let tokens = lexer.tokenize().unwrap();
-        assert!(tokens.is_empty() || tokens.last().unwrap().token_type == TokenType::Eof);
+        let tokens = get_tokens("   \t\n   ");
+        let expected_types = vec![TokenType::Eof];
+
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_single_character_tokens() {
         let input = "(){}[];,+-*/=<>!";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
-
-        let expected = vec![
+        let tokens = get_tokens(input);
+        let expected_types = vec![
             TokenType::LeftParen,
             TokenType::RightParen,
             TokenType::LeftBrace,
@@ -40,72 +52,35 @@ mod lexer_tests {
             TokenType::Equal,
             TokenType::LessThan,
             TokenType::GreaterThan,
-            TokenType::Not,
+            TokenType::Bang,
             TokenType::Eof,
         ];
 
-        assert_eq!(
-            tokens.len(),
-            expected.len(),
-            "Single char tokens: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
-            expected.len(),
-            tokens.len(),
-            tokens
-        );
-        for (i, expected_token) in expected.iter().enumerate() {
-            assert_eq!(
-                std::mem::discriminant(&tokens[i].token_type),
-                std::mem::discriminant(expected_token),
-                "Single char tokens: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i,
-                tokens[i],
-                expected_token
-            );
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_two_character_tokens() {
-        let input = "== != <= >= ->";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let input = "== != <= >=";
+        let tokens = get_tokens(input);
 
-        let expected = vec![
+        let expected_types = vec![
             TokenType::EqualEqual,
-            TokenType::NotEqual,
+            TokenType::BangEqual,
             TokenType::LessEqual,
             TokenType::GreaterEqual,
-            TokenType::Arrow,
             TokenType::Eof,
         ];
 
-        assert_eq!(
-            tokens.len(),
-            expected.len(),
-            "Two char tokens: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
-            expected.len(),
-            tokens.len(),
-            tokens
-        );
-        for (i, expected_token) in expected.iter().enumerate() {
-            assert_eq!(
-                std::mem::discriminant(&tokens[i].token_type),
-                std::mem::discriminant(expected_token),
-                "Two char tokens: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i,
-                tokens[i],
-                expected_token
-            );
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_keywords() {
-        let input = "let fn if else while for return true false in";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let input = "let fn if else while for return true false and or";
+        let tokens = get_tokens(input);
 
-        let expected = vec![
+        let expected_types = vec![
             TokenType::Let,
             TokenType::Fn,
             TokenType::If,
@@ -115,150 +90,65 @@ mod lexer_tests {
             TokenType::Return,
             TokenType::Boolean(true),
             TokenType::Boolean(false),
-            TokenType::In,
+            TokenType::And,
+            TokenType::Or,
             TokenType::Eof,
         ];
 
-        assert_eq!(
-            tokens.len(),
-            expected.len(),
-            "Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
-            expected.len(),
-            tokens.len(),
-            tokens
-        );
-
-        for (i, expected_token) in expected.iter().enumerate() {
-            assert_eq!(
-                std::mem::discriminant(&tokens[i].token_type),
-                std::mem::discriminant(expected_token),
-                "Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}\nAll tokens: {:#?}",
-                i,
-                tokens[i],
-                expected_token,
-                tokens
-            );
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_identifiers() {
         let input = "variable_name camelCase _underscore var123";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let tokens = get_tokens(input);
 
-        let expected_names = vec!["variable_name", "camelCase", "_underscore", "var123"];
-        let identifier_tokens: Vec<_> = tokens
-            .iter()
-            .filter(|t| matches!(t.token_type, TokenType::Identifier(_)))
-            .collect();
+        let expected_types = vec![
+            TokenType::Identifier("variable_name".to_string()),
+            TokenType::Identifier("camelCase".to_string()),
+            TokenType::Identifier("_underscore".to_string()),
+            TokenType::Identifier("var123".to_string()),
+            TokenType::Eof,
+        ];
 
-        assert_eq!(
-            identifier_tokens.len(),
-            expected_names.len(),
-            "Identifier tokens: Count mismatch!\nExpected: {} identifiers\nActual: {} identifiers\nAll tokens: {:#?}",
-            expected_names.len(),
-            identifier_tokens.len(),
-            tokens
-        );
-        for (i, expected_name) in expected_names.iter().enumerate() {
-            if let TokenType::Identifier(name) = &identifier_tokens[i].token_type {
-                assert_eq!(
-                    name, expected_name,
-                    "Identifier mismatch at position {}!\nActual: '{}'\nExpected: '{}'",
-                    i, name, expected_name
-                );
-            } else {
-                panic!(
-                    "Expected identifier token at position {}, got: {:#?}",
-                    i, identifier_tokens[i]
-                );
-            }
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_numbers() {
         let input = "123 3.14 0 999.999";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let tokens = get_tokens(input);
 
-        let expected_numbers = vec![123.0, 3.14, 0.0, 999.999];
-        let number_tokens: Vec<_> = tokens
-            .iter()
-            .filter(|t| matches!(t.token_type, TokenType::Number(_)))
-            .collect();
+        let expected_types = vec![
+            TokenType::Number(123.0),
+            TokenType::Number(3.14),
+            TokenType::Number(0.0),
+            TokenType::Number(999.999),
+            TokenType::Eof,
+        ];
 
-        assert_eq!(
-            number_tokens.len(),
-            expected_numbers.len(),
-            "Number tokens: Count mismatch!\nExpected: {} numbers\nActual: {} numbers\nAll tokens: {:#?}",
-            expected_numbers.len(),
-            number_tokens.len(),
-            tokens
-        );
-        for (i, expected_num) in expected_numbers.iter().enumerate() {
-            if let TokenType::Number(number) = number_tokens[i].token_type {
-                assert_eq!(
-                    number, *expected_num,
-                    "Number mismatch at position {}!\nActual: {}\nExpected: {}",
-                    i, number, expected_num
-                );
-            } else {
-                panic!(
-                    "Expected number token at position {}, got: {:#?}",
-                    i, number_tokens[i]
-                );
-            }
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_strings() {
-        let input = r#""hello" "world with spaces" 'one "double" quote' "escaped\"quote""#;
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let input = r#""hello" "world with spaces" 'one "double" quote'"#;
+        let tokens = get_tokens(input);
 
-        let expected_strings = vec![
-            "hello",
-            "world with spaces",
-            r#"one "double" quote"#,
-            r#"escaped"quote"#,
+        let expected_types = vec![
+            TokenType::String("hello".to_string()),
+            TokenType::String("world with spaces".to_string()),
+            TokenType::String(r#"one "double" quote"#.to_string()),
+            TokenType::Eof,
         ];
-        let string_tokens: Vec<_> = tokens
-            .iter()
-            .filter(|t| matches!(t.token_type, TokenType::String(_)))
-            .collect();
 
-        assert_eq!(
-            string_tokens.len(),
-            expected_strings.len(),
-            "String tokens: Count mismatch!\nExpected: {} strings\nActual: {} strings\nAll tokens: {:#?}",
-            expected_strings.len(),
-            string_tokens.len(),
-            tokens
-        );
-        for (i, expected_str) in expected_strings.iter().enumerate() {
-            if let TokenType::String(s) = &string_tokens[i].token_type {
-                assert_eq!(
-                    s, expected_str,
-                    "String mismatch at position {}!\nActual: '{}'\nExpected: '{}'",
-                    i, s, expected_str
-                );
-            } else {
-                panic!(
-                    "Expected string token at position {}, got: {:#?}",
-                    i, string_tokens[i]
-                );
-            }
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_comments() {
         let input = "// this is a comment\nlet x = 42; // another comment";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let tokens = get_tokens(input);
 
         // Comments should be ignored, only actual tokens should remain
         let expected_types = vec![
@@ -270,43 +160,25 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(
-            tokens.len(),
-            expected_types.len(),
-            "Comment test: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
-            expected_types.len(),
-            tokens.len(),
-            tokens
-        );
-        for (i, expected_type) in expected_types.iter().enumerate() {
-            assert_eq!(
-                std::mem::discriminant(&tokens[i].token_type),
-                std::mem::discriminant(expected_type),
-                "Comment test: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i,
-                tokens[i],
-                expected_type
-            );
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 
     #[test]
     fn test_position_tracking() {
         let input = "let\nx = 42;";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let tokens = get_tokens(input);
 
         assert!(tokens.len() >= 2);
 
         // First token should be on line 1
-        assert_eq!(tokens[0].span.start.line, 1);
+        assert_eq!(tokens[0].position.line, 1);
 
         // Check that we have an identifier token on line 2
         if let Some(x_token) = tokens
             .iter()
             .find(|t| matches!(t.token_type, TokenType::Identifier(_)))
         {
-            assert_eq!(x_token.span.start.line, 2);
+            assert_eq!(x_token.position.line, 2);
         }
     }
 
@@ -321,8 +193,7 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let mut lexer = Lexer::new(input.to_string());
-            let result = lexer.tokenize();
+            let result = get_tokens(input);
 
             assert!(
                 result.is_err(),
@@ -351,8 +222,7 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let mut lexer = Lexer::new(input.to_string());
-            let result = lexer.tokenize();
+            let result = get_tokens(input);
 
             assert!(
                 result.is_err(),
@@ -379,8 +249,7 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let mut lexer = Lexer::new(input.to_string());
-            let result = lexer.tokenize();
+            let result = get_tokens(input);
 
             assert!(
                 result.is_err(),
@@ -408,8 +277,7 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let mut lexer = Lexer::new(input.to_string());
-            let result = lexer.tokenize();
+            let result = get_tokens(input);
 
             assert!(
                 result.is_err(),
@@ -437,9 +305,9 @@ mod lexer_tests {
         let error = result.unwrap_err();
 
         // Error should be at line 1, column 9 (position of @)
-        assert_eq!(error.span.unwrap().start.line, 1, "Error line should be 1");
+        assert_eq!(error.location.unwrap().line, 1, "Error line should be 1");
         assert_eq!(
-            error.span.unwrap().start.column,
+            error.location.unwrap().column,
             9,
             "Error column should be 9"
         );
@@ -455,9 +323,9 @@ mod lexer_tests {
         let error = result.unwrap_err();
 
         // Error should be at line 2
-        assert_eq!(error.span.unwrap().start.line, 2, "Error line should be 2");
+        assert_eq!(error.location.unwrap().line, 2, "Error line should be 2");
         assert_eq!(
-            error.span.unwrap().start.column,
+            error.location.unwrap().column,
             9,
             "Error column should be 9"
         );
@@ -465,24 +333,18 @@ mod lexer_tests {
 
     #[test]
     fn test_function_definition() {
-        let input = "fn add(a: number, b: number) -> number { return a + b; }";
+        let input = "fn add(a, b) { return a + b; }";
         let mut lexer = Lexer::new(input.to_string());
         let tokens = lexer.tokenize().unwrap();
 
-        let expected = vec![
+        let expected_types = vec![
             TokenType::Fn,
             TokenType::Identifier("add".to_string()),
             TokenType::LeftParen,
             TokenType::Identifier("a".to_string()),
-            TokenType::Colon,
-            TokenType::Identifier("number".to_string()),
             TokenType::Comma,
             TokenType::Identifier("b".to_string()),
-            TokenType::Colon,
-            TokenType::Identifier("number".to_string()),
             TokenType::RightParen,
-            TokenType::Arrow,
-            TokenType::Identifier("number".to_string()),
             TokenType::LeftBrace,
             TokenType::Return,
             TokenType::Identifier("a".to_string()),
@@ -493,23 +355,6 @@ mod lexer_tests {
             TokenType::Eof,
         ];
 
-        assert_eq!(
-            tokens.len(),
-            expected.len(),
-            "Function definition: Token count mismatch!\nExpected: {} tokens\nActual: {} tokens\nTokens: {:#?}",
-            expected.len(),
-            tokens.len(),
-            tokens
-        );
-        for (i, expected_token) in expected.iter().enumerate() {
-            assert_eq!(
-                std::mem::discriminant(&tokens[i].token_type),
-                std::mem::discriminant(expected_token),
-                "Function definition: Token type mismatch at position {}!\nActual token: {:#?}\nExpected type: {:#?}",
-                i,
-                tokens[i],
-                expected_token
-            );
-        }
+        assert_eq!(token_types(&tokens), expected_types);
     }
 }
