@@ -264,7 +264,10 @@ impl Parser {
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
-            _ => Err(self.error("Expected expression".to_string())),
+            _ => Err(self.error(format!(
+                "Expected expression, found {:#?}",
+                self.previous().token_type
+            ))),
         }
     }
 

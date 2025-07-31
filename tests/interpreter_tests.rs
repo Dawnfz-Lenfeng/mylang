@@ -185,7 +185,7 @@ mod interpreter_tests {
             greet("Alice");
         "#;
         let result = run_program(input).unwrap();
-        assert_eq!(result, Value::Null);
+        assert_eq!(result, Value::Nil);
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod interpreter_tests {
     fn test_builtin_functions() {
         // Note: print() returns null, so we test that it doesn't crash
         let result = run_program("print(\"Hello, World!\");").unwrap();
-        assert_eq!(result, Value::Null);
+        assert_eq!(result, Value::Nil);
 
         let result = run_program("len(\"hello\");").unwrap();
         assert_eq!(result, Value::Number(5.0));

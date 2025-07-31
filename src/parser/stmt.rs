@@ -32,7 +32,7 @@ pub enum Stmt {
 }
 
 pub trait Visitor<T> {
-    fn visit_expression(&mut self, expr: &Expr) -> T;
+    fn visit_expr(&mut self, expr: &Expr) -> T;
     fn visit_print(&mut self, expr: &Expr) -> T;
     fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> T;
     fn visit_func_decl(&mut self, name: &str, parameters: &[String], body: &Stmt) -> T;
@@ -45,7 +45,7 @@ pub trait Visitor<T> {
 impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
-            Stmt::Expression(expr) => visitor.visit_expression(expr),
+            Stmt::Expression(expr) => visitor.visit_expr(expr),
             Stmt::Print(expr) => visitor.visit_print(expr),
             Stmt::Block(statements) => visitor.visit_block(statements),
             Stmt::VarDecl { name, initializer } => {

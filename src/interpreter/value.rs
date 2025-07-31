@@ -1,10 +1,7 @@
-use super::environment::EnvRef;
+use super::env::EnvRef;
 use crate::parser::stmt::Stmt;
 use std::{fmt, rc::Rc};
 
-pub const NULL: Value = Value::Null;
-
-/// Runtime value types that the interpreter can work with
 #[derive(Debug, Clone)]
 pub enum Value {
     Number(f64),
@@ -15,9 +12,9 @@ pub enum Value {
         name: String,
         params: Vec<String>,
         body: Vec<Stmt>,
-        closure: EnvRef, // Capture lexical scope
+        closure: EnvRef,
     },
-    Null,
+    Nil,
 }
 
 impl PartialEq for Value {
@@ -39,7 +36,7 @@ impl PartialEq for Value {
                     ..
                 },
             ) => Rc::ptr_eq(a_closure, b_closure) && a_name == b_name,
-            (Value::Null, Value::Null) => true,
+            (Value::Nil, Value::Nil) => true,
             _ => false,
         }
     }
@@ -64,17 +61,16 @@ impl fmt::Display for Value {
             Value::Function { name, params, .. } => {
                 write!(f, "<function {}({})>", name, params.join(", "))
             }
-            Value::Null => write!(f, "null"),
+            Value::Nil => write!(f, "null"),
         }
     }
 }
 
 impl Value {
-    /// Check if value is truthy for conditional expressions
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Boolean(b) => *b,
-            Value::Null => false,
+            Value::Nil => false,
             Value::Number(n) => *n != 0.0,
             Value::String(s) => !s.is_empty(),
             Value::Array(arr) => !arr.is_empty(),
@@ -82,7 +78,6 @@ impl Value {
         }
     }
 
-    /// Get the type name of the value
     pub fn type_name(&self) -> &'static str {
         match self {
             Value::Number(_) => "number",
@@ -90,7 +85,7 @@ impl Value {
             Value::Boolean(_) => "boolean",
             Value::Array(_) => "array",
             Value::Function { .. } => "function",
-            Value::Null => "null",
+            Value::Nil => "null",
         }
     }
 }

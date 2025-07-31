@@ -4,8 +4,8 @@ pub mod lexer;
 pub mod parser;
 pub mod utils;
 
-use error::Result;
-use interpreter::{Interpreter, Value};
+use error::{Error, Result};
+use interpreter::Interpreter;
 use lexer::Lexer;
 use parser::Parser;
 
@@ -16,17 +16,16 @@ pub fn run_file(filename: &str) {
     let mut interpreter = Interpreter::new();
     match fs::read_to_string(filename) {
         Ok(source) => match run(source, &mut interpreter) {
-            Ok(result) => {
-                if !matches!(result, Value::Null) {
-                    println!("{result}");
-                }
-            }
+            Ok(_) => (),
             Err(error) => {
                 eprintln!("{error}");
             }
         },
         Err(error) => {
-            eprintln!("Error reading file '{filename}': {error}");
+            eprintln!(
+                "{}",
+                Error::io(format!("Error reading file '{filename}: {error}"))
+            );
         }
     }
 }
@@ -47,11 +46,7 @@ pub fn run_prompt() {
         }
 
         match run(input.to_string(), &mut interpreter) {
-            Ok(result) => {
-                if !matches!(result, Value::Null) {
-                    println!("{}", result);
-                }
-            }
+            Ok(_) => (),
             Err(error) => {
                 eprintln!("{}", error);
             }
@@ -65,12 +60,15 @@ pub fn print_usage(program_name: &str) {
     println!("Usage: {program_name} [script]");
 }
 
-fn run(source: String, interpreter: &mut Interpreter) -> Result<Value> {
+fn run(source: String, interpreter: &mut Interpreter) -> Result<()> {
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize()?;
 
     let mut parser = Parser::new(tokens);
-    let program = parser.parse()?;
+    let stmts = parser.parse()?;
 
-    interpreter.interpret(&program)
+    for stmt in stmts {
+        stmt.accept(interpreter)?;
+    }
+    Ok(())
 }

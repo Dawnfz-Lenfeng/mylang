@@ -1,4 +1,4 @@
-pub mod environment;
+pub mod env;
 pub mod interpreter;
 pub mod value;
 pub use interpreter::Interpreter;
