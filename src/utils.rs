@@ -1,11 +1,11 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Position {
+pub struct Location {
     pub line: usize,
     pub column: usize,
     pub offset: usize,
 }
 
-impl Position {
+impl Location {
     pub fn new() -> Self {
         Self {
             line: 1,

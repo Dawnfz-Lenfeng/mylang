@@ -1,4 +1,4 @@
-use crate::utils::Position;
+use crate::utils::Location;
 use std::fmt;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -16,7 +16,7 @@ pub enum ErrorType {
 pub struct Error {
     pub message: String,
     pub error_type: ErrorType,
-    pub location: Option<Position>,
+    pub location: Option<Location>,
     pub file: Option<String>,
 }
 
@@ -30,7 +30,7 @@ impl Error {
         }
     }
 
-    pub fn with_location(error_type: ErrorType, message: String, location: Position) -> Self {
+    pub fn with_location(error_type: ErrorType, message: String, location: Location) -> Self {
         Self {
             message,
             error_type,
@@ -43,7 +43,7 @@ impl Error {
         error_type: ErrorType,
         message: String,
         file: String,
-        location: Position,
+        location: Location,
     ) -> Self {
         Self {
             message,
@@ -58,16 +58,16 @@ impl Error {
         self
     }
 
-    pub fn at_location(mut self, location: Position) -> Self {
+    pub fn at_location(mut self, location: Location) -> Self {
         self.location = Some(location);
         self
     }
 
-    pub fn lexical(message: String, location: Position) -> Self {
+    pub fn lexical(message: String, location: Location) -> Self {
         Self::with_location(ErrorType::Lexical, message, location)
     }
 
-    pub fn syntax(message: String, location: Position) -> Self {
+    pub fn syntax(message: String, location: Location) -> Self {
         Self::with_location(ErrorType::Syntax, message, location)
     }
 
@@ -75,7 +75,7 @@ impl Error {
         Self::new(ErrorType::Runtime, message)
     }
 
-    pub fn runtime_at(message: String, location: Position) -> Self {
+    pub fn runtime_at(message: String, location: Location) -> Self {
         Self::with_location(ErrorType::Runtime, message, location)
     }
 

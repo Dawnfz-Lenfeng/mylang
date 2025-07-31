@@ -1,4 +1,4 @@
-use crate::utils::Position;
+use crate::utils::Location;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
@@ -51,5 +51,5 @@ pub enum TokenType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
-    pub position: Position,
+    pub location: Location,
 }

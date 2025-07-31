@@ -1,6 +1,6 @@
 use mylang::{
     lexer::{Lexer, Token, TokenType},
-    utils::Position,
+    utils::Location,
 };
 
 #[cfg(test)]
@@ -171,14 +171,14 @@ mod lexer_tests {
         assert!(tokens.len() >= 2);
 
         // First token should be on line 1
-        assert_eq!(tokens[0].position.line, 1);
+        assert_eq!(tokens[0].location.line, 1);
 
         // Check that we have an identifier token on line 2
         if let Some(x_token) = tokens
             .iter()
             .find(|t| matches!(t.token_type, TokenType::Identifier(_)))
         {
-            assert_eq!(x_token.position.line, 2);
+            assert_eq!(x_token.location.line, 2);
         }
     }
 

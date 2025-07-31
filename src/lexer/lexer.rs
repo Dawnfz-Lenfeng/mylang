@@ -1,19 +1,19 @@
 use super::token::{Token, TokenType};
 use crate::{
     error::{Error, Result},
-    utils::Position,
+    utils::Location,
 };
 
 pub struct Lexer {
     input: Vec<char>,
-    position: Position,
+    location: Location,
 }
 
 impl Lexer {
     pub fn new(input: String) -> Self {
         Self {
             input: input.chars().collect(),
-            position: Position::new(),
+            location: Location::new(),
         }
     }
 
@@ -32,26 +32,26 @@ impl Lexer {
 
         tokens.push(Token {
             token_type: TokenType::Eof,
-            position: self.position,
+            location: self.location,
         });
 
         Ok(tokens)
     }
 
     fn peek(&self) -> Option<char> {
-        self.input.get(self.position.offset).copied()
+        self.input.get(self.location.offset).copied()
     }
 
-    fn consume_char(&mut self) -> Option<(char, Position)> {
+    fn consume_char(&mut self) -> Option<(char, Location)> {
         let ch = self.peek()?;
-        let position = self.position.clone();
+        let position = self.location.clone();
         self.advance();
         Some((ch, position))
     }
 
     fn advance(&mut self) {
         if let Some(ch) = self.peek() {
-            self.position.advance(ch);
+            self.location.advance(ch);
         }
     }
 
@@ -63,7 +63,7 @@ impl Lexer {
         }
     }
 
-    fn scan_token(&mut self, ch: char, start: Position) -> Result<Token> {
+    fn scan_token(&mut self, ch: char, start: Location) -> Result<Token> {
         let token_type = match ch {
             '(' => Ok(TokenType::LeftParen),
             ')' => Ok(TokenType::RightParen),
@@ -114,11 +114,11 @@ impl Lexer {
 
         Ok(Token {
             token_type,
-            position: start,
+            location: start,
         })
     }
 
-    fn scan_number(&mut self, start: Position) -> Result<TokenType> {
+    fn scan_number(&mut self, start: Location) -> Result<TokenType> {
         while let Some(ch) = self.peek() {
             if !ch.is_ascii_digit() {
                 break;
@@ -136,7 +136,7 @@ impl Lexer {
             }
             self.advance();
         }
-        let number = self.input[start.offset..self.position.offset]
+        let number = self.input[start.offset..self.location.offset]
             .iter()
             .collect::<String>()
             .parse::<f64>()
@@ -144,10 +144,10 @@ impl Lexer {
         Ok(TokenType::Number(number))
     }
 
-    fn scan_string(&mut self, start: Position, delimiter: char) -> Result<TokenType> {
+    fn scan_string(&mut self, start: Location, delimiter: char) -> Result<TokenType> {
         while let Some((ch, ..)) = self.consume_char() {
             if ch == delimiter {
-                let string = self.input[start.offset + 1..self.position.offset - 1]
+                let string = self.input[start.offset + 1..self.location.offset - 1]
                     .iter()
                     .collect::<String>();
                 return Ok(TokenType::String(string));
@@ -156,18 +156,18 @@ impl Lexer {
 
         Err(Error::lexical(
             "Unterminated string literal".to_string(),
-            self.position,
+            self.location,
         ))
     }
 
-    fn scan_identifier(&mut self, start: Position) -> TokenType {
+    fn scan_identifier(&mut self, start: Location) -> TokenType {
         while let Some(ch) = self.peek() {
             if !ch.is_alphanumeric() && ch != '_' {
                 break;
             }
             self.advance();
         }
-        let identifier = self.input[start.offset..self.position.offset]
+        let identifier = self.input[start.offset..self.location.offset]
             .iter()
             .collect::<String>();
 
