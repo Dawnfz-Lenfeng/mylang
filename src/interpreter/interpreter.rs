@@ -244,7 +244,7 @@ impl Interpreter {
             Expr::Number(n) => Ok(Value::Number(*n)),
             Expr::String(s) => Ok(Value::String(s.clone())),
             Expr::Boolean(b) => Ok(Value::Boolean(*b)),
-            Expr::Identifier(name) => self.current_env.borrow().get(name),
+            Expr::Variable(name) => self.current_env.borrow().get(name),
             Expr::Binary {
                 left,
                 operator,

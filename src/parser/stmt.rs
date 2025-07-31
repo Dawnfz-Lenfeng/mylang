@@ -10,7 +10,7 @@ pub enum Stmt {
     FuncDecl {
         name: String,
         parameters: Vec<String>,
-        body: Vec<Stmt>,
+        body: Box<Stmt>,
     },
 
     // Statements
@@ -35,13 +35,8 @@ pub trait Visitor<T> {
     fn visit_expression(&mut self, expr: &Expr) -> T;
     fn visit_print(&mut self, expr: &Expr) -> T;
     fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> T;
-    fn visit_func_decl(&mut self, name: &str, parameters: &[String], body: &[Stmt]) -> T;
-    fn visit_if(
-        &mut self,
-        condition: &Expr,
-        then_branch: &Stmt,
-        else_branch: Option<&Stmt>,
-    ) -> T;
+    fn visit_func_decl(&mut self, name: &str, parameters: &[String], body: &Stmt) -> T;
+    fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>) -> T;
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> T;
     fn visit_return(&mut self, value: Option<&Expr>) -> T;
     fn visit_block(&mut self, statements: &[Stmt]) -> T;
@@ -53,7 +48,9 @@ impl Stmt {
             Stmt::Expression(expr) => visitor.visit_expression(expr),
             Stmt::Print(expr) => visitor.visit_print(expr),
             Stmt::Block(statements) => visitor.visit_block(statements),
-            Stmt::VarDecl { name, initializer } => visitor.visit_var_decl(name, initializer.as_ref()),
+            Stmt::VarDecl { name, initializer } => {
+                visitor.visit_var_decl(name, initializer.as_ref())
+            }
             Stmt::FuncDecl {
                 name,
                 parameters,

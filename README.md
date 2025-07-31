@@ -32,23 +32,23 @@ program -> statement*
 ```
 statement -> exprStmt
             | forStmt
+            | whileStmt
             | ifStmt
             | printStmt
             | returnStmt
             | varDecl
             | funcDecl
-            | whileStmt
             | block
 
 exprStmt   -> expression ';'
-forStmt    -> 'for' '(' ( varStmt | exprStmt | ';' )  expression? ';' ( expression )? ')' statement
-ifStmt     -> 'if' '(' expression ')' statement ( 'else' statement )?
+forStmt    -> 'for' ( varStmt | exprStmt | ';' )  expression? ';' ( expression )? block
+whileStmt  -> 'while' '(' expression ')' block
+ifStmt     -> 'if' expression block ( 'else' block )?
 printStmt  -> 'print' expression ';'
 returnStmt -> 'return' expression? ';'
 varDecl    -> 'let' Identifier ( '=' expression )? ';'
 funcDecl     -> 'fn' Identifier '(' parameters? ')' block
-whileStmt  -> 'while' '(' expression ')' statement
-block      -> '{' declaration* '}'
+block      -> '{' statement* '}'
 ```
 
 ### Expressions
@@ -63,7 +63,7 @@ equality   -> comparison ( ( '==' | '!=' ) comparison )*
 comparison -> term ( ( '<' | '>' | '<=' | '>=' ) term )*
 term       -> factor ( ( '-' | '+' ) factor )*
 factor     -> unary ( ( '/' | '*' ) unary )*
-unary      -> ( ( '!' | '-' ) )* call
+unary      -> ( '!' | '-' ) unary | call
 call       -> primary ( '(' arguments? ')' )*
 primary    -> 'true' 
             | 'false'

@@ -1,10 +1,15 @@
+use crate::{
+    error::{self, Error},
+    lexer::TokenType,
+};
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     // Literals
     Number(f64),
     String(String),
     Boolean(bool),
-    Identifier(String),
+    Variable(String),
 
     // Expressions
     Binary {
@@ -43,10 +48,48 @@ pub enum BinaryOp {
     LogicalOr,
 }
 
+impl TryFrom<TokenType> for BinaryOp {
+    type Error = error::Error;
+
+    fn try_from(token: TokenType) -> Result<Self, Self::Error> {
+        match token {
+            TokenType::Plus => Ok(BinaryOp::Add),
+            TokenType::Minus => Ok(BinaryOp::Subtract),
+            TokenType::Star => Ok(BinaryOp::Multiply),
+            TokenType::Slash => Ok(BinaryOp::Divide),
+            TokenType::EqualEqual => Ok(BinaryOp::Equal),
+            TokenType::BangEqual => Ok(BinaryOp::NotEqual),
+            TokenType::LessThan => Ok(BinaryOp::LessThan),
+            TokenType::LessEqual => Ok(BinaryOp::LessEqual),
+            TokenType::GreaterThan => Ok(BinaryOp::GreaterThan),
+            TokenType::GreaterEqual => Ok(BinaryOp::GreaterEqual),
+            TokenType::And => Ok(BinaryOp::LogicalAnd),
+            TokenType::Or => Ok(BinaryOp::LogicalOr),
+            _ => Err(Error::internal(
+                "Invalid token type for binary operator: {token}".to_string(),
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
     Minus,
     Not,
+}
+
+impl TryFrom<TokenType> for UnaryOp {
+    type Error = error::Error;
+
+    fn try_from(token: TokenType) -> Result<Self, Self::Error> {
+        match token {
+            TokenType::Minus => Ok(UnaryOp::Minus),
+            TokenType::Bang => Ok(UnaryOp::Not),
+            _ => Err(Error::internal(
+                "Invalid token type for unary operator: {token}".to_string(),
+            )),
+        }
+    }
 }
 
 pub trait Visitor<T> {
@@ -67,7 +110,7 @@ impl Expr {
             Expr::Number(n) => visitor.visit_number(*n),
             Expr::String(s) => visitor.visit_string(s),
             Expr::Boolean(b) => visitor.visit_boolean(*b),
-            Expr::Identifier(name) => visitor.visit_identifier(name),
+            Expr::Variable(name) => visitor.visit_identifier(name),
             Expr::Binary {
                 left,
                 operator,

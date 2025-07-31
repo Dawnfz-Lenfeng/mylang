@@ -6,7 +6,7 @@ use mylang::{
 #[cfg(test)]
 mod lexer_tests {
     use super::*;
-    
+
     fn get_tokens(input: &str) -> Vec<Token> {
         let mut lexer = Lexer::new(input.to_string());
         lexer.tokenize().unwrap()
