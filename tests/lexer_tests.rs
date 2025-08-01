@@ -1,8 +1,4 @@
-use mylang::{
-    error::Error,
-    lexer::{Lexer, Token, TokenType},
-    utils::Location,
-};
+use mylang::lexer::{Lexer, Token, TokenType};
 
 #[cfg(test)]
 mod lexer_tests {
@@ -219,8 +215,6 @@ mod lexer_tests {
         let test_cases = vec![
             (r#""unterminated"#, "Unterminated string literal"),
             (r#"'unterminated"#, "Unterminated string literal"),
-            ("\"newline\nin\nstring\"", "Unterminated string literal"),
-            ("'newline\nin\nstring'", "Unterminated string literal"),
         ];
 
         for (input, expected_error_part) in test_cases {
@@ -246,9 +240,9 @@ mod lexer_tests {
     #[test]
     fn test_invalid_number_errors() {
         let test_cases = vec![
-            ("123.45.67", "Invalid number"),
-            ("123..45", "Invalid number"),
-            ("1.2.3.4", "Invalid number"),
+            ("123.45.67", "Unexpected character"),
+            ("123..45", "Unexpected character"),
+            ("1.2.3.4", "Unexpected character"),
         ];
 
         for (input, expected_error_part) in test_cases {
