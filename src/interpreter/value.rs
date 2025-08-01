@@ -11,7 +11,7 @@ pub enum Value {
     Function {
         name: String,
         params: Vec<String>,
-        body: Vec<Stmt>,
+        body: Stmt,
         closure: EnvRef,
     },
     Nil,

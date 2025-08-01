@@ -22,6 +22,13 @@ impl Interpreter {
         }
     }
 
+    pub fn interpret(&mut self, stmts: &[Stmt]) -> Result<()> {
+        for stmt in stmts {
+            stmt.accept(self)?;
+        }
+        Ok(())
+    }
+
     pub fn enter_scope(&mut self) {
         self.env = Environment::new_local(&self.env);
     }
@@ -29,6 +36,10 @@ impl Interpreter {
     pub fn exit_scope(&mut self) {
         let enclosing = self.env.borrow_mut().enclosing.take();
         self.env = enclosing.unwrap();
+    }
+
+    fn number_operands_error(op: &BinaryOp, left: &Value, right: &Value) -> Error {
+        Error::runtime(format!("Operands must be numbers. Got {left:#?} and {right:?} for {op:?}"))
     }
 }
 
@@ -55,7 +66,14 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         Ok(())
     }
 
-    fn visit_func_decl(&mut self, name: &str, parameters: &[String], body: &Stmt) -> Result<()> {
+    fn visit_func_decl(&mut self, name: &str, params: &[String], body: &Stmt) -> Result<()> {
+        let func = Value::Function {
+            name: name.to_string(),
+            params: params.to_vec(),
+            body: body.clone(),
+            closure: self.env.clone(),
+        };
+        self.env.borrow_mut().define(name.to_string(), func);
         Ok(())
     }
 
@@ -65,10 +83,18 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         then_branch: &Stmt,
         else_branch: Option<&Stmt>,
     ) -> Result<()> {
+        if condition.accept(self)?.is_truthy() {
+            then_branch.accept(self)?;
+        } else if let Some(else_branch) = else_branch {
+            else_branch.accept(self)?;
+        }
         Ok(())
     }
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
+        while condition.accept(self)?.is_truthy() {
+            body.accept(self)?;
+        }
         Ok(())
     }
 
@@ -77,6 +103,9 @@ impl stmt::Visitor<Result<()>> for Interpreter {
     }
 
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<()> {
+        for stmt in statements {
+            stmt.accept(self)?;
+        }
         Ok(())
     }
 }
@@ -102,18 +131,87 @@ impl expr::Visitor<Result<Value>> for Interpreter {
         let left = left.accept(self)?;
         let right = right.accept(self)?;
         match op {
-            BinaryOp::Add => Ok(Value::Nil),
-            BinaryOp::Subtract => Ok(Value::Nil),
-            BinaryOp::Multiply => Ok(Value::Nil),
-            BinaryOp::Divide => Ok(Value::Nil),
-            BinaryOp::Equal => Ok(Value::Nil),
-            BinaryOp::NotEqual => Ok(Value::Nil),
-            BinaryOp::LessThan => Ok(Value::Nil),
-            BinaryOp::LessEqual => Ok(Value::Nil),
-            BinaryOp::GreaterThan => Ok(Value::Nil),
-            BinaryOp::GreaterEqual => Ok(Value::Nil),
-            BinaryOp::LogicalAnd => Ok(Value::Nil),
-            BinaryOp::LogicalOr => Ok(Value::Nil),
+            BinaryOp::Add => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::String(a + &b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers or strings. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::Subtract => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a - b)),
+                    _ => Err(Self::number_operands_error(op, &left, &right)),
+                }
+            },
+            BinaryOp::Multiply => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a * b)),
+                    _ => Err(Self::number_operands_error(op, &left, &right)),
+                }
+            },
+            BinaryOp::Divide => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a / b)),
+                    _ => Err(Self::number_operands_error(op, &left, &right)),
+                }
+            },
+            BinaryOp::Equal => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Boolean(a == b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a == b)),
+                    (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a == b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers, strings or booleans. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::NotEqual => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Boolean(a != b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a != b)),
+                    (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a != b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers, strings or booleans. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::LessThan => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Boolean(a < b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a < b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers or strings. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::LessEqual => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Boolean(a <= b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a <= b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers or strings. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::GreaterThan => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Boolean(a > b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a > b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers or strings. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::GreaterEqual => {
+                match (left.clone(), right.clone()) {
+                    (Value::Number(a), Value::Number(b)) => Ok(Value::Boolean(a >= b)),
+                    (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a >= b)),
+                    _ => Err(Error::runtime(format!("Operands must be numbers or strings. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::LogicalAnd => {
+                match (left.clone(), right.clone()) {
+                    (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a && b)),
+                    _ => Err(Error::runtime(format!("Operands must be booleans. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
+            BinaryOp::LogicalOr => {
+                match (left.clone(), right.clone()) {
+                    (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a || b)),
+                    _ => Err(Error::runtime(format!("Operands must be booleans. Got {left:#?} and {right:?} for {op:?}"))),
+                }
+            },
         }
     }
 
@@ -127,11 +225,21 @@ impl expr::Visitor<Result<Value>> for Interpreter {
         Ok(Value::Nil)
     }
 
-    fn visit_grouping(&mut self, expr: &Expr) -> Result<Value> {
-        Ok(Value::Nil)
-    }
-
     fn visit_unary(&mut self, op: &UnaryOp, operand: &Expr) -> Result<Value> {
-        Ok(Value::Nil)
+        let operand = operand.accept(self)?;
+        match op {
+            UnaryOp::Minus => {
+                match operand {
+                    Value::Number(a) => Ok(Value::Number(-a)),
+                    _ => Err(Error::runtime(format!("Operand must be a number. Got {operand:?} for {op:?}"))),
+                }
+            },
+            UnaryOp::Not => {
+                match operand {
+                    Value::Boolean(a) => Ok(Value::Boolean(!a)),
+                    _ => Err(Error::runtime(format!("Operand must be a boolean. Got {operand:?} for {op:?}"))),
+                }
+            },
+        }
     }
 }
