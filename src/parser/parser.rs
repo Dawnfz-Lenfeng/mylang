@@ -188,17 +188,18 @@ impl Parser {
     }
 
     fn or(&mut self) -> Result<Expr> {
-        self.binary(&[TokenType::Or], |slf| slf.and())
+        self.binary(&[TokenType::Or], Self::and)
     }
 
     fn and(&mut self) -> Result<Expr> {
-        self.binary(&[TokenType::And], |slf| slf.equality())
+        self.binary(&[TokenType::And], Self::equality)
     }
 
     fn equality(&mut self) -> Result<Expr> {
-        self.binary(&[TokenType::EqualEqual, TokenType::BangEqual], |slf| {
-            slf.comparison()
-        })
+        self.binary(
+            &[TokenType::EqualEqual, TokenType::BangEqual],
+            Self::comparison,
+        )
     }
 
     fn comparison(&mut self) -> Result<Expr> {
@@ -209,16 +210,16 @@ impl Parser {
                 TokenType::GreaterThan,
                 TokenType::GreaterEqual,
             ],
-            |slf| slf.term(),
+            Self::term,
         )
     }
 
     fn term(&mut self) -> Result<Expr> {
-        self.binary(&[TokenType::Minus, TokenType::Plus], |slf| slf.factor())
+        self.binary(&[TokenType::Minus, TokenType::Plus], Self::factor)
     }
 
     fn factor(&mut self) -> Result<Expr> {
-        self.binary(&[TokenType::Slash, TokenType::Star], |slf| slf.unary())
+        self.binary(&[TokenType::Slash, TokenType::Star], Self::unary)
     }
 
     fn binary<F>(&mut self, ops: &[TokenType], mut next_level: F) -> Result<Expr>

@@ -48,16 +48,13 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
     }
 
     fn visit_print(&mut self, exprs: &[Expr]) -> InterpreterResult<()> {
-        let values = exprs
+        let output = exprs
             .iter()
-            .map(|expr| expr.accept(self))
-            .collect::<Result<Vec<Value>>>()?
-            .iter()
-            .map(|value| value.to_string())
-            .collect::<Vec<String>>()
+            .map(|expr| expr.accept(self).map(|value| value.to_string()))
+            .collect::<Result<Vec<_>>>()?
             .join(" ");
 
-        println!("{values}");
+        println!("{output}");
         Ok(())
     }
 
