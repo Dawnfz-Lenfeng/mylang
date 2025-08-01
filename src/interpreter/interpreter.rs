@@ -53,9 +53,17 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
         Ok(())
     }
 
-    fn visit_print(&mut self, expr: &Expr) -> InterpreterResult<()> {
-        let value = expr.accept(self)?;
-        println!("{value}");
+    fn visit_print(&mut self, exprs: &[Expr]) -> InterpreterResult<()> {
+        let values = exprs
+            .iter()
+            .map(|expr| expr.accept(self))
+            .collect::<Result<Vec<Value>>>()?
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<Vec<String>>()
+            .join(" ");
+
+        println!("{values}");
         Ok(())
     }
 

@@ -1,4 +1,4 @@
-fn factorial(n: number) -> number {
+fn factorial(n) {
     if n <= 1 {
         return 1;
     } else {
@@ -6,8 +6,6 @@ fn factorial(n: number) -> number {
     }
 }
 
-fn main() {
-    let result = factorial(5);
-    print("5! = ");
-    print(result);
-}
+let result = factorial(5);
+print "5! = ";
+print result;

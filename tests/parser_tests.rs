@@ -579,7 +579,7 @@ mod parser_tests {
                     right: Box::new(Expr::Number(10.0)),
                 },
                 body: Box::new(Stmt::Block(vec![
-                    Stmt::Block(vec![Stmt::Print(Expr::Variable("i".to_string()))]),
+                    Stmt::Block(vec![Stmt::Print(vec![Expr::Variable("i".to_string())])]),
                     Stmt::Expression(Expr::Assign {
                         name: "i".to_string(),
                         value: Box::new(Expr::Binary {

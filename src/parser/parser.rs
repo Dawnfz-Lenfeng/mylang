@@ -149,9 +149,9 @@ impl Parser {
 
     fn print_stmt(&mut self) -> Result<Stmt> {
         self.advance();
-        let expr = self.expr()?;
+        let exprs = self.arguments()?;
         self.consume_semicolon()?;
-        Ok(Stmt::Print(expr))
+        Ok(Stmt::Print(exprs))
     }
 
     fn expr_stmt(&mut self) -> Result<Stmt> {

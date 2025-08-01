@@ -15,7 +15,7 @@ pub enum Stmt {
 
     // Statements
     Expression(Expr),
-    Print(Expr),
+    Print(Vec<Expr>),
     Block(Vec<Stmt>),
     If {
         condition: Expr,
@@ -33,7 +33,7 @@ pub enum Stmt {
 
 pub trait Visitor<T> {
     fn visit_expr(&mut self, expr: &Expr) -> T;
-    fn visit_print(&mut self, expr: &Expr) -> T;
+    fn visit_print(&mut self, exprs: &[Expr]) -> T;
     fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> T;
     fn visit_func_decl(&mut self, name: &str, params: &[String], body: &Stmt) -> T;
     fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>) -> T;
@@ -46,7 +46,7 @@ impl Stmt {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Stmt::Expression(expr) => visitor.visit_expr(expr),
-            Stmt::Print(expr) => visitor.visit_print(expr),
+            Stmt::Print(exprs) => visitor.visit_print(exprs),
             Stmt::Block(statements) => visitor.visit_block(statements),
             Stmt::VarDecl { name, initializer } => {
                 visitor.visit_var_decl(name, initializer.as_ref())
