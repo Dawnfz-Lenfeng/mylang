@@ -560,12 +560,7 @@ mod parser_tests {
 
     #[test]
     fn test_for_statement() {
-        let result = parse_program(
-            "for let i = 0; i < 10; i = i + 1 { 
-                print i; 
-            }",
-        )
-        .unwrap();
+        let result = parse_program("for let i = 0; i < 10; i = i + 1 { print i; }").unwrap();
 
         let expected = vec![Stmt::Block(vec![
             Stmt::VarDecl {

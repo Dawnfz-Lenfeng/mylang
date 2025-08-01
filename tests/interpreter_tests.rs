@@ -1,6 +1,6 @@
 use mylang::{
     error::Result,
-    interpreter::{interpreter::Interpreter, value::Value},
+    interpreter::{Interpreter, Value},
     lexer::lexer::Lexer,
     parser::{parser::Parser, Stmt},
 };

@@ -46,7 +46,7 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Number(n) => write!(f, "{}", n),
-            Value::String(s) => write!(f, "{}", s),
+            Value::String(s) => write!(f, "'{}'", s),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Array(arr) => {
                 write!(f, "[")?;
@@ -61,7 +61,7 @@ impl fmt::Display for Value {
             Value::Function { name, params, .. } => {
                 write!(f, "<function {}({})>", name, params.join(", "))
             }
-            Value::Nil => write!(f, "null"),
+            Value::Nil => write!(f, "nil"),
         }
     }
 }
@@ -85,7 +85,7 @@ impl Value {
             Value::Boolean(_) => "boolean",
             Value::Array(_) => "array",
             Value::Function { .. } => "function",
-            Value::Nil => "null",
+            Value::Nil => "nil",
         }
     }
 }

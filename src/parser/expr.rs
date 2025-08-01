@@ -2,6 +2,7 @@ use crate::{
     error::{self, Error},
     lexer::TokenType,
 };
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -47,6 +48,25 @@ pub enum BinaryOp {
     LogicalOr,
 }
 
+impl fmt::Display for BinaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BinaryOp::Add => write!(f, "+"),
+            BinaryOp::Subtract => write!(f, "-"),
+            BinaryOp::Multiply => write!(f, "*"),
+            BinaryOp::Divide => write!(f, "/"),
+            BinaryOp::Equal => write!(f, "=="),
+            BinaryOp::NotEqual => write!(f, "!="),
+            BinaryOp::LessThan => write!(f, "<"),
+            BinaryOp::LessEqual => write!(f, "<="),
+            BinaryOp::GreaterThan => write!(f, ">"),
+            BinaryOp::GreaterEqual => write!(f, ">="),
+            BinaryOp::LogicalAnd => write!(f, "and"),
+            BinaryOp::LogicalOr => write!(f, "or"),
+        }
+    }
+}
+
 impl TryFrom<TokenType> for BinaryOp {
     type Error = error::Error;
 
@@ -75,6 +95,15 @@ impl TryFrom<TokenType> for BinaryOp {
 pub enum UnaryOp {
     Minus,
     Not,
+}
+
+impl fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UnaryOp::Minus => write!(f, "-"),
+            UnaryOp::Not => write!(f, "!"),
+        }
+    }
 }
 
 impl TryFrom<TokenType> for UnaryOp {
