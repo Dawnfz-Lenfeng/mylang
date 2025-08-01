@@ -1,5 +1,5 @@
 use mylang::{
-    error::{Error},
+    error::Error,
     lexer::{Lexer, Token, TokenType},
     utils::Location,
 };

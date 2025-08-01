@@ -25,7 +25,9 @@ impl From<RuntimeControl> for Error {
     fn from(control: RuntimeControl) -> Self {
         match control {
             RuntimeControl::Error(error) => error,
-            RuntimeControl::Return(value) => Error::runtime(format!("Unexpected return: {}", value)),
+            RuntimeControl::Return(value) => {
+                Error::runtime(format!("Unexpected return: {}", value))
+            }
         }
     }
 }

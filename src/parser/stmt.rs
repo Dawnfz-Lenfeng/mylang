@@ -51,11 +51,7 @@ impl Stmt {
             Stmt::VarDecl { name, initializer } => {
                 visitor.visit_var_decl(name, initializer.as_ref())
             }
-            Stmt::FuncDecl {
-                name,
-                params,
-                body,
-            } => visitor.visit_func_decl(name, params, body),
+            Stmt::FuncDecl { name, params, body } => visitor.visit_func_decl(name, params, body),
             Stmt::If {
                 condition,
                 then_branch,

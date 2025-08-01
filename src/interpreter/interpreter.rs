@@ -237,10 +237,18 @@ impl expr::Visitor<Result<Value>> for Interpreter {
 
     fn visit_call(&mut self, callee: &Expr, arguments: &[Expr]) -> Result<Value> {
         let callee = callee.accept(self)?;
-        let arguments = arguments.iter().map(|arg| arg.accept(self)).collect::<Result<Vec<Value>>>()?;
+        let arguments = arguments
+            .iter()
+            .map(|arg| arg.accept(self))
+            .collect::<Result<Vec<Value>>>()?;
 
         match callee {
-            Value::Function { params, body, closure, .. } => {
+            Value::Function {
+                params,
+                body,
+                closure,
+                ..
+            } => {
                 let local_env = Environment::new_local(&closure);
                 for (param, arg) in params.iter().zip(arguments) {
                     local_env.borrow_mut().define(param.clone(), arg.clone());
@@ -250,8 +258,10 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                     Err(RuntimeControl::Return(value)) => Ok(value),
                     Err(RuntimeControl::Error(e)) => Err(e),
                 }
-            },
-            _ => Err(Error::runtime(format!("Can only call functions. Got {callee:?}"))),
+            }
+            _ => Err(Error::runtime(format!(
+                "Can only call functions. Got {callee:?}"
+            ))),
         }
     }
 

@@ -63,11 +63,7 @@ impl Parser {
 
         let body = Box::new(self.block_stmt()?);
 
-        Ok(Stmt::FuncDecl {
-            name,
-            params,
-            body,
-        })
+        Ok(Stmt::FuncDecl { name, params, body })
     }
 
     fn if_stmt(&mut self) -> Result<Stmt> {
