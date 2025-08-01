@@ -19,7 +19,7 @@ impl Lexer {
 
     pub fn tokenize(&mut self) -> Result<Vec<Token>> {
         let mut tokens = Vec::new();
-        while let Some((ch, position)) = self.consume_char() {
+        while let Some((ch, location)) = self.consume_char() {
             if ch.is_whitespace() {
                 continue;
             }
@@ -27,7 +27,7 @@ impl Lexer {
                 self.skip_comment();
                 continue;
             }
-            tokens.push(self.scan_token(ch, position)?);
+            tokens.push(self.scan_token(ch, location)?);
         }
 
         tokens.push(Token {
@@ -44,9 +44,9 @@ impl Lexer {
 
     fn consume_char(&mut self) -> Option<(char, Location)> {
         let ch = self.peek()?;
-        let position = self.location.clone();
+        let location = self.location.clone();
         self.advance();
-        Some((ch, position))
+        Some((ch, location))
     }
 
     fn advance(&mut self) {

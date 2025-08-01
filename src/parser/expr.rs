@@ -21,7 +21,6 @@ pub enum Expr {
         operator: UnaryOp,
         operand: Box<Expr>,
     },
-    Grouping(Box<Expr>),
     Assign {
         name: String,
         value: Box<Expr>,
@@ -65,9 +64,9 @@ impl TryFrom<TokenType> for BinaryOp {
             TokenType::GreaterEqual => Ok(BinaryOp::GreaterEqual),
             TokenType::And => Ok(BinaryOp::LogicalAnd),
             TokenType::Or => Ok(BinaryOp::LogicalOr),
-            _ => Err(Error::internal(
-                "Invalid token type for binary operator: {token}".to_string(),
-            )),
+            _ => Err(Error::internal(format!(
+                "Invalid token type for binary operator: {token:?}"
+            ))),
         }
     }
 }
@@ -85,9 +84,9 @@ impl TryFrom<TokenType> for UnaryOp {
         match token {
             TokenType::Minus => Ok(UnaryOp::Minus),
             TokenType::Bang => Ok(UnaryOp::Not),
-            _ => Err(Error::internal(
-                "Invalid token type for unary operator: {token}".to_string(),
-            )),
+            _ => Err(Error::internal(format!(
+                "Invalid token type for unary operator: {token:?}"
+            ))),
         }
     }
 }
@@ -99,7 +98,6 @@ pub trait Visitor<T> {
     fn visit_identifier(&mut self, name: &str) -> T;
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> T;
     fn visit_unary(&mut self, op: &UnaryOp, operand: &Expr) -> T;
-    fn visit_grouping(&mut self, expr: &Expr) -> T;
     fn visit_assign(&mut self, name: &str, value: &Expr) -> T;
     fn visit_call(&mut self, callee: &Expr, arguments: &[Expr]) -> T;
 }
@@ -117,7 +115,6 @@ impl Expr {
                 right,
             } => visitor.visit_binary(left, operator, right),
             Expr::Unary { operator, operand } => visitor.visit_unary(operator, operand),
-            Expr::Grouping(expr) => visitor.visit_grouping(expr),
             Expr::Assign { name, value } => visitor.visit_assign(name, value),
             Expr::Call { callee, arguments } => visitor.visit_call(callee, arguments),
         }

@@ -21,61 +21,63 @@ impl Parser {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
-            statements.push(self.statement()?);
+            statements.push(self.stmt()?);
         }
 
         Ok(statements)
     }
 
-    fn statement(&mut self) -> Result<Stmt> {
+    fn stmt(&mut self) -> Result<Stmt> {
         match self.peek().token_type {
-            TokenType::Let => self.var_declaration(),
-            TokenType::Fn => self.function_declaration(),
-            TokenType::If => self.if_statement(),
-            TokenType::While => self.while_statement(),
-            TokenType::For => self.for_statement(),
-            TokenType::Return => self.return_statement(),
-            TokenType::LeftBrace => self.block_statement(),
-            TokenType::Print => self.print_statement(),
-            _ => self.expression_statement(),
+            TokenType::Let => self.var_decl(),
+            TokenType::Fn => self.func_decl(),
+            TokenType::If => self.if_stmt(),
+            TokenType::While => self.while_stmt(),
+            TokenType::For => self.for_stmt(),
+            TokenType::Return => self.return_stmt(),
+            TokenType::LeftBrace => self.block_stmt(),
+            TokenType::Print => self.print_stmt(),
+            _ => self.expr_stmt(),
         }
     }
 
-    fn var_declaration(&mut self) -> Result<Stmt> {
+    fn var_decl(&mut self) -> Result<Stmt> {
         self.advance();
         let name = self.consume_identifier()?;
         let initializer = self
             .try_consume(TokenType::Equal)
-            .then(|| self.expression())
+            .is_some()
+            .then(|| self.expr())
             .transpose()?;
         self.consume_semicolon()?;
         Ok(Stmt::VarDecl { name, initializer })
     }
 
-    fn function_declaration(&mut self) -> Result<Stmt> {
+    fn func_decl(&mut self) -> Result<Stmt> {
         self.advance();
         let name = self.consume_identifier()?;
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
-        let parameters = self.parameters()?;
+        let params = self.parameters()?;
         self.consume(TokenType::RightParen, "Expected ')' after parameters")?;
 
-        let body = Box::new(self.block_statement()?);
+        let body = Box::new(self.block_stmt()?);
 
         Ok(Stmt::FuncDecl {
             name,
-            parameters,
+            params,
             body,
         })
     }
 
-    fn if_statement(&mut self) -> Result<Stmt> {
+    fn if_stmt(&mut self) -> Result<Stmt> {
         self.advance();
-        let condition = self.expression()?;
-        let then_branch = Box::new(self.block_statement()?);
+        let condition = self.expr()?;
+        let then_branch = Box::new(self.block_stmt()?);
         let else_branch = self
             .try_consume(TokenType::Else)
-            .then(|| self.block_statement())
+            .is_some()
+            .then(|| self.block_stmt())
             .transpose()?
             .map(Box::new);
         Ok(Stmt::If {
@@ -85,31 +87,31 @@ impl Parser {
         })
     }
 
-    fn while_statement(&mut self) -> Result<Stmt> {
+    fn while_stmt(&mut self) -> Result<Stmt> {
         self.advance();
-        let condition = self.expression()?;
-        let body = Box::new(self.block_statement()?);
+        let condition = self.expr()?;
+        let body = Box::new(self.block_stmt()?);
         Ok(Stmt::While { condition, body })
     }
 
-    fn for_statement(&mut self) -> Result<Stmt> {
+    fn for_stmt(&mut self) -> Result<Stmt> {
         self.advance();
         let initializer = match () {
-            _ if self.try_consume(TokenType::Let) => Some(self.var_declaration()?),
-            _ if self.try_consume(TokenType::Semicolon) => None,
-            _ => Some(self.expression_statement()?),
+            _ if self.try_consume(TokenType::Let).is_some() => Some(self.var_decl()?),
+            _ if self.try_consume(TokenType::Semicolon).is_some() => None,
+            _ => Some(self.expr_stmt()?),
         };
 
-        let condition = (!self.check(TokenType::Semicolon))
-            .then(|| self.expression())
+        let condition = (!self.check(&TokenType::Semicolon))
+            .then(|| self.expr())
             .transpose()?;
         self.consume(TokenType::Semicolon, "Expect ';' after loop condition")?;
 
-        let increment = (!self.check(TokenType::RightParen))
-            .then(|| self.expression())
+        let increment = (!self.check(&TokenType::RightParen))
+            .then(|| self.expr())
             .transpose()?;
 
-        let body = self.block_statement()?;
+        let body = self.block_stmt()?;
         let body_with_inc = match increment {
             Some(inc) => Stmt::Block(vec![body, Stmt::Expression(inc)]),
             None => body,
@@ -126,46 +128,46 @@ impl Parser {
         })
     }
 
-    fn return_statement(&mut self) -> Result<Stmt> {
+    fn return_stmt(&mut self) -> Result<Stmt> {
         self.advance();
-        let value = (!self.check(TokenType::Semicolon))
-            .then(|| self.expression())
+        let value = (!self.check(&TokenType::Semicolon))
+            .then(|| self.expr())
             .transpose()?;
         self.consume_semicolon()?;
         Ok(Stmt::Return { value })
     }
 
-    fn block_statement(&mut self) -> Result<Stmt> {
+    fn block_stmt(&mut self) -> Result<Stmt> {
         self.advance();
         self.consume(TokenType::LeftBrace, "Expected '{' at start of block")?;
         let mut statements = Vec::new();
-        while !self.check(TokenType::RightBrace) {
-            statements.push(self.statement()?);
+        while !self.check(&TokenType::RightBrace) {
+            statements.push(self.stmt()?);
         }
         self.consume(TokenType::RightBrace, "Expected '}' at end of block")?;
         Ok(Stmt::Block(statements))
     }
 
-    fn print_statement(&mut self) -> Result<Stmt> {
+    fn print_stmt(&mut self) -> Result<Stmt> {
         self.advance();
-        let expr = self.expression()?;
+        let expr = self.expr()?;
         self.consume_semicolon()?;
         Ok(Stmt::Print(expr))
     }
 
-    fn expression_statement(&mut self) -> Result<Stmt> {
-        let expr = self.expression()?;
+    fn expr_stmt(&mut self) -> Result<Stmt> {
+        let expr = self.expr()?;
         self.consume_semicolon()?;
         Ok(Stmt::Expression(expr))
     }
 
-    fn expression(&mut self) -> Result<Expr> {
+    fn expr(&mut self) -> Result<Expr> {
         self.assignment()
     }
 
     fn assignment(&mut self) -> Result<Expr> {
         let mut expr = self.or()?;
-        if self.try_consume(TokenType::Equal) {
+        if let Some(token) = self.try_consume(TokenType::Equal) {
             match expr {
                 Expr::Variable(name) => {
                     let value = self.assignment()?;
@@ -177,7 +179,7 @@ impl Parser {
                 _ => {
                     return Err(Error::syntax(
                         "Invalid assignment target".to_string(),
-                        self.previous().location,
+                        token.location,
                     ))
                 }
             }
@@ -225,10 +227,10 @@ impl Parser {
         F: FnMut(&mut Self) -> Result<Expr>,
     {
         let mut expr = next_level(self)?;
-        while self.try_consume_any(ops) {
+        while let Some(token) = self.try_consume_any(ops) {
             expr = Expr::Binary {
                 left: Box::new(expr),
-                operator: BinaryOp::try_from(self.previous().token_type.clone())?,
+                operator: BinaryOp::try_from(token.token_type.clone())?,
                 right: Box::new(next_level(self)?),
             };
         }
@@ -237,9 +239,9 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Result<Expr> {
-        if self.try_consume_any(&[TokenType::Bang, TokenType::Minus]) {
+        if let Some(token) = self.try_consume_any(&[TokenType::Bang, TokenType::Minus]) {
             return Ok(Expr::Unary {
-                operator: UnaryOp::try_from(self.peek().token_type.clone())?,
+                operator: UnaryOp::try_from(token.token_type.clone())?,
                 operand: Box::new(self.unary()?),
             });
         }
@@ -249,7 +251,7 @@ impl Parser {
 
     fn call(&mut self) -> Result<Expr> {
         let mut expr = self.primary()?;
-        while self.try_consume(TokenType::LeftParen) {
+        while self.try_consume(TokenType::LeftParen).is_some() {
             let arguments = self.arguments()?;
             expr = Expr::Call {
                 callee: Box::new(expr),
@@ -269,7 +271,7 @@ impl Parser {
             TokenType::Boolean(b) => Ok(Expr::Boolean(*b)),
             TokenType::Identifier(name) => Ok(Expr::Variable(name.clone())),
             TokenType::LeftParen => {
-                let expr = self.expression()?;
+                let expr = self.expr()?;
                 self.consume(TokenType::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
@@ -285,11 +287,11 @@ impl Parser {
 
     fn parameters(&mut self) -> Result<Vec<String>> {
         let mut parameters = Vec::new();
-        if self.check(TokenType::RightParen) {
+        if self.check(&TokenType::RightParen) {
             return Ok(parameters);
         }
         parameters.push(self.consume_identifier()?);
-        while self.check(TokenType::Comma) {
+        while self.check(&TokenType::Comma) {
             self.advance();
             parameters.push(self.consume_identifier()?);
         }
@@ -299,13 +301,13 @@ impl Parser {
 
     fn arguments(&mut self) -> Result<Vec<Expr>> {
         let mut arguments = Vec::new();
-        if self.check(TokenType::RightParen) {
+        if self.check(&TokenType::RightParen) {
             return Ok(arguments);
         }
-        arguments.push(self.expression()?);
-        while self.check(TokenType::Comma) {
+        arguments.push(self.expr()?);
+        while self.check(&TokenType::Comma) {
             self.advance();
-            arguments.push(self.expression()?);
+            arguments.push(self.expr()?);
         }
         Ok(arguments)
     }
@@ -315,53 +317,49 @@ impl Parser {
         &self.tokens[self.current]
     }
 
-    fn previous(&self) -> &Token {
-        &self.tokens[self.current - 1]
-    }
-
     fn is_at_end(&self) -> bool {
         matches!(self.peek().token_type, TokenType::Eof)
     }
 
     fn advance(&mut self) -> &Token {
+        let token = &self.tokens[self.current];
         if !self.is_at_end() {
             self.current += 1;
         }
-        self.previous()
+        token
     }
 
-    fn check(&self, token_type: TokenType) -> bool {
+    fn check(&self, token_type: &TokenType) -> bool {
         if self.is_at_end() {
             false
         } else {
-            self.peek().token_type == token_type
+            self.peek().token_type == *token_type
         }
     }
 
     fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token> {
-        if self.check(token_type) {
+        if self.check(&token_type) {
             Ok(self.advance())
         } else {
             Err(self.error(message.to_string()))
         }
     }
 
-    fn try_consume(&mut self, token_type: TokenType) -> bool {
-        if self.check(token_type) {
-            self.advance();
-            true
+    fn try_consume(&mut self, token_type: TokenType) -> Option<&Token> {
+        if self.check(&token_type) {
+            Some(self.advance())
         } else {
-            false
+            None
         }
     }
 
-    fn try_consume_any(&mut self, token_types: &[TokenType]) -> bool {
+    fn try_consume_any(&mut self, token_types: &[TokenType]) -> Option<&Token> {
         for token_type in token_types {
-            if self.try_consume(token_type.clone()) {
-                return true;
+            if self.check(token_type) {
+                return Some(self.advance());
             }
         }
-        false
+        None
     }
 
     fn consume_identifier(&mut self) -> Result<String> {
