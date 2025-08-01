@@ -1,4 +1,5 @@
 use mylang::{
+    error::{Error},
     lexer::{Lexer, Token, TokenType},
     utils::Location,
 };
@@ -193,7 +194,8 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let result = get_tokens(input);
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
 
             assert!(
                 result.is_err(),
@@ -222,7 +224,8 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let result = get_tokens(input);
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
 
             assert!(
                 result.is_err(),
@@ -249,7 +252,8 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let result = get_tokens(input);
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
 
             assert!(
                 result.is_err(),
@@ -277,7 +281,8 @@ mod lexer_tests {
         ];
 
         for (input, expected_error_part) in test_cases {
-            let result = get_tokens(input);
+            let mut lexer = Lexer::new(input.to_string());
+            let result = lexer.tokenize();
 
             assert!(
                 result.is_err(),
@@ -304,7 +309,7 @@ mod lexer_tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
 
-        // Error should be at line 1, column 9 (position of @)
+        // Error should be at line 1, column 9 (location of @)
         assert_eq!(error.location.unwrap().line, 1, "Error line should be 1");
         assert_eq!(
             error.location.unwrap().column,
