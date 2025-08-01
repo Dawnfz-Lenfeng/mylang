@@ -85,7 +85,7 @@ impl TryFrom<TokenType> for BinaryOp {
             TokenType::And => Ok(BinaryOp::LogicalAnd),
             TokenType::Or => Ok(BinaryOp::LogicalOr),
             _ => Err(Error::internal(format!(
-                "Invalid token type for binary operator: {token:?}"
+                "invalid token type for binary operator: {token:?}"
             ))),
         }
     }
@@ -114,7 +114,7 @@ impl TryFrom<TokenType> for UnaryOp {
             TokenType::Minus => Ok(UnaryOp::Minus),
             TokenType::Bang => Ok(UnaryOp::Not),
             _ => Err(Error::internal(format!(
-                "Invalid token type for unary operator: {token:?}"
+                "invalid token type for unary operator: {token:?}"
             ))),
         }
     }

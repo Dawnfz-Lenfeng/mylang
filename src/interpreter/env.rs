@@ -38,7 +38,7 @@ impl Environment {
             return parent.borrow().get(name);
         }
 
-        Err(Error::runtime(format!("Undefined variable '{name}'")))
+        Err(Error::runtime(format!("undefined variable '{name}'")))
     }
 
     pub fn set(&mut self, name: &str, value: Value) -> Result<()> {
@@ -51,6 +51,6 @@ impl Environment {
             return enclosing.borrow_mut().set(name, value);
         }
 
-        Err(Error::runtime(format!("Undefined variable '{name}'")))
+        Err(Error::runtime(format!("undefined variable '{name}'")))
     }
 }

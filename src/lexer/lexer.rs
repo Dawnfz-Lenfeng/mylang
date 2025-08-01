@@ -109,7 +109,7 @@ impl Lexer {
             '"' | '\'' => self.scan_string(start, ch),
             '0'..='9' => self.scan_number(start),
             'a'..='z' | 'A'..='Z' | '_' => Ok(self.scan_identifier(start)),
-            _ => Err(Error::lexical(format!("Unexpected character: {ch}"), start)),
+            _ => Err(Error::lexical(format!("unexpected character: {ch}"), start)),
         }?;
 
         Ok(Token {
@@ -155,7 +155,7 @@ impl Lexer {
         }
 
         Err(Error::lexical(
-            "Unterminated string literal".to_string(),
+            "unterminated string literal".to_string(),
             self.location,
         ))
     }

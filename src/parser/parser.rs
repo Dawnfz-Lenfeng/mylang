@@ -57,9 +57,9 @@ impl Parser {
         self.advance();
         let name = self.consume_identifier()?;
 
-        self.consume(TokenType::LeftParen, "Expected '(' after function name")?;
+        self.consume(TokenType::LeftParen, "expected '(' after function name")?;
         let params = self.parameters()?;
-        self.consume(TokenType::RightParen, "Expected ')' after parameters")?;
+        self.consume(TokenType::RightParen, "expected ')' after parameters")?;
 
         let body = Box::new(self.block_stmt()?);
 
@@ -105,7 +105,7 @@ impl Parser {
             .then(|| self.expr())
             .transpose()?
             .unwrap_or_else(|| Expr::Boolean(true));
-        self.consume(TokenType::Semicolon, "Expect ';' after loop condition")?;
+        self.consume(TokenType::Semicolon, "expect ';' after loop condition")?;
 
         let increment = (!self.check(&TokenType::RightParen))
             .then(|| self.expr())
@@ -138,12 +138,12 @@ impl Parser {
     }
 
     fn block_stmt(&mut self) -> Result<Stmt> {
-        self.consume(TokenType::LeftBrace, "Expected '{' at start of block")?;
+        self.consume(TokenType::LeftBrace, "expected '{' at start of block")?;
         let mut statements = Vec::new();
         while !self.check(&TokenType::RightBrace) {
             statements.push(self.stmt()?);
         }
-        self.consume(TokenType::RightBrace, "Expected '}' at end of block")?;
+        self.consume(TokenType::RightBrace, "expected '}' at end of block")?;
         Ok(Stmt::Block(statements))
     }
 
@@ -177,7 +177,7 @@ impl Parser {
                 }
                 _ => {
                     return Err(Error::syntax(
-                        "Invalid assignment target".to_string(),
+                        "invalid assignment target".to_string(),
                         token.location,
                     ))
                 }
@@ -256,7 +256,7 @@ impl Parser {
                 callee: Box::new(expr),
                 arguments,
             };
-            self.consume(TokenType::RightParen, "Expected ')' after arguments")?;
+            self.consume(TokenType::RightParen, "expected ')' after arguments")?;
         }
         Ok(expr)
     }
@@ -271,13 +271,13 @@ impl Parser {
             TokenType::Identifier(name) => Ok(Expr::Variable(name.clone())),
             TokenType::LeftParen => {
                 let expr = self.expr()?;
-                self.consume(TokenType::RightParen, "Expected ')' after expression")?;
+                self.consume(TokenType::RightParen, "expected ')' after expression")?;
                 Ok(expr)
             }
             _ => {
                 let expected = "number, string, boolean, identifier or '('";
                 Err(Error::syntax(
-                    format!("Expected {}, found {:?}", expected, token.token_type),
+                    format!("expected {}, found {:?}", expected, token.token_type),
                     token.location,
                 ))
             }
@@ -367,12 +367,12 @@ impl Parser {
             self.advance();
             Ok(name)
         } else {
-            Err(self.error("Expected identifier".to_string()))
+            Err(self.error("expected identifier".to_string()))
         }
     }
 
     fn consume_semicolon(&mut self) -> Result<()> {
-        self.consume(TokenType::Semicolon, "Expected ';'")?;
+        self.consume(TokenType::Semicolon, "expected ';'")?;
         Ok(())
     }
 

@@ -99,11 +99,11 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let type_name = match self.error_type {
-            ErrorType::Lexical => "Lexical error",
-            ErrorType::Syntax => "Syntax error",
-            ErrorType::Runtime => "Runtime error",
-            ErrorType::Io => "I/O error",
-            ErrorType::Internal => "Internal error",
+            ErrorType::Lexical => "LexicalError",
+            ErrorType::Syntax => "SyntaxError",
+            ErrorType::Runtime => "RuntimeError",
+            ErrorType::Io => "IOError",
+            ErrorType::Internal => "InternalError",
         };
 
         match (&self.file, &self.location) {

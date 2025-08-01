@@ -1,6 +1,6 @@
 use super::env::EnvRef;
-use crate::parser::stmt::Stmt;
-use std::{fmt, rc::Rc};
+use crate::{error::{Error, Result}, parser::Stmt};
+use std::{fmt, ops::Add, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -15,6 +15,22 @@ pub enum Value {
         closure: EnvRef,
     },
     Nil,
+}
+
+impl Add for Value {
+    type Output = Result<Value>;
+
+    fn add(self, other: Self) -> Self::Output {
+        let self_type = self.type_name();
+        let other_type = other.type_name();
+
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::String(a + &b)),
+            (Value::Array(a), Value::Array(b)) => Ok(Value::Array(a.iter().chain(b.iter()).cloned().collect())),
+            _ => Err(Error::runtime(format!("unsupported operand type(s) for +: '{self_type}' and '{other_type}'"))),
+        }
+    }
 }
 
 impl PartialEq for Value {
