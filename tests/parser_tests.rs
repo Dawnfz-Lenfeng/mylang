@@ -133,7 +133,7 @@ mod parser_tests {
         assert_eq!(program, expected);
 
         // Test unary not
-        let program = parse_program("not true;").unwrap();
+        let program = parse_program("!true;").unwrap();
         let expected = vec![Stmt::Expression(Expr::Unary {
             operator: UnaryOp::Not,
             operand: Box::new(Expr::Boolean(true)),
@@ -287,7 +287,7 @@ mod parser_tests {
                 })],
             ), // and before or
             (
-                "not a and b;",
+                "!a and b;",
                 vec![Stmt::Expression(Expr::Binary {
                     left: Box::new(Expr::Unary {
                         operator: UnaryOp::Not,
@@ -327,20 +327,20 @@ mod parser_tests {
             (
                 "a + b * c - d / e;",
                 vec![Stmt::Expression(Expr::Binary {
-                    left: Box::new(Expr::Variable("a".to_string())),
-                    operator: BinaryOp::Add,
-                    right: Box::new(Expr::Binary {
-                        left: Box::new(Expr::Binary {
+                    left: Box::new(Expr::Binary {
+                        left: Box::new(Expr::Variable("a".to_string())),
+                        operator: BinaryOp::Add,
+                        right: Box::new(Expr::Binary {
                             left: Box::new(Expr::Variable("b".to_string())),
                             operator: BinaryOp::Multiply,
                             right: Box::new(Expr::Variable("c".to_string())),
                         }),
-                        operator: BinaryOp::Subtract,
-                        right: Box::new(Expr::Binary {
-                            left: Box::new(Expr::Variable("d".to_string())),
-                            operator: BinaryOp::Divide,
-                            right: Box::new(Expr::Variable("e".to_string())),
-                        }),
+                    }),
+                    operator: BinaryOp::Subtract,
+                    right: Box::new(Expr::Binary {
+                        left: Box::new(Expr::Variable("d".to_string())),
+                        operator: BinaryOp::Divide,
+                        right: Box::new(Expr::Variable("e".to_string())),
                     }),
                 })],
             ),
@@ -379,7 +379,7 @@ mod parser_tests {
                 })],
             ),
             (
-                "not flag and count > 0;",
+                "!flag and count > 0;",
                 vec![Stmt::Expression(Expr::Binary {
                     left: Box::new(Expr::Unary {
                         operator: UnaryOp::Not,

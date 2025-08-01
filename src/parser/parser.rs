@@ -134,7 +134,6 @@ impl Parser {
     }
 
     fn block_stmt(&mut self) -> Result<Stmt> {
-        self.advance();
         self.consume(TokenType::LeftBrace, "Expected '{' at start of block")?;
         let mut statements = Vec::new();
         while !self.check(&TokenType::RightBrace) {
