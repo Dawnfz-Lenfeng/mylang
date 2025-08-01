@@ -1,6 +1,14 @@
 use super::env::EnvRef;
-use crate::{error::{Error, Result}, parser::Stmt};
-use std::{fmt, ops::Add, rc::Rc};
+use crate::{
+    error::{Error, Result},
+    parser::Stmt,
+};
+use std::{
+    fmt,
+    ops::{Add, Div, Mul, Neg, Sub},
+    cmp::Ordering,
+    rc::Rc,
+};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -17,6 +25,30 @@ pub enum Value {
     Nil,
 }
 
+impl Value {
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Value::Boolean(b) => *b,
+            Value::Nil => false,
+            Value::Number(n) => *n != 0.0,
+            Value::String(s) => !s.is_empty(),
+            Value::Array(arr) => !arr.is_empty(),
+            Value::Function { .. } => true,
+        }
+    }
+
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Value::Number(_) => "number",
+            Value::String(_) => "string",
+            Value::Boolean(_) => "boolean",
+            Value::Array(_) => "array",
+            Value::Function { .. } => "function",
+            Value::Nil => "nil",
+        }
+    }
+}
+
 impl Add for Value {
     type Output = Result<Value>;
 
@@ -27,8 +59,60 @@ impl Add for Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
             (Value::String(a), Value::String(b)) => Ok(Value::String(a + &b)),
-            (Value::Array(a), Value::Array(b)) => Ok(Value::Array(a.iter().chain(b.iter()).cloned().collect())),
-            _ => Err(Error::runtime(format!("unsupported operand type(s) for +: '{self_type}' and '{other_type}'"))),
+            (Value::Array(a), Value::Array(b)) => {
+                Ok(Value::Array(a.iter().chain(b.iter()).cloned().collect()))
+            }
+            _ => Err(Error::runtime(format!(
+                "unsupported operand type(s) for +: '{self_type}' and '{other_type}'"
+            ))),
+        }
+    }
+}
+
+impl Sub for Value {
+    type Output = Result<Value>;
+
+    fn sub(self, other: Self) -> Self::Output {
+        let self_type = self.type_name();
+        let other_type = other.type_name();
+
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a - b)),
+            _ => Err(Error::runtime(format!(
+                "unsupported operand type(s) for -: '{self_type}' and '{other_type}'"
+            ))),
+        }
+    }
+}
+
+impl Mul for Value {
+    type Output = Result<Value>;
+
+    fn mul(self, other: Self) -> Self::Output {
+        let self_type = self.type_name();
+        let other_type = other.type_name();
+
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a * b)),
+            _ => Err(Error::runtime(format!(
+                "unsupported operand type(s) for *: '{self_type}' and '{other_type}'"
+            ))),
+        }
+    }
+}
+
+impl Div for Value {
+    type Output = Result<Value>;
+
+    fn div(self, other: Self) -> Self::Output {
+        let self_type = self.type_name();
+        let other_type = other.type_name();
+
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a / b)),
+            _ => Err(Error::runtime(format!(
+                "unsupported operand type(s) for /: '{self_type}' and '{other_type}'"
+            ))),
         }
     }
 }
@@ -58,6 +142,30 @@ impl PartialEq for Value {
     }
 }
 
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
+            (Value::String(a), Value::String(b)) => a.partial_cmp(b),
+            (Value::Boolean(a), Value::Boolean(b)) => a.partial_cmp(b),
+            (Value::Array(a), Value::Array(b)) => a.partial_cmp(b),
+            _ => None,
+        }
+    }
+}
+
+impl Neg for Value {
+    type Output = Result<Value>;
+
+    fn neg(self) -> Self::Output {
+        let self_type = self.type_name();
+        match self {
+            Value::Number(n) => Ok(Value::Number(-n)),
+            _ => Err(Error::runtime(format!("bad operand type for unary -: '{self_type}'"))),
+        }
+    }
+}
+
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -78,30 +186,6 @@ impl fmt::Display for Value {
                 write!(f, "<function {}({})>", name, params.join(", "))
             }
             Value::Nil => write!(f, "nil"),
-        }
-    }
-}
-
-impl Value {
-    pub fn is_truthy(&self) -> bool {
-        match self {
-            Value::Boolean(b) => *b,
-            Value::Nil => false,
-            Value::Number(n) => *n != 0.0,
-            Value::String(s) => !s.is_empty(),
-            Value::Array(arr) => !arr.is_empty(),
-            Value::Function { .. } => true,
-        }
-    }
-
-    pub fn type_name(&self) -> &'static str {
-        match self {
-            Value::Number(_) => "number",
-            Value::String(_) => "string",
-            Value::Boolean(_) => "boolean",
-            Value::Array(_) => "array",
-            Value::Function { .. } => "function",
-            Value::Nil => "nil",
         }
     }
 }
