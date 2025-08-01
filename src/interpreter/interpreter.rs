@@ -1,4 +1,5 @@
 use super::{
+    control::{InterpreterResult, RuntimeControl},
     env::{EnvRef, Environment},
     value::Value,
 };
@@ -39,23 +40,25 @@ impl Interpreter {
     }
 
     fn number_operands_error(op: &BinaryOp, left: &Value, right: &Value) -> Error {
-        Error::runtime(format!("Operands must be numbers. Got {left:#?} and {right:?} for {op:?}"))
+        Error::runtime(format!(
+            "Operands must be numbers. Got {left:#?} and {right:?} for {op:?}"
+        ))
     }
 }
 
-impl stmt::Visitor<Result<()>> for Interpreter {
-    fn visit_expr(&mut self, expr: &Expr) -> Result<()> {
+impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
+    fn visit_expr(&mut self, expr: &Expr) -> InterpreterResult<()> {
         expr.accept(self)?;
         Ok(())
     }
 
-    fn visit_print(&mut self, expr: &Expr) -> Result<()> {
+    fn visit_print(&mut self, expr: &Expr) -> InterpreterResult<()> {
         let value = expr.accept(self)?;
         println!("{value}");
         Ok(())
     }
 
-    fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> Result<()> {
+    fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> InterpreterResult<()> {
         let value = if let Some(expr) = initializer {
             expr.accept(self)?
         } else {
@@ -66,7 +69,12 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         Ok(())
     }
 
-    fn visit_func_decl(&mut self, name: &str, params: &[String], body: &Stmt) -> Result<()> {
+    fn visit_func_decl(
+        &mut self,
+        name: &str,
+        params: &[String],
+        body: &Stmt,
+    ) -> InterpreterResult<()> {
         let func = Value::Function {
             name: name.to_string(),
             params: params.to_vec(),
@@ -82,7 +90,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         condition: &Expr,
         then_branch: &Stmt,
         else_branch: Option<&Stmt>,
-    ) -> Result<()> {
+    ) -> InterpreterResult<()> {
         if condition.accept(self)?.is_truthy() {
             then_branch.accept(self)?;
         } else if let Some(else_branch) = else_branch {
@@ -91,21 +99,27 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         Ok(())
     }
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
+    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> InterpreterResult<()> {
         while condition.accept(self)?.is_truthy() {
             body.accept(self)?;
         }
         Ok(())
     }
 
-    fn visit_return(&mut self, value: Option<&Expr>) -> Result<()> {
-        Ok(())
+    fn visit_return(&mut self, value: Option<&Expr>) -> InterpreterResult<()> {
+        let value = value
+            .map(|expr| expr.accept(self))
+            .transpose()?
+            .unwrap_or(Value::Nil);
+        return Err(RuntimeControl::Return(value));
     }
 
-    fn visit_block(&mut self, statements: &[Stmt]) -> Result<()> {
+    fn visit_block(&mut self, statements: &[Stmt]) -> InterpreterResult<()> {
+        self.enter_scope();
         for stmt in statements {
             stmt.accept(self)?;
         }
+        self.exit_scope();
         Ok(())
     }
 }
@@ -222,23 +236,39 @@ impl expr::Visitor<Result<Value>> for Interpreter {
     }
 
     fn visit_call(&mut self, callee: &Expr, arguments: &[Expr]) -> Result<Value> {
-        Ok(Value::Nil)
+        let callee = callee.accept(self)?;
+        let arguments = arguments.iter().map(|arg| arg.accept(self)).collect::<Result<Vec<Value>>>()?;
+
+        match callee {
+            Value::Function { params, body, closure, .. } => {
+                let local_env = Environment::new_local(&closure);
+                for (param, arg) in params.iter().zip(arguments) {
+                    local_env.borrow_mut().define(param.clone(), arg.clone());
+                }
+                match body.accept(self) {
+                    Ok(_) => Ok(Value::Nil),
+                    Err(RuntimeControl::Return(value)) => Ok(value),
+                    Err(RuntimeControl::Error(e)) => Err(e),
+                }
+            },
+            _ => Err(Error::runtime(format!("Can only call functions. Got {callee:?}"))),
+        }
     }
 
     fn visit_unary(&mut self, op: &UnaryOp, operand: &Expr) -> Result<Value> {
         let operand = operand.accept(self)?;
         match op {
-            UnaryOp::Minus => {
-                match operand {
-                    Value::Number(a) => Ok(Value::Number(-a)),
-                    _ => Err(Error::runtime(format!("Operand must be a number. Got {operand:?} for {op:?}"))),
-                }
+            UnaryOp::Minus => match operand {
+                Value::Number(a) => Ok(Value::Number(-a)),
+                _ => Err(Error::runtime(format!(
+                    "Operand must be a number. Got {operand:?} for {op:?}"
+                ))),
             },
-            UnaryOp::Not => {
-                match operand {
-                    Value::Boolean(a) => Ok(Value::Boolean(!a)),
-                    _ => Err(Error::runtime(format!("Operand must be a boolean. Got {operand:?} for {op:?}"))),
-                }
+            UnaryOp::Not => match operand {
+                Value::Boolean(a) => Ok(Value::Boolean(!a)),
+                _ => Err(Error::runtime(format!(
+                    "Operand must be a boolean. Got {operand:?} for {op:?}"
+                ))),
             },
         }
     }

@@ -138,33 +138,3 @@ impl From<std::io::Error> for Error {
         Error::io(err.to_string())
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum RuntimeControl {
-    Return(crate::interpreter::value::Value),
-    Break,
-    Continue,
-}
-
-impl RuntimeControl {
-    pub fn is_return(&self) -> bool {
-        matches!(self, RuntimeControl::Return(_))
-    }
-
-    pub fn get_return_value(self) -> Option<crate::interpreter::value::Value> {
-        match self {
-            RuntimeControl::Return(value) => Some(value),
-            _ => None,
-        }
-    }
-}
-
-impl fmt::Display for RuntimeControl {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RuntimeControl::Return(value) => write!(f, "return {}", value),
-            RuntimeControl::Break => write!(f, "break"),
-            RuntimeControl::Continue => write!(f, "continue"),
-        }
-    }
-}
