@@ -559,6 +559,43 @@ mod parser_tests {
     }
 
     #[test]
+    fn test_for_statement() {
+        let result = parse_program(
+            "for let i = 0; i < 10; i = i + 1 { 
+                print i; 
+            }",
+        )
+        .unwrap();
+
+        let expected = vec![Stmt::Block(vec![
+            Stmt::VarDecl {
+                name: "i".to_string(),
+                initializer: Some(Expr::Number(0.0)),
+            },
+            Stmt::While {
+                condition: Expr::Binary {
+                    left: Box::new(Expr::Variable("i".to_string())),
+                    operator: BinaryOp::LessThan,
+                    right: Box::new(Expr::Number(10.0)),
+                },
+                body: Box::new(Stmt::Block(vec![
+                    Stmt::Block(vec![Stmt::Print(Expr::Variable("i".to_string()))]),
+                    Stmt::Expression(Expr::Assign {
+                        name: "i".to_string(),
+                        value: Box::new(Expr::Binary {
+                            left: Box::new(Expr::Variable("i".to_string())),
+                            operator: BinaryOp::Add,
+                            right: Box::new(Expr::Number(1.0)),
+                        }),
+                    }),
+                ])),
+            },
+        ])];
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
     fn test_function_declaration() {
         let result = parse_program("fn add(a, b) { return a + b; }").unwrap();
         let expected = vec![Stmt::FuncDecl {

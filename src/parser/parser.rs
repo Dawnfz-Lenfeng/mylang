@@ -92,15 +92,19 @@ impl Parser {
 
     fn for_stmt(&mut self) -> Result<Stmt> {
         self.advance();
-        let initializer = match () {
-            _ if self.try_consume(TokenType::Let).is_some() => Some(self.var_decl()?),
-            _ if self.try_consume(TokenType::Semicolon).is_some() => None,
+        let initializer = match self.peek().token_type {
+            TokenType::Let => Some(self.var_decl()?),
+            TokenType::Semicolon => {
+                self.advance();
+                None
+            }
             _ => Some(self.expr_stmt()?),
         };
 
         let condition = (!self.check(&TokenType::Semicolon))
             .then(|| self.expr())
-            .transpose()?;
+            .transpose()?
+            .unwrap_or_else(|| Expr::Boolean(true));
         self.consume(TokenType::Semicolon, "Expect ';' after loop condition")?;
 
         let increment = (!self.check(&TokenType::RightParen))
@@ -114,7 +118,7 @@ impl Parser {
         };
 
         let while_loop = Stmt::While {
-            condition: condition.unwrap_or_else(|| Expr::Boolean(true)),
+            condition,
             body: Box::new(body_with_inc),
         };
 
