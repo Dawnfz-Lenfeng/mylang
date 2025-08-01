@@ -11,6 +11,7 @@ use crate::{
         BinaryOp, UnaryOp,
     },
 };
+use std::rc::Rc;
 
 pub struct Interpreter {
     env: EnvRef,
@@ -249,11 +250,16 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 closure,
                 ..
             } => {
-                let local_env = Environment::new_local(&closure);
-                for (param, arg) in params.iter().zip(arguments) {
-                    local_env.borrow_mut().define(param.clone(), arg.clone());
+                let prev_env = Rc::clone(&self.env);
+                self.env = Environment::new_local(&closure);
+
+                for (param, arg) in params.iter().zip(arguments.iter()) {
+                    self.env.borrow_mut().define(param.clone(), arg.clone());
                 }
-                match body.accept(self) {
+                let result = body.accept(self);
+
+                self.env = prev_env;
+                match result {
                     Ok(_) => Ok(Value::Nil),
                     Err(RuntimeControl::Return(value)) => Ok(value),
                     Err(RuntimeControl::Error(e)) => Err(e),

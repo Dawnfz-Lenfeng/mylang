@@ -20,7 +20,7 @@ impl Environment {
 
     pub fn new_local(enclosing: &EnvRef) -> EnvRef {
         Rc::new(RefCell::new(Environment {
-            enclosing: Some(enclosing.clone()),
+            enclosing: Some(Rc::clone(enclosing)),
             variables: HashMap::new(),
         }))
     }
