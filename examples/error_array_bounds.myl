@@ -1,0 +1,3 @@
+// Array bounds error test
+let arr = [1, 2, 3];
+print arr[5];  // This should cause an out of bounds error

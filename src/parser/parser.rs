@@ -217,6 +217,54 @@ impl Parser {
                         _ => unreachable!(),
                     }
                 }
+                Expr::Index { array, index } => {
+                    let op_type = token.token_type.clone();
+                    let value = self.assignment()?;
+                    expr = match op_type {
+                        TokenType::Equal => Expr::IndexAssign {
+                            array,
+                            index,
+                            value: Box::new(value),
+                        },
+                        TokenType::PlusEqual => Expr::IndexAssign {
+                            array: array.clone(),
+                            index: index.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Index { array, index }),
+                                operator: BinaryOp::Add,
+                                right: Box::new(value),
+                            }),
+                        },
+                        TokenType::MinusEqual => Expr::IndexAssign {
+                            array: array.clone(),
+                            index: index.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Index { array, index }),
+                                operator: BinaryOp::Subtract,
+                                right: Box::new(value),
+                            }),
+                        },
+                        TokenType::StarEqual => Expr::IndexAssign {
+                            array: array.clone(),
+                            index: index.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Index { array, index }),
+                                operator: BinaryOp::Multiply,
+                                right: Box::new(value),
+                            }),
+                        },
+                        TokenType::SlashEqual => Expr::IndexAssign {
+                            array: array.clone(),
+                            index: index.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Index { array, index }),
+                                operator: BinaryOp::Divide,
+                                right: Box::new(value),
+                            }),
+                        },
+                        _ => unreachable!(),
+                    }
+                }
                 _ => {
                     return Err(Error::syntax(
                         "invalid assignment target".to_string(),
@@ -293,13 +341,24 @@ impl Parser {
 
     fn call(&mut self) -> Result<Expr> {
         let mut expr = self.primary()?;
-        while self.try_consume(TokenType::LeftParen).is_some() {
-            let arguments = self.arguments()?;
-            expr = Expr::Call {
-                callee: Box::new(expr),
-                arguments,
-            };
-            self.consume(TokenType::RightParen, "expected ')' after arguments")?;
+        loop {
+            if self.try_consume(TokenType::LeftParen).is_some() {
+                let arguments = self.arguments()?;
+                expr = Expr::Call {
+                    callee: Box::new(expr),
+                    arguments,
+                };
+                self.consume(TokenType::RightParen, "expected ')' after arguments")?;
+            } else if self.try_consume(TokenType::LeftBracket).is_some() {
+                let index = self.expr()?;
+                expr = Expr::Index {
+                    array: Box::new(expr),
+                    index: Box::new(index),
+                };
+                self.consume(TokenType::RightBracket, "expected ']' after array index")?;
+            } else {
+                break;
+            }
         }
         Ok(expr)
     }
@@ -317,8 +376,13 @@ impl Parser {
                 self.consume(TokenType::RightParen, "expected ')' after expression")?;
                 Ok(expr)
             }
+            TokenType::LeftBracket => {
+                let elements = self.array_elements()?;
+                self.consume(TokenType::RightBracket, "expected ']' after array elements")?;
+                Ok(Expr::Array(elements))
+            }
             _ => {
-                let expected = "number, string, boolean, identifier or '('";
+                let expected = "number, string, boolean, identifier, '(' or '['";
                 Err(Error::syntax(
                     format!("expected {}, found {:?}", expected, token.token_type),
                     token.location,
@@ -352,6 +416,19 @@ impl Parser {
             arguments.push(self.expr()?);
         }
         Ok(arguments)
+    }
+
+    fn array_elements(&mut self) -> Result<Vec<Expr>> {
+        let mut elements = Vec::new();
+        if self.check(&TokenType::RightBracket) {
+            return Ok(elements);
+        }
+        elements.push(self.expr()?);
+        while self.check(&TokenType::Comma) {
+            self.advance();
+            elements.push(self.expr()?);
+        }
+        Ok(elements)
     }
 
     // Utility methods

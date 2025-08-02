@@ -1,0 +1,55 @@
+// Array functionality test
+
+// Array literals
+let numbers = [1, 2, 3, 4, 5];
+print "Numbers array:", numbers;
+
+let mixed = [42, "hello", true, [1, 2]];
+print "Mixed array:", mixed;
+
+let empty = [];
+print "Empty array:", empty;
+
+// Array indexing
+print "First number:", numbers[0];
+print "Last number:", numbers[4];
+print "Mixed second element:", mixed[1];
+
+// Array assignment
+numbers[0] = 100;
+print "After changing first element:", numbers;
+
+mixed[3] = "replaced nested array";
+print "After replacing nested array:", mixed;
+
+// Array with expressions
+let a = 10;
+let b = 20;
+let calculated = [a + b, a * b, a - b];
+print "Calculated array:", calculated;
+
+// Compound assignment with arrays
+numbers[1] += 5;
+print "After numbers[1] += 5:", numbers;
+
+numbers[2] *= 3;
+print "After numbers[2] *= 3:", numbers;
+
+// Nested array access
+let matrix = [[1, 2], [3, 4], [5, 6]];
+print "Matrix:", matrix;
+print "Matrix[1][0]:", matrix[1][0];
+
+// Array in function
+fn sum_array(arr) {
+    let total = 0;
+    let i = 0;
+    while i < 3 {  // Assuming length 3 for simplicity
+        total += arr[i];
+        i += 1;
+    }
+    return total;
+}
+
+let test_array = [10, 20, 30];
+print "Sum of test_array:", sum_array(test_array);

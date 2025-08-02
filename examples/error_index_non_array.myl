@@ -1,0 +1,3 @@
+// Index non-array error test
+let not_array = 42;
+print not_array[0];  // This should cause an error

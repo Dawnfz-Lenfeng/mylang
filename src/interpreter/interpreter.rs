@@ -151,6 +151,14 @@ impl expr::Visitor<Result<Value>> for Interpreter {
         self.env.borrow().get(name)
     }
 
+    fn visit_array(&mut self, elements: &[Expr]) -> Result<Value> {
+        let values = elements
+            .iter()
+            .map(|expr| expr.accept(self))
+            .collect::<Result<Vec<Value>>>()?;
+        Ok(Value::Array(values))
+    }
+
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> Result<Value> {
         match op {
             BinaryOp::LogicalAnd => {
@@ -195,6 +203,58 @@ impl expr::Visitor<Result<Value>> for Interpreter {
         let value = value.accept(self)?;
         self.env.borrow_mut().set(name, value.clone())?;
         Ok(value)
+    }
+
+    fn visit_index(&mut self, array: &Expr, index: &Expr) -> Result<Value> {
+        let array_value = array.accept(self)?;
+        let index_value = index.accept(self)?;
+
+        match (array_value, index_value) {
+            (Value::Array(arr), Value::Number(idx)) => {
+                let idx = idx as usize;
+                if idx < arr.len() {
+                    Ok(arr[idx].clone())
+                } else {
+                    Err(Error::runtime(format!("Array index {} out of bounds (length: {})", idx, arr.len())))
+                }
+            }
+            (Value::Array(_), _) => {
+                Err(Error::runtime("Array index must be a number".to_string()))
+            }
+            _ => {
+                Err(Error::runtime("Cannot index non-array value".to_string()))
+            }
+        }
+    }
+
+    fn visit_index_assign(&mut self, array: &Expr, index: &Expr, value: &Expr) -> Result<Value> {
+        let index_value = index.accept(self)?;
+        let new_value = value.accept(self)?;
+
+        match index_value {
+            Value::Number(idx) => {
+                let idx = idx as usize;
+                match array {
+                    Expr::Variable(name) => {
+                        let mut array_value = self.env.borrow().get(name)?;
+                        match &mut array_value {
+                            Value::Array(ref mut arr) => {
+                                if idx < arr.len() {
+                                    arr[idx] = new_value.clone();
+                                    self.env.borrow_mut().set(name, array_value)?;
+                                    Ok(new_value)
+                                } else {
+                                    Err(Error::runtime(format!("Array index {} out of bounds (length: {})", idx, arr.len())))
+                                }
+                            }
+                            _ => Err(Error::runtime("Cannot index assign to non-array value".to_string()))
+                        }
+                    }
+                    _ => Err(Error::runtime("Can only assign to array variables".to_string()))
+                }
+            }
+            _ => Err(Error::runtime("Array index must be a number".to_string()))
+        }
     }
 
     fn visit_call(&mut self, callee: &Expr, arguments: &[Expr]) -> Result<Value> {

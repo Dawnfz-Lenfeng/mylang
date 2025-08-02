@@ -11,6 +11,7 @@ pub enum Expr {
     String(String),
     Boolean(bool),
     Variable(String),
+    Array(Vec<Expr>),
 
     // Expressions
     Binary {
@@ -25,6 +26,15 @@ pub enum Expr {
     Assign {
         name: String,
         value: Box<Expr>,
+    },
+    IndexAssign {
+        array: Box<Expr>,
+        index: Box<Expr>,
+        value: Box<Expr>,
+    },
+    Index {
+        array: Box<Expr>,
+        index: Box<Expr>,
     },
     Call {
         callee: Box<Expr>,
@@ -125,9 +135,12 @@ pub trait Visitor<T> {
     fn visit_string(&mut self, value: &str) -> T;
     fn visit_boolean(&mut self, value: bool) -> T;
     fn visit_identifier(&mut self, name: &str) -> T;
+    fn visit_array(&mut self, elements: &[Expr]) -> T;
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> T;
     fn visit_unary(&mut self, op: &UnaryOp, operand: &Expr) -> T;
     fn visit_assign(&mut self, name: &str, value: &Expr) -> T;
+    fn visit_index_assign(&mut self, array: &Expr, index: &Expr, value: &Expr) -> T;
+    fn visit_index(&mut self, array: &Expr, index: &Expr) -> T;
     fn visit_call(&mut self, callee: &Expr, arguments: &[Expr]) -> T;
 }
 
@@ -138,6 +151,7 @@ impl Expr {
             Expr::String(s) => visitor.visit_string(s),
             Expr::Boolean(b) => visitor.visit_boolean(*b),
             Expr::Variable(name) => visitor.visit_identifier(name),
+            Expr::Array(elements) => visitor.visit_array(elements),
             Expr::Binary {
                 left,
                 operator,
@@ -145,6 +159,12 @@ impl Expr {
             } => visitor.visit_binary(left, operator, right),
             Expr::Unary { operator, operand } => visitor.visit_unary(operator, operand),
             Expr::Assign { name, value } => visitor.visit_assign(name, value),
+            Expr::IndexAssign {
+                array,
+                index,
+                value,
+            } => visitor.visit_index_assign(array, index, value),
+            Expr::Index { array, index } => visitor.visit_index(array, index),
             Expr::Call { callee, arguments } => visitor.visit_call(callee, arguments),
         }
     }

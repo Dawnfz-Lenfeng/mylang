@@ -272,6 +272,28 @@ mod file_tests {
         assert_eq!(output, expected);
     }
 
+    #[test]
+    fn test_array_functionality() {
+        let output = run_myl_file("arrays.myl").unwrap();
+        let expected = concat!(
+            "Numbers array: [1, 2, 3, 4, 5]\n",
+            "Mixed array: [42, hello, true, [1, 2]]\n",
+            "Empty array: []\n",
+            "First number: 1\n",
+            "Last number: 5\n",
+            "Mixed second element: hello\n",
+            "After changing first element: [100, 2, 3, 4, 5]\n",
+            "After replacing nested array: [42, hello, true, replaced nested array]\n",
+            "Calculated array: [30, 200, -10]\n",
+            "After numbers[1] += 5: [100, 7, 3, 4, 5]\n",
+            "After numbers[2] *= 3: [100, 7, 9, 4, 5]\n",
+            "Matrix: [[1, 2], [3, 4], [5, 6]]\n",
+            "Matrix[1][0]: 3\n",
+            "Sum of test_array: 60\n"
+        );
+        assert_eq!(output, expected);
+    }
+
     // Error handling tests
     #[test]
     fn test_undefined_variable_error() {
@@ -292,5 +314,23 @@ mod file_tests {
     fn test_function_not_found_error() {
         let result = run_myl_file("error_function_not_found.myl");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_bounds_error() {
+        let result = run_myl_file("error_array_bounds.myl");
+        assert!(result.is_err());
+        if let Err(error) = result {
+            assert!(error.message.contains("out of bounds") || error.message.contains("index"));
+        }
+    }
+
+    #[test]
+    fn test_index_non_array_error() {
+        let result = run_myl_file("error_index_non_array.myl");
+        assert!(result.is_err());
+        if let Err(error) = result {
+            assert!(error.message.contains("Cannot index") || error.message.contains("non-array"));
+        }
     }
 }
