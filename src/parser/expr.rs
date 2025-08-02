@@ -12,6 +12,7 @@ pub enum Expr {
     Boolean(bool),
     Variable(String),
     Array(Vec<Expr>),
+    Nil,
 
     // Expressions
     Binary {
@@ -134,6 +135,7 @@ pub trait Visitor<T> {
     fn visit_number(&mut self, value: f64) -> T;
     fn visit_string(&mut self, value: &str) -> T;
     fn visit_boolean(&mut self, value: bool) -> T;
+    fn visit_nil(&mut self) -> T;
     fn visit_identifier(&mut self, name: &str) -> T;
     fn visit_array(&mut self, elements: &[Expr]) -> T;
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> T;
@@ -150,6 +152,7 @@ impl Expr {
             Expr::Number(n) => visitor.visit_number(*n),
             Expr::String(s) => visitor.visit_string(s),
             Expr::Boolean(b) => visitor.visit_boolean(*b),
+            Expr::Nil => visitor.visit_nil(),
             Expr::Variable(name) => visitor.visit_identifier(name),
             Expr::Array(elements) => visitor.visit_array(elements),
             Expr::Binary {

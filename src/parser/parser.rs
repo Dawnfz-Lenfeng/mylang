@@ -371,6 +371,7 @@ impl Parser {
             TokenType::String(s) => Ok(Expr::String(s.clone())),
             TokenType::Boolean(b) => Ok(Expr::Boolean(*b)),
             TokenType::Identifier(name) => Ok(Expr::Variable(name.clone())),
+            TokenType::Nil => Ok(Expr::Nil),
             TokenType::LeftParen => {
                 let expr = self.expr()?;
                 self.consume(TokenType::RightParen, "expected ')' after expression")?;

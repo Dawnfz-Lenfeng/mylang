@@ -203,6 +203,7 @@ impl Lexer {
             "while" => TokenType::While,
             "for" => TokenType::For,
             "return" => TokenType::Return,
+            "nil" => TokenType::Nil,
             "true" => TokenType::Boolean(true),
             "false" => TokenType::Boolean(false),
             "and" => TokenType::And,

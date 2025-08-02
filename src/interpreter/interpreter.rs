@@ -147,6 +147,10 @@ impl expr::Visitor<Result<Value>> for Interpreter {
         Ok(Value::Boolean(value))
     }
 
+    fn visit_nil(&mut self) -> Result<Value> {
+        Ok(Value::Nil)
+    }
+
     fn visit_identifier(&mut self, name: &str) -> Result<Value> {
         self.env.borrow().get(name)
     }

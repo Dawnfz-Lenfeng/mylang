@@ -7,6 +7,7 @@ pub enum TokenType {
     String(String),
     Boolean(bool),
     Identifier(String),
+    Nil,
 
     // Keywords
     Let,

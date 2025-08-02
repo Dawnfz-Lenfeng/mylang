@@ -6,6 +6,7 @@ pub type BuiltinFn = fn(&[Value]) -> Result<Value>;
 pub const BUILTIN_FUNCTIONS: &[(&str, BuiltinFn)] = &[
     ("len", builtin_len as BuiltinFn),
     ("type", builtin_type as BuiltinFn),
+    ("clock", builtin_clock as BuiltinFn),
 ];
 
 /// Built-in function: len(value) -> number
@@ -39,4 +40,21 @@ fn builtin_type(args: &[Value]) -> Result<Value> {
     }
 
     Ok(Value::String(args[0].type_name().to_string()))
+}
+
+/// Built-in function: clock() -> number
+/// Returns the current time in seconds since the UNIX epoch
+pub fn builtin_clock(args: &[Value]) -> Result<Value> {
+    if args.len() != 0 {
+        return Err(Error::runtime(format!(
+            "clock() takes no arguments ({} given)",
+            args.len()
+        )));
+    }
+    Ok(Value::Number(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64(),
+    ))
 }
