@@ -11,16 +11,25 @@ use crate::{
         BinaryOp, UnaryOp,
     },
 };
-use std::rc::Rc;
+use std::{io::Write, rc::Rc};
 
 pub struct Interpreter {
     env: EnvRef,
+    output: Box<dyn Write>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Self {
             env: Environment::new_global(),
+            output: Box::new(std::io::stdout()),
+        }
+    }
+
+    pub fn with_output(output: Box<dyn Write>) -> Self {
+        Self {
+            env: Environment::new_global(),
+            output,
         }
     }
 
@@ -54,7 +63,8 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
             .collect::<Result<Vec<_>>>()?
             .join(" ");
 
-        println!("{output}");
+        writeln!(self.output, "{output}")
+            .map_err(|e| RuntimeControl::Error(Error::io(e.to_string())))?;
         Ok(())
     }
 

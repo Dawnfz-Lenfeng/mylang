@@ -4,9 +4,9 @@ use crate::{
     parser::Stmt,
 };
 use std::{
+    cmp::Ordering,
     fmt,
     ops::{Add, Div, Mul, Neg, Sub},
-    cmp::Ordering,
     rc::Rc,
 };
 
@@ -161,7 +161,9 @@ impl Neg for Value {
         let self_type = self.type_name();
         match self {
             Value::Number(n) => Ok(Value::Number(-n)),
-            _ => Err(Error::runtime(format!("bad operand type for unary -: '{self_type}'"))),
+            _ => Err(Error::runtime(format!(
+                "bad operand type for unary -: '{self_type}'"
+            ))),
         }
     }
 }
@@ -170,7 +172,7 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Number(n) => write!(f, "{}", n),
-            Value::String(s) => write!(f, "'{}'", s),
+            Value::String(s) => write!(f, "{}", s),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Array(arr) => {
                 write!(f, "[")?;

@@ -18,7 +18,7 @@ pub fn run_file(filename: &str) {
         Ok(source) => match run(source, &mut interpreter) {
             Ok(_) => (),
             Err(error) => {
-                eprintln!("{error}");
+                eprintln!("{}", error.in_file(filename.to_string()));
             }
         },
         Err(error) => {
