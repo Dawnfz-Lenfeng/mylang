@@ -152,21 +152,42 @@ impl expr::Visitor<Result<Value>> for Interpreter {
     }
 
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> Result<Value> {
-        let left = left.accept(self)?;
-        let right = right.accept(self)?;
         match op {
-            BinaryOp::Add => left + right,
-            BinaryOp::Subtract => left - right,
-            BinaryOp::Multiply => left * right,
-            BinaryOp::Divide => left / right,
-            BinaryOp::Equal => Ok(Value::Boolean(left == right)),
-            BinaryOp::NotEqual => Ok(Value::Boolean(left != right)),
-            BinaryOp::LessThan => Ok(Value::Boolean(left < right)),
-            BinaryOp::LessEqual => Ok(Value::Boolean(left <= right)),
-            BinaryOp::GreaterThan => Ok(Value::Boolean(left > right)),
-            BinaryOp::GreaterEqual => Ok(Value::Boolean(left >= right)),
-            BinaryOp::LogicalAnd => Ok(Value::Boolean(left.is_truthy() && right.is_truthy())),
-            BinaryOp::LogicalOr => Ok(Value::Boolean(left.is_truthy() || right.is_truthy())),
+            BinaryOp::LogicalAnd => {
+                let left = left.accept(self)?;
+                if !left.is_truthy() {
+                    Ok(Value::Boolean(false))
+                } else {
+                    let right = right.accept(self)?;
+                    Ok(Value::Boolean(right.is_truthy()))
+                }
+            }
+            BinaryOp::LogicalOr => {
+                let left = left.accept(self)?;
+                if left.is_truthy() {
+                    Ok(Value::Boolean(true))
+                } else {
+                    let right = right.accept(self)?;
+                    Ok(Value::Boolean(right.is_truthy()))
+                }
+            }
+            _ => {
+                let left = left.accept(self)?;
+                let right = right.accept(self)?;
+                match op {
+                    BinaryOp::Add => left + right,
+                    BinaryOp::Subtract => left - right,
+                    BinaryOp::Multiply => left * right,
+                    BinaryOp::Divide => left / right,
+                    BinaryOp::Equal => Ok(Value::Boolean(left == right)),
+                    BinaryOp::NotEqual => Ok(Value::Boolean(left != right)),
+                    BinaryOp::LessThan => Ok(Value::Boolean(left < right)),
+                    BinaryOp::LessEqual => Ok(Value::Boolean(left <= right)),
+                    BinaryOp::GreaterThan => Ok(Value::Boolean(left > right)),
+                    BinaryOp::GreaterEqual => Ok(Value::Boolean(left >= right)),
+                    _ => unreachable!(),
+                }
+            }
         }
     }
 

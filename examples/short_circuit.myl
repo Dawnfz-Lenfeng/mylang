@@ -1,0 +1,62 @@
+// Short circuit evaluation tests
+let call_count = 0;
+
+fn side_effect(msg) {
+    call_count = call_count + 1;
+    print "Side effect called:", msg, "Count:", call_count;
+    return true;
+}
+
+fn false_side_effect(msg) {
+    call_count = call_count + 1;
+    print "False side effect called:", msg, "Count:", call_count;
+    return false;
+}
+
+print "=== Testing AND short circuit ===";
+
+// Test 1: false AND anything - should short circuit
+call_count = 0;
+let result1 = false and side_effect("should not be called");
+print "Result1:", result1, "Call count:", call_count;
+
+// Test 2: true AND something - should not short circuit
+call_count = 0;
+let result2 = true and side_effect("should be called");
+print "Result2:", result2, "Call count:", call_count;
+
+print "=== Testing OR short circuit ===";
+
+// Test 3: true OR anything - should short circuit
+call_count = 0;
+let result3 = true or side_effect("should not be called");
+print "Result3:", result3, "Call count:", call_count;
+
+// Test 4: false OR something - should not short circuit
+call_count = 0;
+let result4 = false or side_effect("should be called");
+print "Result4:", result4, "Call count:", call_count;
+
+print "=== Complex short circuit tests ===";
+
+// Test 5: Chain of AND operations
+call_count = 0;
+let result5 = true and false_side_effect("first") and side_effect("should not be called");
+print "Result5:", result5, "Call count:", call_count;
+
+// Test 6: Chain of OR operations
+call_count = 0;
+let result6 = false or side_effect("first") or false_side_effect("should not be called");
+print "Result6:", result6, "Call count:", call_count;
+
+print "=== Variable assignment in short circuit ===";
+
+// Test 7: Assignment in short-circuited expression
+let assigned = false;
+let result7 = false and (assigned = true);
+print "Result7:", result7, "Assigned:", assigned;
+
+// Test 8: Assignment in short-circuited expression  
+assigned = false;
+let result8 = true or (assigned = true);
+print "Result8:", result8, "Assigned:", assigned;

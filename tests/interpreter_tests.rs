@@ -3,7 +3,6 @@ use mylang::{
 };
 use std::{cell::RefCell, fs, io::Write, rc::Rc};
 
-// 用于测试的输出捕获器
 struct OutputCapture {
     buffer: Rc<RefCell<Vec<u8>>>,
 }
@@ -229,6 +228,30 @@ mod file_tests {
             "Return 1: early return\n",
             "After if statement\n",
             "Return 2: second return\n"
+        );
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_short_circuit_evaluation() {
+        let output = run_myl_file("short_circuit.myl").unwrap();
+        let expected = concat!(
+            "=== Testing AND short circuit ===\n",
+            "Result1: false Call count: 0\n",
+            "Side effect called: should be called Count: 1\n",
+            "Result2: true Call count: 1\n",
+            "=== Testing OR short circuit ===\n",
+            "Result3: true Call count: 0\n",
+            "Side effect called: should be called Count: 1\n",
+            "Result4: true Call count: 1\n",
+            "=== Complex short circuit tests ===\n",
+            "False side effect called: first Count: 1\n",
+            "Result5: false Call count: 1\n",
+            "Side effect called: first Count: 1\n",
+            "Result6: true Call count: 1\n",
+            "=== Variable assignment in short circuit ===\n",
+            "Result7: false Assigned: false\n",
+            "Result8: true Assigned: false\n"
         );
         assert_eq!(output, expected);
     }
