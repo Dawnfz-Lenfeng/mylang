@@ -1,0 +1,30 @@
+// Function definitions and calls
+fn greet(name) {
+    print "Hello,", name;
+}
+
+fn add(a, b) {
+    return a + b;
+}
+
+fn multiply(x, y) {
+    let result = x * y;
+    print "Multiplying", x, "and", y;
+    return result;
+}
+
+// Function calls
+greet("World");
+let sum = add(5, 3);
+print "Sum:", sum;
+
+let product = multiply(4, 6);
+print "Product:", product;
+
+// Function without return value
+fn no_return() {
+    print "This function returns nil";
+}
+
+let nil_result = no_return();
+print "Result:", nil_result;

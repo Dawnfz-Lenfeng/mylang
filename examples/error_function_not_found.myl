@@ -1,0 +1,3 @@
+// This file contains a function not found error
+print "Before error";
+unknown_function();  // This should cause an error

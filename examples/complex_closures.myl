@@ -1,0 +1,46 @@
+// Complex closure scenarios
+fn counter_factory(start) {
+    let count = start;
+    
+    fn increment() {
+        count = count + 1;
+        return count;
+    }
+    
+    fn decrement() {
+        count = count - 1;
+        return count;
+    }
+    
+    fn get_count() {
+        return count;
+    }
+    
+    return increment;
+}
+
+// Test multiple counters
+let counter1 = counter_factory(0);
+let counter2 = counter_factory(100);
+
+print "Counter1:", counter1();
+print "Counter1:", counter1();
+print "Counter2:", counter2();
+print "Counter1:", counter1();
+print "Counter2:", counter2();
+
+// Nested closure
+fn outer(x) {
+    fn middle(y) {
+        fn inner(z) {
+            print "Values:", x, y, z;
+            return x + y + z;
+        }
+        return inner;
+    }
+    return middle;
+}
+
+let nested = outer(1)(2);
+let result = nested(3);
+print "Nested result:", result;

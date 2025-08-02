@@ -1,0 +1,30 @@
+// If-else statements
+let x = 10;
+
+if x > 5 {
+    print "x is greater than 5";
+} else {
+    print "x is not greater than 5";
+}
+
+// Nested conditionals
+let y = 15;
+if y > 10 {
+    if y < 20 {
+        print "y is between 10 and 20";
+    } else {
+        print "y is 20 or greater";
+    }
+} else {
+    print "y is 10 or less";
+}
+
+// Boolean operations
+let flag = true;
+if flag and x > 0 {
+    print "Both conditions are true";
+}
+
+if flag or x < 0 {
+    print "At least one condition is true";
+}

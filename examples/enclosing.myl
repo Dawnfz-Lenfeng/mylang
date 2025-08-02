@@ -1,0 +1,16 @@
+fn wrapper() {
+    let a = 0;
+
+    fn inner() {
+        print a;
+        a = a + 1;
+    }
+
+    return inner;
+}
+
+
+
+let increase = wrapper();
+increase();
+increase();

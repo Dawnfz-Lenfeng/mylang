@@ -1,0 +1,12 @@
+// Basic arithmetic operations
+let a = 10;
+let b = 3;
+
+print "Addition:", a + b;
+print "Subtraction:", a - b;
+print "Multiplication:", a * b;
+print "Division:", a / b;
+
+// Operator precedence
+print "Precedence test:", 2 + 3 * 4;
+print "Parentheses:", (2 + 3) * 4;

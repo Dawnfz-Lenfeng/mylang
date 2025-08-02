@@ -1,0 +1,4 @@
+// This file contains a type mismatch error
+let text = "hello";
+let number = 42;
+print text + number;  // This should cause a type error

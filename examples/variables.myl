@@ -1,0 +1,29 @@
+// Variable declarations and assignments
+let num = 42;
+let text = "Hello";
+let flag = true;
+
+print "Number:", num;
+print "Text:", text;
+print "Boolean:", flag;
+
+// Variable reassignment
+num = 100;
+text = "World";
+flag = false;
+
+print "Updated number:", num;
+print "Updated text:", text;
+print "Updated boolean:", flag;
+
+// Block scoping
+{
+    let local_var = "I'm local";
+    print "Inside block:", local_var;
+    
+    // Shadow outer variable
+    let num = 999;
+    print "Shadowed num:", num;
+}
+
+print "Outside block num:", num;

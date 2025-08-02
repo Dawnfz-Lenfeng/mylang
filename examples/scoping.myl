@@ -1,0 +1,21 @@
+// Variable scoping test
+let global_var = "global";
+
+fn outer_function() {
+    let outer_var = "outer";
+    print "In outer function:", outer_var;
+    print "Can access global:", global_var;
+    
+    fn inner_function() {
+        let inner_var = "inner";
+        print "In inner function:", inner_var;
+        print "Can access outer:", outer_var;
+        print "Can access global:", global_var;
+    }
+    
+    inner_function();
+    print "Back in outer function";
+}
+
+outer_function();
+print "Back in global scope:", global_var;

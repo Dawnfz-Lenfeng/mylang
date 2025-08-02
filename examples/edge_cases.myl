@@ -1,0 +1,59 @@
+// Edge cases and boundary conditions
+
+// Empty function
+fn empty_function() {
+}
+
+let result = empty_function();
+print "Empty function result:", result;
+
+// Zero and negative numbers
+let zero = 0;
+let negative = -42;
+print "Zero:", zero;
+print "Negative:", negative;
+
+// Boolean operations
+print "True and true:", true and true;
+print "True and false:", true and false;
+print "False or true:", false or true;
+print "Not true:", !true;
+print "Not false:", !false;
+
+// String operations
+let empty_string = "";
+let space = " ";
+print "Empty string:", empty_string;
+print "Space:", space;
+
+// Nested blocks
+{
+    let a = 1;
+    {
+        let b = 2;
+        {
+            let c = 3;
+            print "Nested values:", a, b, c;
+        }
+        print "After inner block:", a, b;
+    }
+    print "After middle block:", a;
+}
+
+// Multiple returns in function
+fn multiple_returns(condition) {
+    if condition {
+        return "early return";
+    }
+    
+    print "After if statement";
+    
+    if !condition {
+        return "second return";
+    }
+    
+    return "default return";
+}
+
+print "Return 1:", multiple_returns(true);
+print "Return 2:", multiple_returns(false);
