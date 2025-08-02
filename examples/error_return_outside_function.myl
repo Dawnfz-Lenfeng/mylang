@@ -1,0 +1,3 @@
+// This should produce an error: return outside function
+print "This will error";
+return 42;

@@ -10,11 +10,18 @@ use crate::{
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    loop_depth: usize, // Track if we're inside a loop
+    function_depth: usize, // Track if we're inside a function
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self { 
+            tokens, 
+            current: 0,
+            loop_depth: 0,
+            function_depth: 0,
+        }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Stmt>> {
@@ -63,7 +70,10 @@ impl Parser {
         let params = self.parameters()?;
         self.consume(TokenType::RightParen, "expected ')' after parameters")?;
 
+        // Enter function scope
+        self.function_depth += 1;
         let body = Box::new(self.block_stmt()?);
+        self.function_depth -= 1;
 
         Ok(Stmt::FuncDecl { name, params, body })
     }
@@ -95,7 +105,12 @@ impl Parser {
     fn while_stmt(&mut self) -> Result<Stmt> {
         self.advance();
         let condition = self.expr()?;
+        
+        // Enter loop scope
+        self.loop_depth += 1;
         let body = Box::new(self.block_stmt()?);
+        self.loop_depth -= 1;
+        
         Ok(Stmt::While { condition, body })
     }
 
@@ -120,7 +135,11 @@ impl Parser {
             .then(|| self.expr())
             .transpose()?;
 
+        // Enter loop scope
+        self.loop_depth += 1;
         let body = self.block_stmt()?;
+        self.loop_depth -= 1;
+        
         let body_with_inc = match increment {
             Some(inc) => Stmt::Block(vec![body, Stmt::Expression(inc)]),
             None => body,
@@ -138,6 +157,13 @@ impl Parser {
     }
 
     fn return_stmt(&mut self) -> Result<Stmt> {
+        if self.function_depth == 0 {
+            let return_token = self.peek();
+            return Err(Error::syntax(
+                "'return' statement must be inside a function".to_string(),
+                return_token.location,
+            ));
+        }
         self.advance();
         let value = (!self.check(&TokenType::Semicolon))
             .then(|| self.expr())
@@ -147,12 +173,26 @@ impl Parser {
     }
 
     fn break_stmt(&mut self) -> Result<Stmt> {
+        if self.loop_depth == 0 {
+            let break_token = self.peek();
+            return Err(Error::syntax(
+                "'break' statement must be inside a loop".to_string(),
+                break_token.location,
+            ));
+        }
         self.advance();
         self.consume_semicolon()?;
         Ok(Stmt::Break)
     }
 
     fn continue_stmt(&mut self) -> Result<Stmt> {
+        if self.loop_depth == 0 {
+            let continue_token = self.peek();
+            return Err(Error::syntax(
+                "'continue' statement must be inside a loop".to_string(),
+                continue_token.location,
+            ));
+        }
         self.advance();
         self.consume_semicolon()?;
         Ok(Stmt::Continue)

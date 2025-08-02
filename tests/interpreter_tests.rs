@@ -440,7 +440,7 @@ mod file_tests {
         let result = run_myl_file("error_break_outside_loop.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("break") && error.message.contains("outside"));
+            assert!(error.message.contains("'break' statement must be inside a loop"));
         }
     }
 
@@ -449,7 +449,7 @@ mod file_tests {
         let result = run_myl_file("error_continue_outside_loop.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("continue") && error.message.contains("outside"));
+            assert!(error.message.contains("'continue' statement must be inside a loop"));
         }
     }
 
@@ -458,7 +458,16 @@ mod file_tests {
         let result = run_myl_file("error_break_in_function.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("break") && error.message.contains("outside"));
+            assert!(error.message.contains("'break' statement must be inside a loop"));
+        }
+    }
+
+    #[test]
+    fn test_return_outside_function_error() {
+        let result = run_myl_file("error_return_outside_function.myl");
+        assert!(result.is_err());
+        if let Err(error) = result {
+            assert!(error.message.contains("'return' statement must be inside a function"));
         }
     }
 

@@ -45,7 +45,7 @@ pub fn run_prompt() {
         match run(input.to_string(), &mut interpreter) {
             Ok(_) => (),
             Err(error) => {
-                eprintln!("{}", error);
+                eprintln!("{}", error.in_file("<stdin>".to_string()));
             }
         }
     }
