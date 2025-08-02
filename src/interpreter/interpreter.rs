@@ -215,15 +215,15 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 if idx < arr.len() {
                     Ok(arr[idx].clone())
                 } else {
-                    Err(Error::runtime(format!("Array index {} out of bounds (length: {})", idx, arr.len())))
+                    Err(Error::runtime(format!(
+                        "Array index {} out of bounds (length: {})",
+                        idx,
+                        arr.len()
+                    )))
                 }
             }
-            (Value::Array(_), _) => {
-                Err(Error::runtime("Array index must be a number".to_string()))
-            }
-            _ => {
-                Err(Error::runtime("Cannot index non-array value".to_string()))
-            }
+            (Value::Array(_), _) => Err(Error::runtime("Array index must be a number".to_string())),
+            _ => Err(Error::runtime("Cannot index non-array value".to_string())),
         }
     }
 
@@ -244,16 +244,24 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                                     self.env.borrow_mut().set(name, array_value)?;
                                     Ok(new_value)
                                 } else {
-                                    Err(Error::runtime(format!("Array index {} out of bounds (length: {})", idx, arr.len())))
+                                    Err(Error::runtime(format!(
+                                        "Array index {} out of bounds (length: {})",
+                                        idx,
+                                        arr.len()
+                                    )))
                                 }
                             }
-                            _ => Err(Error::runtime("Cannot index assign to non-array value".to_string()))
+                            _ => Err(Error::runtime(
+                                "Cannot index assign to non-array value".to_string(),
+                            )),
                         }
                     }
-                    _ => Err(Error::runtime("Can only assign to array variables".to_string()))
+                    _ => Err(Error::runtime(
+                        "Can only assign to array variables".to_string(),
+                    )),
                 }
             }
-            _ => Err(Error::runtime("Array index must be a number".to_string()))
+            _ => Err(Error::runtime("Array index must be a number".to_string())),
         }
     }
 
@@ -286,6 +294,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                     Err(RuntimeControl::Error(e)) => Err(e),
                 }
             }
+            Value::BuiltinFunction { function, .. } => function(&arguments),
             _ => Err(Error::runtime(format!(
                 "can only call functions. Got {callee}"
             ))),

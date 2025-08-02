@@ -294,6 +294,27 @@ mod file_tests {
         assert_eq!(output, expected);
     }
 
+    #[test]
+    fn test_builtin_functions() {
+        let output = run_myl_file("builtins.myl").expect("Failed to run builtins.myl");
+        let expected = concat!(
+            "Testing len() function:\n",
+            "len([1, 2, 3, 4, 5]) = 5\n",
+            "len('hello') = 5\n",
+            "len([]) = 0\n",
+            "len('') = 0\n",
+            "Testing type() function:\n",
+            "type(42) = number\n",
+            "type('hello') = string\n",
+            "type(true) = boolean\n",
+            "type([1, 2, 3]) = array\n",
+            "type(nil) = nil\n",
+            "type(test_func) = function\n",
+            "type(len) = builtin_function\n"
+        );
+        assert_eq!(output, expected);
+    }
+
     // Error handling tests
     #[test]
     fn test_undefined_variable_error() {

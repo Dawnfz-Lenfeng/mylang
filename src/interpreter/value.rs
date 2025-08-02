@@ -1,4 +1,4 @@
-use super::env::EnvRef;
+use super::{buildin::BuiltinFn, env::EnvRef};
 use crate::{
     error::{Error, Result},
     parser::Stmt,
@@ -22,6 +22,10 @@ pub enum Value {
         body: Stmt,
         closure: EnvRef,
     },
+    BuiltinFunction {
+        name: String,
+        function: BuiltinFn,
+    },
     Nil,
 }
 
@@ -34,6 +38,7 @@ impl Value {
             Value::String(s) => !s.is_empty(),
             Value::Array(arr) => !arr.is_empty(),
             Value::Function { .. } => true,
+            Value::BuiltinFunction { .. } => true,
         }
     }
 
@@ -44,6 +49,7 @@ impl Value {
             Value::Boolean(_) => "boolean",
             Value::Array(_) => "array",
             Value::Function { .. } => "function",
+            Value::BuiltinFunction { .. } => "builtin_function",
             Value::Nil => "nil",
         }
     }
@@ -136,6 +142,10 @@ impl PartialEq for Value {
                     ..
                 },
             ) => Rc::ptr_eq(a_closure, b_closure) && a_name == b_name,
+            (
+                Value::BuiltinFunction { name: a_name, .. },
+                Value::BuiltinFunction { name: b_name, .. },
+            ) => a_name == b_name,
             (Value::Nil, Value::Nil) => true,
             _ => false,
         }
@@ -186,6 +196,9 @@ impl fmt::Display for Value {
             }
             Value::Function { name, params, .. } => {
                 write!(f, "<function {}({})>", name, params.join(", "))
+            }
+            Value::BuiltinFunction { name, .. } => {
+                write!(f, "<builtin function {}>", name)
             }
             Value::Nil => write!(f, "nil"),
         }

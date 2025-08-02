@@ -1,5 +1,6 @@
-pub mod control;
-pub mod env;
+mod buildin;
+mod control;
+mod env;
 pub mod interpreter;
 pub mod value;
 

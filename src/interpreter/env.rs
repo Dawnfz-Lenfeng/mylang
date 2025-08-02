@@ -1,4 +1,4 @@
-use super::value::Value;
+use super::{buildin::BUILTIN_FUNCTIONS, value::Value};
 use crate::error::{Error, Result};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
@@ -12,9 +12,19 @@ pub struct Environment {
 
 impl Environment {
     pub fn new_global() -> EnvRef {
+        let mut variables = HashMap::new();
+
+        for (name, func) in BUILTIN_FUNCTIONS {
+            let builtin_value = Value::BuiltinFunction {
+                name: name.to_string(),
+                function: *func,
+            };
+            variables.insert(name.to_string(), builtin_value);
+        }
+
         Rc::new(RefCell::new(Environment {
             enclosing: None,
-            variables: HashMap::new(),
+            variables,
         }))
     }
 

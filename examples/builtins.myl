@@ -1,0 +1,29 @@
+// Test built-in functions: len and type
+
+// Test len() function
+print "Testing len() function:";
+let arr = [1, 2, 3, 4, 5];
+print "len([1, 2, 3, 4, 5]) =", len(arr);
+
+let str = "hello";
+print "len('hello') =", len(str);
+
+let empty_arr = [];
+print "len([]) =", len(empty_arr);
+
+let empty_str = "";
+print "len('') =", len(empty_str);
+
+// Test type() function
+print "Testing type() function:";
+print "type(42) =", type(42);
+print "type('hello') =", type("hello");
+print "type(true) =", type(true);
+print "type([1, 2, 3]) =", type([1, 2, 3]);
+print "type(nil) =", type(nil);
+
+fn test_func(x) {
+    return "test";
+}
+print "type(test_func) =", type(test_func);
+print "type(len) =", type(len);

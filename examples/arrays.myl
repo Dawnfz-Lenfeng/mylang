@@ -44,7 +44,7 @@ print "Matrix[1][0]:", matrix[1][0];
 fn sum_array(arr) {
     let total = 0;
     let i = 0;
-    while i < 3 {  // Assuming length 3 for simplicity
+    while i < len(arr) {
         total += arr[i];
         i += 1;
     }
