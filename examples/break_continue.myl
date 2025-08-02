@@ -1,0 +1,58 @@
+// Basic break test
+print "Testing break:";
+let i = 0;
+while i < 10 {
+    if i == 3 {
+        break;
+    }
+    print "i =", i;
+    i = i + 1;
+}
+print "After while loop, i =", i;
+
+print "";
+
+// Basic continue test
+print "Testing continue:";
+let j = 0;
+while j < 5 {
+    j = j + 1;
+    if j == 3 {
+        continue;
+    }
+    print "j =", j;
+}
+
+print "";
+
+// Nested loops with break
+print "Testing nested break:";
+let x = 0;
+while x < 3 {
+    let y = 0;
+    while y < 3 {
+        if y == 1 {
+            break; // Only breaks inner loop
+        }
+        print "x =", x, "y =", y;
+        y = y + 1;
+    }
+    x = x + 1;
+}
+
+print "";
+
+// Nested loops with continue
+print "Testing nested continue:";
+let a = 0;
+while a < 3 {
+    let b = 0;
+    while b < 3 {
+        b = b + 1;
+        if b == 2 {
+            continue; // Only continues inner loop
+        }
+        print "a =", a, "b =", b;
+    }
+    a = a + 1;
+}

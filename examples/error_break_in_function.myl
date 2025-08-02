@@ -1,0 +1,7 @@
+// This should produce an error: break outside loop (even though it's in a function)
+fn test() {
+    print "Inside function";
+    break; // Error: break outside loop
+}
+
+test();

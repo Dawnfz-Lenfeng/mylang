@@ -1,0 +1,3 @@
+// This should produce an error: continue outside loop
+print "This will error";
+continue;

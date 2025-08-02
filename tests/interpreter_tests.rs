@@ -354,4 +354,111 @@ mod file_tests {
             assert!(error.message.contains("Cannot index") || error.message.contains("non-array"));
         }
     }
+
+    #[test]
+    fn test_break_continue_basic() {
+        let output = run_myl_file("break_continue.myl").unwrap();
+        let expected = concat!(
+            "Testing break:\n",
+            "i = 0\n",
+            "i = 1\n",
+            "i = 2\n",
+            "After while loop, i = 3\n",
+            "\n",
+            "Testing continue:\n",
+            "j = 1\n",
+            "j = 2\n",
+            "j = 4\n",
+            "j = 5\n",
+            "\n",
+            "Testing nested break:\n",
+            "x = 0 y = 0\n",
+            "x = 1 y = 0\n",
+            "x = 2 y = 0\n",
+            "\n",
+            "Testing nested continue:\n",
+            "a = 0 b = 1\n",
+            "a = 0 b = 3\n",
+            "a = 1 b = 1\n",
+            "a = 1 b = 3\n",
+            "a = 2 b = 1\n",
+            "a = 2 b = 3\n"
+        );
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_complex_break_continue() {
+        let output = run_myl_file("complex_break_continue.myl").unwrap();
+        let expected = concat!(
+            "=== Complex break/continue scenarios ===\n",
+            "Test 1: Multiple conditions\n",
+            "Processing 1\n",
+            "Skipping 2\n",
+            "Processing 3\n",
+            "Processing 4\n",
+            "Skipping 5 too\n",
+            "Processing 6\n",
+            "Processing 7\n",
+            "Breaking at 8\n",
+            "\n",
+            "Test 2: With function calls\n",
+            "Number: 1\n",
+            "Number: 2\n",
+            "Number: 4\n",
+            "Number: 5\n",
+            "Number: 7\n",
+            "\n",
+            "Test 3: Deeply nested\n",
+            "Outer loop: 1\n",
+            "Values: 1 1 1\n",
+            "Values: 1 1 2\n",
+            "Values: 1 1 3\n",
+            "Values: 1 3 1\n",
+            "Breaking inner at 1 3 2\n",
+            "Breaking middle at 1 3\n",
+            "Outer loop: 2\n",
+            "Values: 2 1 1\n",
+            "Values: 2 1 2\n",
+            "Values: 2 1 3\n",
+            "Values: 2 3 1\n",
+            "Breaking inner at 2 3 2\n",
+            "Breaking middle at 2 3\n",
+            "Outer loop: 3\n",
+            "Values: 3 1 1\n",
+            "Values: 3 1 2\n",
+            "Values: 3 1 3\n",
+            "Values: 3 3 1\n",
+            "Breaking inner at 3 3 2\n",
+            "Breaking middle at 3 3\n"
+        );
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_break_outside_loop_error() {
+        let result = run_myl_file("error_break_outside_loop.myl");
+        assert!(result.is_err());
+        if let Err(error) = result {
+            assert!(error.message.contains("break") && error.message.contains("outside"));
+        }
+    }
+
+    #[test]
+    fn test_continue_outside_loop_error() {
+        let result = run_myl_file("error_continue_outside_loop.myl");
+        assert!(result.is_err());
+        if let Err(error) = result {
+            assert!(error.message.contains("continue") && error.message.contains("outside"));
+        }
+    }
+
+    #[test]
+    fn test_break_in_function_error() {
+        let result = run_myl_file("error_break_in_function.myl");
+        assert!(result.is_err());
+        if let Err(error) = result {
+            assert!(error.message.contains("break") && error.message.contains("outside"));
+        }
+    }
 }

@@ -1,0 +1,90 @@
+// Complex scenarios with break and continue
+print "=== Complex break/continue scenarios ===";
+
+// Test 1: Multiple breaks and continues in same loop
+print "Test 1: Multiple conditions";
+let count = 0;
+while count < 10 {
+    count = count + 1;
+    
+    if count == 2 {
+        print "Skipping", count;
+        continue;
+    }
+    
+    if count == 5 {
+        print "Skipping", count, "too";
+        continue;
+    }
+    
+    if count == 8 {
+        print "Breaking at", count;
+        break;
+    }
+    
+    print "Processing", count;
+}
+
+print "";
+
+// Test 2: Break and continue with function calls
+print "Test 2: With function calls";
+
+fn should_skip(n) {
+    return n == 3 or n == 6;
+}
+
+fn should_break(n) {
+    return n > 7;
+}
+
+let num = 0;
+while num < 10 {
+    num = num + 1;
+    
+    if should_skip(num) {
+        continue;
+    }
+    
+    if should_break(num) {
+        break;
+    }
+    
+    print "Number:", num;
+}
+
+print "";
+
+// Test 3: Deeply nested with mixed break/continue
+print "Test 3: Deeply nested";
+let outer = 0;
+while outer < 3 {
+    outer = outer + 1;
+    print "Outer loop:", outer;
+    
+    let middle = 0;
+    while middle < 4 {
+        middle = middle + 1;
+        
+        if middle == 2 {
+            continue; // Skip middle == 2
+        }
+        
+        let inner = 0;
+        while inner < 3 {
+            inner = inner + 1;
+            
+            if inner == 2 and middle == 3 {
+                print "Breaking inner at", outer, middle, inner;
+                break;
+            }
+            
+            print "Values:", outer, middle, inner;
+        }
+        
+        if middle == 3 {
+            print "Breaking middle at", outer, middle;
+            break;
+        }
+    }
+}
