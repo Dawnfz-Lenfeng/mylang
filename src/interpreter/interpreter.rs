@@ -286,6 +286,13 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 let prev_env = Rc::clone(&self.env);
                 self.env = Environment::new_local(&closure);
 
+                if params.len() != arguments.len() {
+                    return Err(Error::runtime(format!(
+                        "Expected {} arguments, got {}",
+                        params.len(),
+                        arguments.len()
+                    )));
+                }
                 for (param, arg) in params.iter().zip(arguments.iter()) {
                     self.env.borrow_mut().define(param.clone(), arg.clone());
                 }

@@ -68,11 +68,11 @@ impl Lexer {
     }
 
     fn skip_block_comment(&mut self) -> Result<()> {
-        self.advance(); // 跳过 *
+        self.advance(); // skip *
 
         while let Some((ch, ..)) = self.consume_char() {
             if ch == '*' && self.peek() == Some('/') {
-                self.advance(); // 跳过 /
+                self.advance(); // skip /
                 return Ok(());
             }
         }
