@@ -31,7 +31,7 @@ mod lexer_tests {
 
     #[test]
     fn test_single_character_tokens() {
-        let input = "(){}[];,+-*/=<>!";
+        let input = "(){}[];,=+-*/<>!";
         let tokens = get_tokens(input);
         let expected_types = vec![
             TokenType::LeftParen,
@@ -42,11 +42,11 @@ mod lexer_tests {
             TokenType::RightBracket,
             TokenType::Semicolon,
             TokenType::Comma,
+            TokenType::Equal,
             TokenType::Plus,
             TokenType::Minus,
             TokenType::Star,
             TokenType::Slash,
-            TokenType::Equal,
             TokenType::LessThan,
             TokenType::GreaterThan,
             TokenType::Bang,
@@ -58,7 +58,7 @@ mod lexer_tests {
 
     #[test]
     fn test_two_character_tokens() {
-        let input = "== != <= >=";
+        let input = "== != <= >= += -= *= /=";
         let tokens = get_tokens(input);
 
         let expected_types = vec![
@@ -66,6 +66,10 @@ mod lexer_tests {
             TokenType::BangEqual,
             TokenType::LessEqual,
             TokenType::GreaterEqual,
+            TokenType::PlusEqual,
+            TokenType::MinusEqual,
+            TokenType::StarEqual,
+            TokenType::SlashEqual,
             TokenType::Eof,
         ];
 
@@ -182,11 +186,11 @@ mod lexer_tests {
     #[test]
     fn test_error_handling() {
         let test_cases = vec![
-            ("let x = @invalid", "Unexpected character: @"),
-            ("let x = #hash", "Unexpected character: #"),
-            ("let x = $dollar", "Unexpected character: $"),
-            ("let x = `backtick", "Unexpected character: `"),
-            ("let x = ~tilde", "Unexpected character: ~"),
+            ("let x = @invalid", "unexpected character: @"),
+            ("let x = #hash", "unexpected character: #"),
+            ("let x = $dollar", "unexpected character: $"),
+            ("let x = `backtick", "unexpected character: `"),
+            ("let x = ~tilde", "unexpected character: ~"),
         ];
 
         for (input, expected_error_part) in test_cases {
@@ -213,8 +217,8 @@ mod lexer_tests {
     #[test]
     fn test_unterminated_string_errors() {
         let test_cases = vec![
-            (r#""unterminated"#, "Unterminated string literal"),
-            (r#"'unterminated"#, "Unterminated string literal"),
+            (r#""unterminated"#, "unterminated string literal"),
+            (r#"'unterminated"#, "unterminated string literal"),
         ];
 
         for (input, expected_error_part) in test_cases {
@@ -240,9 +244,9 @@ mod lexer_tests {
     #[test]
     fn test_invalid_number_errors() {
         let test_cases = vec![
-            ("123.45.67", "Unexpected character"),
-            ("123..45", "Unexpected character"),
-            ("1.2.3.4", "Unexpected character"),
+            ("123.45.67", "unexpected character"),
+            ("123..45", "unexpected character"),
+            ("1.2.3.4", "unexpected character"),
         ];
 
         for (input, expected_error_part) in test_cases {
@@ -268,10 +272,10 @@ mod lexer_tests {
     #[test]
     fn test_unicode_and_special_characters() {
         let test_cases = vec![
-            ("let x = ü", "Unexpected character: ü"),
-            ("let x = 中文", "Unexpected character: 中"),
-            ("let x = 🚀", "Unexpected character: 🚀"),
-            ("let x = €", "Unexpected character: €"),
+            ("let x = ü", "unexpected character: ü"),
+            ("let x = 中文", "unexpected character: 中"),
+            ("let x = 🚀", "unexpected character: 🚀"),
+            ("let x = €", "unexpected character: €"),
         ];
 
         for (input, expected_error_part) in test_cases {
