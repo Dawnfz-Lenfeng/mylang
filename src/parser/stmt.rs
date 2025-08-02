@@ -26,6 +26,8 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+    Break,
+    Continue,
     Return {
         value: Option<Expr>,
     },
@@ -39,6 +41,8 @@ pub trait Visitor<T> {
     fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>) -> T;
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> T;
     fn visit_return(&mut self, value: Option<&Expr>) -> T;
+    fn visit_break(&mut self) -> T;
+    fn visit_continue(&mut self) -> T;
     fn visit_block(&mut self, statements: &[Stmt]) -> T;
 }
 
@@ -59,6 +63,8 @@ impl Stmt {
             } => visitor.visit_if(condition, then_branch, else_branch.as_deref()),
             Stmt::While { condition, body } => visitor.visit_while(condition, body),
             Stmt::Return { value } => visitor.visit_return(value.as_ref()),
+            Stmt::Break => visitor.visit_break(),
+            Stmt::Continue => visitor.visit_continue(),
         }
     }
 }

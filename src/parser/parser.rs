@@ -37,6 +37,8 @@ impl Parser {
             TokenType::Return => self.return_stmt(),
             TokenType::LeftBrace => self.block_stmt(),
             TokenType::Print => self.print_stmt(),
+            TokenType::Break => self.break_stmt(),
+            TokenType::Continue => self.continue_stmt(),
             _ => self.expr_stmt(),
         }
     }
@@ -135,6 +137,18 @@ impl Parser {
             .transpose()?;
         self.consume_semicolon()?;
         Ok(Stmt::Return { value })
+    }
+
+    fn break_stmt(&mut self) -> Result<Stmt> {
+        self.advance();
+        self.consume_semicolon()?;
+        Ok(Stmt::Break)
+    }
+
+    fn continue_stmt(&mut self) -> Result<Stmt> {
+        self.advance();
+        self.consume_semicolon()?;
+        Ok(Stmt::Continue)
     }
 
     fn block_stmt(&mut self) -> Result<Stmt> {

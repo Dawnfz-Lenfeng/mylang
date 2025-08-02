@@ -111,9 +111,22 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> InterpreterResult<()> {
         while condition.accept(self)?.is_truthy() {
-            body.accept(self)?;
+            match body.accept(self) {
+                Ok(_) => {}
+                Err(RuntimeControl::Break) => break,
+                Err(RuntimeControl::Continue) => {}
+                Err(e) => return Err(e.into()),
+            }
         }
         Ok(())
+    }
+
+    fn visit_break(&mut self) -> InterpreterResult<()> {
+        Err(RuntimeControl::Break)
+    }
+
+    fn visit_continue(&mut self) -> InterpreterResult<()> {
+        Err(RuntimeControl::Continue)
     }
 
     fn visit_return(&mut self, value: Option<&Expr>) -> InterpreterResult<()> {
@@ -302,7 +315,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 match result {
                     Ok(_) => Ok(Value::Nil),
                     Err(RuntimeControl::Return(value)) => Ok(value),
-                    Err(RuntimeControl::Error(e)) => Err(e),
+                    Err(e) => Err(e.into()),
                 }
             }
             Value::BuiltinFunction { function, .. } => function(&arguments),

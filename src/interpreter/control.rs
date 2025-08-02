@@ -7,12 +7,8 @@ pub type InterpreterResult<T> = Result<T, RuntimeControl>;
 pub enum RuntimeControl {
     Error(Error),
     Return(Value),
-}
-
-impl RuntimeControl {
-    pub fn is_return(&self) -> bool {
-        matches!(self, RuntimeControl::Return(_))
-    }
+    Break,
+    Continue,
 }
 
 impl From<Error> for RuntimeControl {
@@ -25,8 +21,14 @@ impl From<RuntimeControl> for Error {
     fn from(control: RuntimeControl) -> Self {
         match control {
             RuntimeControl::Error(error) => error,
-            RuntimeControl::Return(value) => {
-                Error::runtime(format!("Unexpected return: {}", value))
+            RuntimeControl::Return(_) => {
+                Error::runtime("'return' outside function".to_string())
+            }
+            RuntimeControl::Break => {
+                Error::runtime("'break' outside loop".to_string())
+            }
+            RuntimeControl::Continue => {
+                Error::runtime("'continue' outside loop".to_string())
             }
         }
     }

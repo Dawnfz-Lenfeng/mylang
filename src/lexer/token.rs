@@ -16,6 +16,8 @@ pub enum TokenType {
     Else,
     While,
     For,
+    Break,
+    Continue,
     Return,
     And,
     Or,
