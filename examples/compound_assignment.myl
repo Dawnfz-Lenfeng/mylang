@@ -1,0 +1,37 @@
+// Compound assignment operators test
+let x = 10;
+print "Initial x:", x;
+
+// Test +=
+x += 5;
+print "After x += 5:", x;
+
+// Test -=
+x -= 3;
+print "After x -= 3:", x;
+
+// Test *=
+x *= 2;
+print "After x *= 2:", x;
+
+// Test /=
+x /= 4;
+print "After x /= 4:", x;
+
+// Test with expressions
+let y = 100;
+y += x * 2;
+print "y += x * 2 (y was 100, x is 6):", y;
+
+// Test chaining (right associative)
+let a = 5;
+let b = 3;
+a += b += 2;  // Should be: a += (b += 2), so b becomes 5, then a becomes 10
+print "After a += b += 2:", "a =", a, "b =", b;
+
+// Test with different data types
+let count = 0;
+count += 1;
+count += 1;
+count += 1;
+print "Count after three increments:", count;

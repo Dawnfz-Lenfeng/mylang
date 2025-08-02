@@ -2,12 +2,12 @@
 let i = 0;
 while i < 5 {
     print "Count:", i;
-    i = i + 1;
+    i += 1;
 }
 
 print "for loop";
-for let x = 0; x < 3; x = x + 1 {
-    for let y = 0; y < 3; y = y + 1 {
+for let x = 0; x < 3; x += 1 {
+    for let y = 0; y < 3; y += 1 {
         print "Position:", x, y;
     }
 }
@@ -19,7 +19,7 @@ while x < 3 {
     let y = 0;
     while y < 3 {
         print "Position:", x, y;
-        y = y + 1;
+        y += 1;
     }
-    x = x + 1;
+    x += 1;
 }

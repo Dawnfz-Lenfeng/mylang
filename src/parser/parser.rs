@@ -166,13 +166,55 @@ impl Parser {
 
     fn assignment(&mut self) -> Result<Expr> {
         let mut expr = self.or()?;
-        if let Some(token) = self.try_consume(TokenType::Equal) {
+        if let Some(token) = self.try_consume_any(&[
+            TokenType::Equal,
+            TokenType::PlusEqual,
+            TokenType::MinusEqual,
+            TokenType::StarEqual,
+            TokenType::SlashEqual,
+        ]) {
             match expr {
                 Expr::Variable(name) => {
+                    let op_type = token.token_type.clone();
                     let value = self.assignment()?;
-                    expr = Expr::Assign {
-                        name,
-                        value: Box::new(value),
+                    expr = match op_type {
+                        TokenType::Equal => Expr::Assign {
+                            name,
+                            value: Box::new(value),
+                        },
+                        TokenType::PlusEqual => Expr::Assign {
+                            name: name.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Variable(name)),
+                                operator: BinaryOp::Add,
+                                right: Box::new(value),
+                            }),
+                        },
+                        TokenType::MinusEqual => Expr::Assign {
+                            name: name.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Variable(name)),
+                                operator: BinaryOp::Subtract,
+                                right: Box::new(value),
+                            }),
+                        },
+                        TokenType::StarEqual => Expr::Assign {
+                            name: name.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Variable(name)),
+                                operator: BinaryOp::Multiply,
+                                right: Box::new(value),
+                            }),
+                        },
+                        TokenType::SlashEqual => Expr::Assign {
+                            name: name.clone(),
+                            value: Box::new(Expr::Binary {
+                                left: Box::new(Expr::Variable(name)),
+                                operator: BinaryOp::Divide,
+                                right: Box::new(value),
+                            }),
+                        },
+                        _ => unreachable!(),
                     }
                 }
                 _ => {

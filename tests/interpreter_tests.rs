@@ -256,6 +256,22 @@ mod file_tests {
         assert_eq!(output, expected);
     }
 
+    #[test]
+    fn test_compound_assignment_operators() {
+        let output = run_myl_file("compound_assignment.myl").unwrap();
+        let expected = concat!(
+            "Initial x: 10\n",
+            "After x += 5: 15\n",
+            "After x -= 3: 12\n",
+            "After x *= 2: 24\n",
+            "After x /= 4: 6\n",
+            "y += x * 2 (y was 100, x is 6): 112\n",
+            "After a += b += 2: a = 10 b = 5\n",
+            "Count after three increments: 3\n"
+        );
+        assert_eq!(output, expected);
+    }
+
     // Error handling tests
     #[test]
     fn test_undefined_variable_error() {

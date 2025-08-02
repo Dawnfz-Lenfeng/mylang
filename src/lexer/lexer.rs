@@ -74,10 +74,34 @@ impl Lexer {
             ',' => Ok(TokenType::Comma),
             ';' => Ok(TokenType::Semicolon),
             ':' => Ok(TokenType::Colon),
-            '+' => Ok(TokenType::Plus),
-            '-' => Ok(TokenType::Minus),
-            '*' => Ok(TokenType::Star),
-            '/' => Ok(TokenType::Slash),
+            '+' => match self.peek() {
+                Some('=') => {
+                    self.advance();
+                    Ok(TokenType::PlusEqual)
+                }
+                _ => Ok(TokenType::Plus),
+            },
+            '-' => match self.peek() {
+                Some('=') => {
+                    self.advance();
+                    Ok(TokenType::MinusEqual)
+                }
+                _ => Ok(TokenType::Minus),
+            },
+            '*' => match self.peek() {
+                Some('=') => {
+                    self.advance();
+                    Ok(TokenType::StarEqual)
+                }
+                _ => Ok(TokenType::Star),
+            },
+            '/' => match self.peek() {
+                Some('=') => {
+                    self.advance();
+                    Ok(TokenType::SlashEqual)
+                }
+                _ => Ok(TokenType::Slash),
+            },
             '=' => match self.peek() {
                 Some('=') => {
                     self.advance();
