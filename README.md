@@ -30,53 +30,62 @@ program -> statement*
 ### Statements
 
 ```
-statement -> exprStmt
-            | forStmt
-            | whileStmt
-            | ifStmt
-            | printStmt
-            | returnStmt
-            | varDecl
-            | funcDecl
-            | block
+statement    -> exprStmt
+                | forStmt
+                | whileStmt
+                | ifStmt
+                | printStmt
+                | returnStmt
+                | breakStmt
+                | continueStmt
+                | varDecl
+                | funcDecl
+                | block
 
-exprStmt   -> expression ';'
-forStmt    -> 'for' ( varStmt | exprStmt | ';' )  expression? ';' ( expression )? block
-whileStmt  -> 'while' '(' expression ')' block
-ifStmt     -> 'if' expression block ( 'else' block )?
-printStmt  -> 'print' expression ';'
-returnStmt -> 'return' expression? ';'
-varDecl    -> 'let' Identifier ( '=' expression )? ';'
+exprStmt     -> expression ';'
+forStmt      -> 'for' ( varDecl | exprStmt | ';' ) expression? ';' expression? block
+whileStmt    -> 'while' expression block
+ifStmt       -> 'if' expression block ( 'else' ( ifStmt | block ) )?
+printStmt    -> 'print' arguments? ';'
+returnStmt   -> 'return' expression? ';'
+breakStmt    -> 'break' ';'
+continueStmt -> 'continue' ';'
+varDecl      -> 'let' Identifier ( '=' expression )? ';'
 funcDecl     -> 'fn' Identifier '(' parameters? ')' block
-block      -> '{' statement* '}'
+block        -> '{' statement* '}'
 ```
 
 ### Expressions
 
 ```
-expression -> assignment
+expression   -> assignment
 
-assignment -> Identifier '=' assignment | logic_or
-logic_or   -> logic_and ( 'or' logic_and )*
-logic_and  -> equality ( 'and' equality )*
-equality   -> comparison ( ( '==' | '!=' ) comparison )*
-comparison -> term ( ( '<' | '>' | '<=' | '>=' ) term )*
-term       -> factor ( ( '-' | '+' ) factor )*
-factor     -> unary ( ( '/' | '*' ) unary )*
-unary      -> ( '!' | '-' ) unary | call
-call       -> primary ( '(' arguments? ')' )*
-primary    -> 'true' 
-            | 'false'
-            | 'nil' 
-            | Number 
-            | String 
-            | Identifier 
-            | '(' expression ')'
+assignment   -> ( Identifier | arrayAccess ) ( '=' | '+=' | '-=' | '*=' | '/=' ) assignment 
+                | logic_or
+
+logic_or     -> logic_and ( 'or' logic_and )*
+logic_and    -> equality ( 'and' equality )*
+equality     -> comparison ( ( '==' | '!=' ) comparison )*
+comparison   -> term ( ( '<' | '>' | '<=' | '>=' ) term )*
+term         -> factor ( ( '-' | '+' ) factor )*
+factor       -> unary ( ( '/' | '*' ) unary )*
+unary        -> ( '!' | '-' ) unary | call
+call         -> primary ( '(' arguments? ')' | '[' expression ']' )*
+arrayLiteral -> '[' arguments? ']'
+arrayAccess  -> primary '[' expression ']'
+primary      -> 'true' 
+                | 'false'
+                | 'nil' 
+                | Number 
+                | String 
+                | Identifier 
+                | arrayLiteral
+                | '(' expression ')'
 ```
 
 ### Utils
 
 ```
-arguments    -> expression ( ',' expression )*
-parameters   -> Identifier ( ',' Identifier )*
+arguments     -> expression ( ',' expression )*
+parameters    -> Identifier ( ',' Identifier )*
 ```

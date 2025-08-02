@@ -75,9 +75,16 @@ impl Parser {
         let else_branch = self
             .try_consume(TokenType::Else)
             .is_some()
-            .then(|| self.block_stmt())
+            .then(|| {
+                if self.check(&TokenType::If) {
+                    self.if_stmt()
+                } else {
+                    self.block_stmt()
+                }
+            })
             .transpose()?
             .map(Box::new);
+
         Ok(Stmt::If {
             condition,
             then_branch,
@@ -392,7 +399,7 @@ impl Parser {
                 Ok(expr)
             }
             TokenType::LeftBracket => {
-                let elements = self.array_elements()?;
+                let elements = self.arguments()?;
                 self.consume(TokenType::RightBracket, "expected ']' after array elements")?;
                 Ok(Expr::Array(elements))
             }
@@ -431,19 +438,6 @@ impl Parser {
             arguments.push(self.expr()?);
         }
         Ok(arguments)
-    }
-
-    fn array_elements(&mut self) -> Result<Vec<Expr>> {
-        let mut elements = Vec::new();
-        if self.check(&TokenType::RightBracket) {
-            return Ok(elements);
-        }
-        elements.push(self.expr()?);
-        while self.check(&TokenType::Comma) {
-            self.advance();
-            elements.push(self.expr()?);
-        }
-        Ok(elements)
     }
 
     // Utility methods

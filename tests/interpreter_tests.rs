@@ -461,4 +461,30 @@ mod file_tests {
             assert!(error.message.contains("break") && error.message.contains("outside"));
         }
     }
+
+    #[test]
+    fn test_else_if_functionality() {
+        let output = run_myl_file("else_if.myl").unwrap();
+        let expected = concat!(
+            "=== Testing else if ===\n",
+            "Grade: B\n",
+            "\n",
+            "Testing value: 45\n",
+            "  Poor\n",
+            "Testing value: 65\n",
+            "  Below average\n",
+            "Testing value: 75\n",
+            "  Average\n",
+            "Testing value: 85\n",
+            "  Good!\n",
+            "Testing value: 95\n",
+            "  Excellent!\n",
+            "\n",
+            "=== Testing nested if with else if ===\n",
+            "x is greater than 10\n",
+            "y is also greater than 20\n",
+            "sum is greater than 35\n"
+        );
+        assert_eq!(output, expected);
+    }
 }
