@@ -24,7 +24,11 @@ impl Lexer {
                 continue;
             }
             if ch == '/' && self.peek() == Some('/') {
-                self.skip_comment();
+                self.skip_line_comment();
+                continue;
+            }
+            if ch == '/' && self.peek() == Some('*') {
+                self.skip_block_comment()?;
                 continue;
             }
             tokens.push(self.scan_token(ch, location)?);
@@ -55,12 +59,28 @@ impl Lexer {
         }
     }
 
-    fn skip_comment(&mut self) {
+    fn skip_line_comment(&mut self) {
         while let Some((ch, ..)) = self.consume_char() {
             if ch == '\n' {
                 break;
             }
         }
+    }
+
+    fn skip_block_comment(&mut self) -> Result<()> {
+        self.advance(); // 跳过 *
+
+        while let Some((ch, ..)) = self.consume_char() {
+            if ch == '*' && self.peek() == Some('/') {
+                self.advance(); // 跳过 /
+                return Ok(());
+            }
+        }
+
+        Err(Error::lexical(
+            "unterminated block comment".to_string(),
+            self.location,
+        ))
     }
 
     fn scan_token(&mut self, ch: char, start: Location) -> Result<Token> {

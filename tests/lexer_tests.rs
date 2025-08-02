@@ -337,8 +337,7 @@ mod lexer_tests {
     #[test]
     fn test_function_definition() {
         let input = "fn add(a, b) { return a + b; }";
-        let mut lexer = Lexer::new(input.to_string());
-        let tokens = lexer.tokenize().unwrap();
+        let tokens = get_tokens(input);
 
         let expected_types = vec![
             TokenType::Fn,
@@ -355,6 +354,120 @@ mod lexer_tests {
             TokenType::Identifier("b".to_string()),
             TokenType::Semicolon,
             TokenType::RightBrace,
+            TokenType::Eof,
+        ];
+
+        assert_eq!(token_types(&tokens), expected_types);
+    }
+
+    // Block comment tests
+    #[test]
+    fn test_simple_block_comment() {
+        let input = r#"print "before";/* this is a block comment */print "after";"#;
+        let tokens = get_tokens(input);
+
+        let expected_types = vec![
+            TokenType::Print,
+            TokenType::String("before".to_string()),
+            TokenType::Semicolon,
+            TokenType::Print,
+            TokenType::String("after".to_string()),
+            TokenType::Semicolon,
+            TokenType::Eof,
+        ];
+
+        assert_eq!(token_types(&tokens), expected_types);
+    }
+
+    #[test]
+    fn test_multiline_block_comment() {
+        let input = r#"
+let x = 1;
+/*
+ * This is a 
+ * multiline comment
+ * with multiple lines
+ */
+let y = 2;
+"#;
+        let tokens = get_tokens(input);
+
+        let expected_types = vec![
+            TokenType::Let,
+            TokenType::Identifier("x".to_string()),
+            TokenType::Equal,
+            TokenType::Number(1.0),
+            TokenType::Semicolon,
+            TokenType::Let,
+            TokenType::Identifier("y".to_string()),
+            TokenType::Equal,
+            TokenType::Number(2.0),
+            TokenType::Semicolon,
+            TokenType::Eof,
+        ];
+
+        assert_eq!(token_types(&tokens), expected_types);
+    }
+
+    #[test]
+    fn test_block_comment_at_end_of_line() {
+        let input = r#"let x = 42; /* comment */ let y = 24;"#;
+        let tokens = get_tokens(input);
+
+        let expected_types = vec![
+            TokenType::Let,
+            TokenType::Identifier("x".to_string()),
+            TokenType::Equal,
+            TokenType::Number(42.0),
+            TokenType::Semicolon,
+            TokenType::Let,
+            TokenType::Identifier("y".to_string()),
+            TokenType::Equal,
+            TokenType::Number(24.0),
+            TokenType::Semicolon,
+            TokenType::Eof,
+        ];
+
+        assert_eq!(token_types(&tokens), expected_types);
+    }
+
+    #[test]
+    fn test_unterminated_block_comment() {
+        let input = r#"
+print "before";
+/* this is an unterminated comment
+print "after";
+"#;
+        let mut lexer = Lexer::new(input.to_string());
+        let result = lexer.tokenize();
+
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.message.contains("unterminated block comment"));
+    }
+
+    #[test]
+    fn test_mixed_comments() {
+        let input = r#"
+// Line comment
+let x = 1;
+/* Block comment */
+// Another line comment  
+let y = 2; /* End of line block */
+"#;
+        let tokens = get_tokens(input);
+
+        let expected_types = vec![
+            TokenType::Let,
+            TokenType::Identifier("x".to_string()),
+            TokenType::Equal,
+            TokenType::Number(1.0),
+            TokenType::Semicolon,
+            TokenType::Let,
+            TokenType::Identifier("y".to_string()),
+            TokenType::Equal,
+            TokenType::Number(2.0),
+            TokenType::Semicolon,
             TokenType::Eof,
         ];
 
