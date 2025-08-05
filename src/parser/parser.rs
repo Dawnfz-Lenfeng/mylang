@@ -10,14 +10,14 @@ use crate::{
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    loop_depth: usize, // Track if we're inside a loop
+    loop_depth: usize,     // Track if we're inside a loop
     function_depth: usize, // Track if we're inside a function
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { 
-            tokens, 
+        Self {
+            tokens,
             current: 0,
             loop_depth: 0,
             function_depth: 0,
@@ -105,12 +105,12 @@ impl Parser {
     fn while_stmt(&mut self) -> Result<Stmt> {
         self.advance();
         let condition = self.expr()?;
-        
+
         // Enter loop scope
         self.loop_depth += 1;
         let body = Box::new(self.block_stmt()?);
         self.loop_depth -= 1;
-        
+
         Ok(Stmt::While { condition, body })
     }
 
@@ -139,7 +139,7 @@ impl Parser {
         self.loop_depth += 1;
         let body = self.block_stmt()?;
         self.loop_depth -= 1;
-        
+
         let body_with_inc = match increment {
             Some(inc) => Stmt::Block(vec![body, Stmt::Expression(inc)]),
             None => body,

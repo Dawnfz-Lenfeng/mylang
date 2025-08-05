@@ -21,15 +21,9 @@ impl From<RuntimeControl> for Error {
     fn from(control: RuntimeControl) -> Self {
         match control {
             RuntimeControl::Error(error) => error,
-            RuntimeControl::Return(_) => {
-                Error::runtime("'return' outside function".to_string())
-            }
-            RuntimeControl::Break => {
-                Error::runtime("'break' outside loop".to_string())
-            }
-            RuntimeControl::Continue => {
-                Error::runtime("'continue' outside loop".to_string())
-            }
+            RuntimeControl::Return(_) => Error::runtime("'return' outside function".to_string()),
+            RuntimeControl::Break => Error::runtime("'break' outside loop".to_string()),
+            RuntimeControl::Continue => Error::runtime("'continue' outside loop".to_string()),
         }
     }
 }

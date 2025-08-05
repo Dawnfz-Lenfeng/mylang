@@ -1,5 +1,5 @@
 use mylang::{
-    error::Result, interpreter::Interpreter, lexer::lexer::Lexer, parser::parser::Parser,
+    error::Result, treewalk_interpreter::Interpreter, lexer::lexer::Lexer, parser::parser::Parser,
 };
 use std::{cell::RefCell, fs, io::Write, rc::Rc};
 
@@ -440,7 +440,9 @@ mod file_tests {
         let result = run_myl_file("error_break_outside_loop.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("'break' statement must be inside a loop"));
+            assert!(error
+                .message
+                .contains("'break' statement must be inside a loop"));
         }
     }
 
@@ -449,7 +451,9 @@ mod file_tests {
         let result = run_myl_file("error_continue_outside_loop.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("'continue' statement must be inside a loop"));
+            assert!(error
+                .message
+                .contains("'continue' statement must be inside a loop"));
         }
     }
 
@@ -458,7 +462,9 @@ mod file_tests {
         let result = run_myl_file("error_break_in_function.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("'break' statement must be inside a loop"));
+            assert!(error
+                .message
+                .contains("'break' statement must be inside a loop"));
         }
     }
 
@@ -467,7 +473,9 @@ mod file_tests {
         let result = run_myl_file("error_return_outside_function.myl");
         assert!(result.is_err());
         if let Err(error) = result {
-            assert!(error.message.contains("'return' statement must be inside a function"));
+            assert!(error
+                .message
+                .contains("'return' statement must be inside a function"));
         }
     }
 

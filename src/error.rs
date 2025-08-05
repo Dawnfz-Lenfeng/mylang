@@ -10,6 +10,10 @@ pub enum ErrorType {
     Runtime,
     Io,
     Internal,
+    Compilation,    // 编译错误
+    VmRuntime,      // 虚拟机运行时错误
+    StackOverflow,  // 栈溢出
+    StackUnderflow, // 栈下溢
 }
 
 #[derive(Debug, Clone)]
@@ -87,6 +91,100 @@ impl Error {
         Self::new(ErrorType::Internal, message)
     }
 
+    /// Create a compilation error
+    pub fn compilation(message: String) -> Self {
+        Self::new(ErrorType::Compilation, message)
+    }
+
+    /// Create a compilation error with location
+    pub fn compilation_at(message: String, location: Location) -> Self {
+        Self::with_location(ErrorType::Compilation, message, location)
+    }
+
+    /// Create a VM runtime error
+    pub fn vm_runtime(message: String) -> Self {
+        Self::new(ErrorType::VmRuntime, message)
+    }
+
+    /// Create a VM runtime error with location
+    pub fn vm_runtime_at(message: String, location: Location) -> Self {
+        Self::with_location(ErrorType::VmRuntime, message, location)
+    }
+
+    /// Create a stack overflow error
+    pub fn stack_overflow(message: String) -> Self {
+        Self::new(ErrorType::StackOverflow, message)
+    }
+
+    /// Create a stack underflow error
+    pub fn stack_underflow(message: String) -> Self {
+        Self::new(ErrorType::StackUnderflow, message)
+    }
+
+    /// Create a constant pool overflow error
+    pub fn constant_overflow() -> Self {
+        Self::compilation("Too many constants in chunk (max 256)".to_string())
+    }
+
+    /// Create an invalid opcode error
+    pub fn invalid_opcode(opcode: u8) -> Self {
+        Self::vm_runtime(format!("Invalid opcode: {}", opcode))
+    }
+
+    /// Create a type error for operations
+    pub fn type_error(operation: &str, expected: &str, found: &str) -> Self {
+        Self::vm_runtime(format!(
+            "Type error in {}: expected {}, found {}",
+            operation, expected, found
+        ))
+    }
+
+    /// Create an arity error for function calls
+    pub fn arity_error(function: &str, expected: usize, found: usize) -> Self {
+        Self::vm_runtime(format!(
+            "Arity error in function '{}': expected {} arguments, found {}",
+            function, expected, found
+        ))
+    }
+
+    /// Create a division by zero error
+    pub fn division_by_zero() -> Self {
+        Self::vm_runtime("Division by zero".to_string())
+    }
+
+    /// Create an array index out of bounds error
+    pub fn index_out_of_bounds(index: usize, length: usize) -> Self {
+        Self::vm_runtime(format!(
+            "Array index {} out of bounds (length: {})",
+            index, length
+        ))
+    }
+
+    /// Create an undefined variable error
+    pub fn undefined_variable(name: &str) -> Self {
+        Self::vm_runtime(format!("Undefined variable '{}'", name))
+    }
+
+    /// Create an undefined function error
+    pub fn undefined_function(name: &str) -> Self {
+        Self::vm_runtime(format!("Undefined function '{}'", name))
+    }
+
+    /// Create a call stack overflow error
+    pub fn call_stack_overflow() -> Self {
+        Self::stack_overflow("Call stack overflow".to_string())
+    }
+
+    /// Create an operand stack overflow error
+    pub fn operand_stack_overflow() -> Self {
+        Self::stack_overflow("Operand stack overflow".to_string())
+    }
+
+    /// Create an operand stack underflow error
+    pub fn operand_stack_underflow() -> Self {
+        Self::stack_underflow("Operand stack underflow".to_string())
+    }
+
     pub fn line(&self) -> Option<usize> {
         self.location.map(|loc| loc.line)
     }
@@ -104,6 +202,10 @@ impl fmt::Display for Error {
             ErrorType::Runtime => "RuntimeError",
             ErrorType::Io => "IOError",
             ErrorType::Internal => "InternalError",
+            ErrorType::Compilation => "CompilationError",
+            ErrorType::VmRuntime => "VMRuntimeError",
+            ErrorType::StackOverflow => "StackOverflowError",
+            ErrorType::StackUnderflow => "StackUnderflowError",
         };
 
         match (&self.file, &self.location) {
@@ -136,5 +238,82 @@ impl std::error::Error for Error {}
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Error::io(err.to_string())
+    }
+}
+
+/// VM-specific error utilities
+impl Error {
+    /// Check if this is a VM runtime error
+    pub fn is_vm_runtime(&self) -> bool {
+        matches!(self.error_type, ErrorType::VmRuntime)
+    }
+
+    /// Check if this is a compilation error
+    pub fn is_compilation(&self) -> bool {
+        matches!(self.error_type, ErrorType::Compilation)
+    }
+
+    /// Check if this is a stack-related error
+    pub fn is_stack_error(&self) -> bool {
+        matches!(
+            self.error_type,
+            ErrorType::StackOverflow | ErrorType::StackUnderflow
+        )
+    }
+
+    /// Create an error with bytecode instruction pointer context
+    pub fn with_ip(mut self, ip: usize) -> Self {
+        self.message = format!("{} (at instruction {})", self.message, ip);
+        self
+    }
+
+    /// Create an error with stack size context
+    pub fn with_stack_size(mut self, size: usize) -> Self {
+        self.message = format!("{} (stack size: {})", self.message, size);
+        self
+    }
+
+    /// Create an error with call frame context
+    pub fn with_frame_info(mut self, frame_count: usize, function: &str) -> Self {
+        self.message = format!(
+            "{} (in function '{}', frame {})",
+            self.message, function, frame_count
+        );
+        self
+    }
+
+    /// Add VM debugging information
+    pub fn with_vm_debug(mut self, ip: usize, stack_size: usize, frame_count: usize) -> Self {
+        self.message = format!(
+            "{} [VM: ip={}, stack={}, frames={}]",
+            self.message, ip, stack_size, frame_count
+        );
+        self
+    }
+}
+
+/// Runtime control flow for VM (similar to interpreter control)
+#[derive(Debug, Clone)]
+pub enum VmControl {
+    Continue,
+    Break,
+    Return(crate::treewalk_interpreter::Value),
+    Error(Error),
+}
+
+impl From<Error> for VmControl {
+    fn from(error: Error) -> Self {
+        VmControl::Error(error)
+    }
+}
+
+impl From<VmControl> for Result<()> {
+    fn from(control: VmControl) -> Self {
+        match control {
+            VmControl::Continue => Ok(()),
+            VmControl::Break => Err(Error::vm_runtime("Unexpected break".to_string())),
+            VmControl::Return(_) => Err(Error::vm_runtime("Unexpected return".to_string())),
+            VmControl::Error(e) => Err(e),
+        }
     }
 }

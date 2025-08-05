@@ -1,13 +1,17 @@
+pub mod compliler;
 pub mod error;
-pub mod interpreter;
+pub mod treewalk_interpreter;
 pub mod lexer;
 pub mod parser;
 pub mod utils;
+pub mod vm;
 
+use compliler::{Chunk, Compiler};
 use error::{Error, Result};
-use interpreter::Interpreter;
+use treewalk_interpreter::Interpreter;
 use lexer::Lexer;
 use parser::Parser;
+use vm::VM;
 
 use std::fs;
 use std::io::{self, Write};
@@ -66,4 +70,37 @@ fn run(source: String, interpreter: &mut Interpreter) -> Result<()> {
 
     interpreter.interpret(&stmts)?;
     Ok(())
+}
+
+/// Run with bytecode VM (alternative execution method)
+pub fn run_with_vm(source: String) -> Result<()> {
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize()?;
+
+    let mut parser = Parser::new(tokens);
+    let stmts = parser.parse()?;
+
+    let mut chunk = Chunk::new();
+    let mut compiler = Compiler::new(&mut chunk);
+    compiler.compile(&stmts)?;
+
+    let mut vm = VM::new();
+    vm.interpret(chunk)?;
+
+    Ok(())
+}
+
+/// Run file with bytecode VM
+pub fn run_file_with_vm(filename: &str) {
+    match fs::read_to_string(filename) {
+        Ok(source) => match run_with_vm(source) {
+            Ok(_) => (),
+            Err(error) => {
+                eprintln!("{}", error.in_file(filename.to_string()));
+            }
+        },
+        Err(error) => {
+            eprintln!("{}", Error::from(error));
+        }
+    }
 }

@@ -127,7 +127,7 @@ mod parser_tests {
         // Test unary minus
         let program = parse_program("-42;").unwrap();
         let expected = vec![Stmt::Expression(Expr::Unary {
-            operator: UnaryOp::Minus,
+            operator: UnaryOp::Negate,
             operand: Box::new(Expr::Number(42.0)),
         })];
         assert_eq!(program, expected);

@@ -328,7 +328,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
     fn visit_unary(&mut self, op: &UnaryOp, operand: &Expr) -> Result<Value> {
         let operand = operand.accept(self)?;
         match op {
-            UnaryOp::Minus => -operand,
+            UnaryOp::Negate => -operand,
             UnaryOp::Not => Ok(Value::Boolean(!operand.is_truthy())),
         }
     }

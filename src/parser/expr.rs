@@ -104,14 +104,14 @@ impl TryFrom<TokenType> for BinaryOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
-    Minus,
+    Negate,
     Not,
 }
 
 impl fmt::Display for UnaryOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            UnaryOp::Minus => write!(f, "-"),
+            UnaryOp::Negate => write!(f, "-"),
             UnaryOp::Not => write!(f, "!"),
         }
     }
@@ -122,7 +122,7 @@ impl TryFrom<TokenType> for UnaryOp {
 
     fn try_from(token: TokenType) -> Result<Self, Self::Error> {
         match token {
-            TokenType::Minus => Ok(UnaryOp::Minus),
+            TokenType::Minus => Ok(UnaryOp::Negate),
             TokenType::Bang => Ok(UnaryOp::Not),
             _ => Err(Error::internal(format!(
                 "invalid token type for unary operator: {token:?}"
