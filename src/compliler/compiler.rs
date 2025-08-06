@@ -132,7 +132,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
         for expr in exprs {
             expr.accept(self)?;
         }
-        self.emit_op(OpCode::Print);
+        self.emit_op_with_operand(OpCode::Print, exprs.len() as u8);
         Ok(())
     }
 
@@ -156,6 +156,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
         let mut function_chunk = Chunk::new();
         let mut function_compiler = Compiler::new(&mut function_chunk);
 
+        function_compiler.add_local(name.to_string());
         for param in params {
             function_compiler.add_local(param.clone());
         }

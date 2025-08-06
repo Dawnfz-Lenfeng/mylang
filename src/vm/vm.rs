@@ -62,27 +62,21 @@ impl VM {
                 OpCode::True => self.push(Value::Boolean(true)),
                 OpCode::False => self.push(Value::Boolean(false)),
 
-                // Arithmetic
-                OpCode::Add => self.binary_op(OpCode::Add)?,
-                OpCode::Subtract => self.binary_op(OpCode::Subtract)?,
-                OpCode::Multiply => self.binary_op(OpCode::Multiply)?,
-                OpCode::Divide => self.binary_op(OpCode::Divide)?,
-                OpCode::Negate => self.unary_op(OpCode::Negate)?,
+                OpCode::Add
+                | OpCode::Subtract
+                | OpCode::Multiply
+                | OpCode::Divide
+                | OpCode::Equal
+                | OpCode::NotEqual
+                | OpCode::LessThan
+                | OpCode::LessEqual
+                | OpCode::GreaterThan
+                | OpCode::GreaterEqual
+                | OpCode::And
+                | OpCode::Or => self.binary_op(instruction)?,
 
-                // Comparison
-                OpCode::Equal => self.binary_op(OpCode::Equal)?,
-                OpCode::NotEqual => self.binary_op(OpCode::NotEqual)?,
-                OpCode::LessThan => self.binary_op(OpCode::LessThan)?,
-                OpCode::LessEqual => self.binary_op(OpCode::LessEqual)?,
-                OpCode::GreaterThan => self.binary_op(OpCode::GreaterThan)?,
-                OpCode::GreaterEqual => self.binary_op(OpCode::GreaterEqual)?,
+                OpCode::Negate | OpCode::Not => self.unary_op(instruction)?,
 
-                // Logical
-                OpCode::Not => self.unary_op(OpCode::Not)?,
-                OpCode::And => self.binary_op(OpCode::And)?,
-                OpCode::Or => self.binary_op(OpCode::Or)?,
-
-                // Variables
                 OpCode::DefineGlobal => {
                     let name = self.read_global_name()?;
                     let value = self.pop()?;
@@ -146,7 +140,7 @@ impl VM {
                     let result = self.pop()?;
                     if let Some(frame) = self.call_stack.pop() {
                         self.ip = frame.ip;
-                        self.stack.truncate(frame.slots_offset + 1); // +1 for function itself
+                        self.stack.truncate(frame.slots_offset - 1); // -1 for function itself
                         self.push(result);
                         self.chunk = frame.caller_chunk;
                     } else {
@@ -158,7 +152,10 @@ impl VM {
                 OpCode::Pop => {
                     self.pop()?;
                 }
-                OpCode::Print => self.print_values(1)?,
+                OpCode::Print => {
+                    let count = self.read_byte()? as usize;
+                    self.print_values(count)?;
+                }
 
                 // Arrays
                 OpCode::Array => {
@@ -368,10 +365,17 @@ impl VM {
     }
 
     fn print_values(&mut self, count: usize) -> Result<()> {
-        for _ in 0..count {
-            let value = self.pop()?;
-            writeln!(self.output, "{value}")?;
-        }
+        let output = self
+            .stack
+            .iter()
+            .rev()
+            .take(count)
+            .rev()
+            .map(|value| value.to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        writeln!(self.output, "{output}").map_err(|e| Error::io(e.to_string()))?;
         Ok(())
     }
 }
