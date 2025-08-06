@@ -117,8 +117,8 @@ impl Error {
     }
 
     /// Create a stack underflow error
-    pub fn stack_underflow(message: String) -> Self {
-        Self::new(ErrorType::StackUnderflow, message)
+    pub fn stack_underflow() -> Self {
+        Self::new(ErrorType::StackUnderflow, "Stack underflow".to_string())
     }
 
     /// Create a constant pool overflow error
@@ -162,27 +162,12 @@ impl Error {
 
     /// Create an undefined variable error
     pub fn undefined_variable(name: &str) -> Self {
-        Self::vm_runtime(format!("Undefined variable '{}'", name))
+        Self::vm_runtime(format!("Undefined variable '{name}'"))
     }
 
     /// Create an undefined function error
     pub fn undefined_function(name: &str) -> Self {
-        Self::vm_runtime(format!("Undefined function '{}'", name))
-    }
-
-    /// Create a call stack overflow error
-    pub fn call_stack_overflow() -> Self {
-        Self::stack_overflow("Call stack overflow".to_string())
-    }
-
-    /// Create an operand stack overflow error
-    pub fn operand_stack_overflow() -> Self {
-        Self::stack_overflow("Operand stack overflow".to_string())
-    }
-
-    /// Create an operand stack underflow error
-    pub fn operand_stack_underflow() -> Self {
-        Self::stack_underflow("Operand stack underflow".to_string())
+        Self::vm_runtime(format!("Undefined function '{name}'"))
     }
 
     pub fn line(&self) -> Option<usize> {

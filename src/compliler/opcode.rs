@@ -56,9 +56,6 @@ pub enum OpCode {
     Array = 80,
     Index,
     IndexSet,
-
-    // Functions
-    Function = 90,
 }
 
 impl From<OpCode> for u8 {
@@ -107,7 +104,6 @@ impl TryFrom<u8> for OpCode {
             80 => Ok(OpCode::Array),
             81 => Ok(OpCode::Index),
             82 => Ok(OpCode::IndexSet),
-            90 => Ok(OpCode::Function),
             _ => Err(Error::invalid_opcode(byte)),
         }
     }

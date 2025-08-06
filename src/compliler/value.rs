@@ -1,7 +1,5 @@
-use crate::{
-    error::{Error, Result},
-    parser::Stmt,
-};
+use super::Chunk;
+use crate::error::{Error, Result};
 use std::{
     cmp::Ordering,
     fmt,
@@ -17,7 +15,7 @@ pub enum Value {
     Function {
         name: String,
         params: Vec<String>,
-        body: Stmt,
+        chunk: Box<Chunk>,
     },
     Nil,
 }

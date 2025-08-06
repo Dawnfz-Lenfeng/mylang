@@ -1,16 +1,16 @@
 pub mod compliler;
 pub mod error;
-pub mod treewalk_interpreter;
 pub mod lexer;
 pub mod parser;
+pub mod treewalk_interpreter;
 pub mod utils;
 pub mod vm;
 
 use compliler::{Chunk, Compiler};
 use error::{Error, Result};
-use treewalk_interpreter::Interpreter;
 use lexer::Lexer;
 use parser::Parser;
+use treewalk_interpreter::Interpreter;
 use vm::VM;
 
 use std::fs;

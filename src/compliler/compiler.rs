@@ -18,7 +18,6 @@ pub struct Compiler<'a> {
     chunk: &'a mut Chunk,
     locals: Vec<Local>,
     scope_depth: usize,
-    current_line: usize,
 }
 
 impl<'a> Compiler<'a> {
@@ -27,7 +26,6 @@ impl<'a> Compiler<'a> {
             chunk,
             locals: Vec::new(),
             scope_depth: 0,
-            current_line: 0,
         }
     }
 
@@ -36,12 +34,6 @@ impl<'a> Compiler<'a> {
             stmt.accept(self)?;
         }
         Ok(())
-    }
-
-    fn emit_constant(&mut self, value: Value) -> usize {
-        let index = self.chunk.add_constant(value);
-        self.emit_op_with_operand(OpCode::Constant, index as u8);
-        index
     }
 
     fn begin_scope(&mut self) {
@@ -66,17 +58,16 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn add_global(&mut self, global: String) -> usize {
+    fn add_global(&mut self, global: String) -> u8 {
         self.chunk.add_global(global)
     }
 
-    fn add_local(&mut self, name: String) -> usize {
+    fn add_local(&mut self, name: String) {
         self.locals.push(Local {
             name,
             depth: self.scope_depth,
             is_captured: false,
         });
-        self.locals.len() - 1
     }
 
     fn resolve_local(&mut self, name: &str) -> Option<u8> {
@@ -98,6 +89,11 @@ impl<'a> Compiler<'a> {
             .map(|(index, _)| index as u8)
     }
 
+    fn emit_constant(&mut self, value: Value) {
+        let index = self.chunk.add_constant(value);
+        self.emit_op_with_operand(OpCode::Constant, index);
+    }
+
     fn emit_jump(&mut self, op: OpCode) -> usize {
         let offset = self.chunk.code.len();
         self.emit_byte(op as u8);
@@ -107,7 +103,7 @@ impl<'a> Compiler<'a> {
     }
 
     fn emit_byte(&mut self, byte: u8) {
-        self.chunk.write(byte, self.current_line);
+        self.chunk.write(byte);
     }
 
     fn emit_op(&mut self, op: OpCode) {
@@ -136,6 +132,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
         for expr in exprs {
             expr.accept(self)?;
         }
+        self.emit_op(OpCode::Print);
         Ok(())
     }
 
@@ -156,16 +153,28 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_func_decl(&mut self, name: &str, params: &[String], body: &Stmt) -> Result<()> {
+        let mut function_chunk = Chunk::new();
+        let mut function_compiler = Compiler::new(&mut function_chunk);
+
+        for param in params {
+            function_compiler.add_local(param.clone());
+        }
+
+        body.accept(&mut function_compiler)?;
+
+        function_compiler.emit_op(OpCode::Nil);
+        function_compiler.emit_op(OpCode::Return);
+
         let func_value = Value::Function {
             name: name.to_string(),
             params: params.to_vec(),
-            body: body.clone(),
+            chunk: Box::new(function_chunk),
         };
-        let func_index = self.chunk.add_constant(func_value);
+
+        self.emit_constant(func_value);
         let name_index = self.add_global(name.to_string());
-        self.emit_op_with_operand(OpCode::Constant, func_index as u8);
         self.emit_op_with_operand(OpCode::DefineGlobal, name_index as u8);
-        
+
         Ok(())
     }
 
@@ -308,7 +317,9 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
         } else if let Some(global_index) = self.resolve_global(name) {
             self.emit_op_with_operand(OpCode::SetGlobal, global_index);
         } else {
-            return Err(Error::runtime(format!("Assignment to undeclared variable '{name}'")));
+            return Err(Error::runtime(format!(
+                "Assignment to undeclared variable '{name}'"
+            )));
         }
         Ok(())
     }
@@ -333,7 +344,8 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
         for argument in arguments {
             argument.accept(self)?;
         }
-        self.emit_op(OpCode::Call);
+
+        self.emit_op_with_operand(OpCode::Call, arguments.len() as u8);
         Ok(())
     }
 }

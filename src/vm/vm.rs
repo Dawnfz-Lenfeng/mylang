@@ -1,168 +1,378 @@
+use super::stack::{CallFrame, CallStack};
 use crate::{
-    compliler::{Chunk, OpCode},
+    compliler::{Chunk, OpCode, Value},
     error::{Error, Result},
-    treewalk_interpreter::Value,
 };
 use std::{collections::HashMap, io::Write};
 
-/// Call frame for function calls
-#[derive(Debug, Clone)]
-pub struct CallFrame {
-    pub function: Value,
-    pub ip: usize,
-    pub slots_offset: usize,
-}
-
-/// Virtual machine for executing bytecode
 pub struct VM {
     chunk: Option<Chunk>,
     ip: usize,
     stack: Vec<Value>,
     globals: HashMap<String, Value>,
-    frames: Vec<CallFrame>,
-    frame_count: usize,
+    call_stack: CallStack,
     output: Box<dyn Write>,
 }
 
 impl VM {
-    /// Create a new virtual machine
     pub fn new() -> Self {
-        todo!("Initialize VM")
+        Self {
+            chunk: None,
+            ip: 0,
+            stack: Vec::new(),
+            globals: HashMap::new(),
+            call_stack: CallStack::new(),
+            output: Box::new(std::io::stdout()),
+        }
     }
 
-    /// Create a VM with custom output
     pub fn with_output(output: Box<dyn Write>) -> Self {
-        todo!("Initialize VM with custom output")
+        Self {
+            output,
+            ..Self::new()
+        }
     }
 
-    /// Interpret a chunk of bytecode
     pub fn interpret(&mut self, chunk: Chunk) -> Result<()> {
-        todo!("Execute bytecode chunk")
+        self.chunk = Some(chunk);
+        self.ip = 0;
+        self.stack.clear();
+        self.call_stack.clear();
+        self.globals.clear();
+
+        self.run()
     }
 
-    /// Execute the main interpretation loop
     fn run(&mut self) -> Result<()> {
-        todo!("Main execution loop")
+        loop {
+            let chunk = self.chunk.as_ref().unwrap();
+            if self.ip >= chunk.code.len() {
+                break;
+            }
+
+            let instruction = OpCode::try_from(chunk.code[self.ip])?;
+            self.ip += 1;
+
+            match instruction {
+                OpCode::Constant => {
+                    let constant = self.read_constant()?;
+                    self.push(constant);
+                }
+                OpCode::Nil => self.push(Value::Nil),
+                OpCode::True => self.push(Value::Boolean(true)),
+                OpCode::False => self.push(Value::Boolean(false)),
+
+                // Arithmetic
+                OpCode::Add => self.binary_op(OpCode::Add)?,
+                OpCode::Subtract => self.binary_op(OpCode::Subtract)?,
+                OpCode::Multiply => self.binary_op(OpCode::Multiply)?,
+                OpCode::Divide => self.binary_op(OpCode::Divide)?,
+                OpCode::Negate => self.unary_op(OpCode::Negate)?,
+
+                // Comparison
+                OpCode::Equal => self.binary_op(OpCode::Equal)?,
+                OpCode::NotEqual => self.binary_op(OpCode::NotEqual)?,
+                OpCode::LessThan => self.binary_op(OpCode::LessThan)?,
+                OpCode::LessEqual => self.binary_op(OpCode::LessEqual)?,
+                OpCode::GreaterThan => self.binary_op(OpCode::GreaterThan)?,
+                OpCode::GreaterEqual => self.binary_op(OpCode::GreaterEqual)?,
+
+                // Logical
+                OpCode::Not => self.unary_op(OpCode::Not)?,
+                OpCode::And => self.binary_op(OpCode::And)?,
+                OpCode::Or => self.binary_op(OpCode::Or)?,
+
+                // Variables
+                OpCode::DefineGlobal => {
+                    let name = self.read_global_name()?;
+                    let value = self.pop()?;
+                    self.define_global(name, value);
+                }
+                OpCode::GetGlobal => {
+                    let name = self.read_global_name()?;
+                    let value = self.get_global(&name)?;
+                    self.push(value);
+                }
+                OpCode::SetGlobal => {
+                    let name = self.read_global_name()?;
+                    let value = self.peek(0)?.clone();
+                    self.set_global(name, value)?;
+                }
+                OpCode::GetLocal => {
+                    let slot = self.read_byte()? as usize;
+                    let value = self.get_local(slot)?;
+                    self.push(value);
+                }
+                OpCode::SetLocal => {
+                    let slot = self.read_byte()? as usize;
+                    let value = self.peek(0)?.clone();
+                    self.set_local(slot, value)?;
+                }
+
+                // Control flow
+                OpCode::Jump => {
+                    let offset = self.read_short()? as usize;
+                    self.ip += offset;
+                }
+                OpCode::JumpIfFalse => {
+                    let offset = self.read_short()? as usize;
+                    let condition = self.peek(0)?;
+                    if !condition.is_truthy() {
+                        self.ip += offset;
+                    }
+                }
+                OpCode::Loop => {
+                    let offset = self.read_short()? as usize;
+                    self.ip -= offset;
+                }
+                OpCode::Break => {
+                    // Break implementation - handled by compiler
+                    let offset = self.read_short()? as usize;
+                    self.ip += offset;
+                }
+                OpCode::Continue => {
+                    // Continue implementation - handled by compiler
+                    let offset = self.read_short()? as usize;
+                    self.ip -= offset;
+                }
+
+                // Functions
+                OpCode::Call => {
+                    let arg_count = self.read_byte()? as usize;
+                    let callee = self.peek(arg_count)?.clone();
+                    self.call_value(callee, arg_count)?;
+                }
+                OpCode::Return => {
+                    let result = self.pop()?;
+                    if let Some(frame) = self.call_stack.pop() {
+                        self.ip = frame.ip;
+                        self.stack.truncate(frame.slots_offset + 1); // +1 for function itself
+                        self.push(result);
+                        self.chunk = frame.caller_chunk;
+                    } else {
+                        return Ok(());
+                    }
+                }
+
+                // Stack operations
+                OpCode::Pop => {
+                    self.pop()?;
+                }
+                OpCode::Print => self.print_values(1)?,
+
+                // Arrays
+                OpCode::Array => {
+                    let element_count = self.read_byte()? as usize;
+                    let array = self.create_array(element_count)?;
+                    self.push(array);
+                }
+                OpCode::Index => {
+                    self.index_array()?;
+                }
+                OpCode::IndexSet => {
+                    self.set_array_element()?;
+                }
+            }
+        }
+        Ok(())
     }
 
-    /// Read the next byte from the chunk
     fn read_byte(&mut self) -> Result<u8> {
-        todo!("Read next byte from bytecode")
+        let byte = self.chunk.as_ref().unwrap().code[self.ip];
+        self.ip += 1;
+        Ok(byte)
     }
 
-    /// Read a 16-bit operand (for jumps, etc.)
     fn read_short(&mut self) -> Result<u16> {
-        todo!("Read 16-bit operand")
+        let byte1 = self.read_byte()? as u16;
+        let byte2 = self.read_byte()? as u16;
+        Ok((byte1 << 8) | byte2)
     }
 
-    /// Read a constant from the chunk
     fn read_constant(&mut self) -> Result<Value> {
-        todo!("Read constant from chunk")
+        let index = self.read_byte()?;
+        Ok(self.chunk.as_ref().unwrap().constants[index as usize].clone())
     }
 
-    /// Push a value onto the stack
+    fn read_global_name(&mut self) -> Result<String> {
+        let index = self.read_byte()?;
+        Ok(self.chunk.as_ref().unwrap().globals[index as usize].clone())
+    }
+
     fn push(&mut self, value: Value) {
-        todo!("Push value to stack")
+        self.stack.push(value);
     }
 
-    /// Pop a value from the stack
     fn pop(&mut self) -> Result<Value> {
-        todo!("Pop value from stack")
+        self.stack.pop().ok_or(Error::stack_underflow())
     }
 
-    /// Peek at the top value without popping
     fn peek(&self, distance: usize) -> Result<&Value> {
-        todo!("Peek at stack value")
+        self.stack
+            .get(self.stack.len() - distance - 1)
+            .ok_or(Error::stack_underflow())
     }
 
-    /// Execute binary operations
     fn binary_op(&mut self, op: OpCode) -> Result<()> {
-        todo!("Execute binary operation")
+        let right = self.pop()?;
+        let left = self.pop()?;
+
+        match op {
+            OpCode::Add => self.push((left + right)?),
+            OpCode::Subtract => self.push((left - right)?),
+            OpCode::Multiply => self.push((left * right)?),
+            OpCode::Divide => self.push((left / right)?),
+            OpCode::Equal => self.push(Value::Boolean(left == right)),
+            OpCode::NotEqual => self.push(Value::Boolean(left != right)),
+            OpCode::LessThan => self.push(Value::Boolean(left < right)),
+            OpCode::LessEqual => self.push(Value::Boolean(left <= right)),
+            OpCode::GreaterThan => self.push(Value::Boolean(left > right)),
+            OpCode::GreaterEqual => self.push(Value::Boolean(left >= right)),
+            OpCode::And => self.push(Value::Boolean(left.is_truthy() && right.is_truthy())),
+            OpCode::Or => self.push(Value::Boolean(left.is_truthy() || right.is_truthy())),
+            _ => return Err(Error::invalid_opcode(op as u8)),
+        }
+        Ok(())
     }
 
-    /// Execute unary operations
     fn unary_op(&mut self, op: OpCode) -> Result<()> {
-        todo!("Execute unary operation")
+        let operand = self.pop()?;
+        match op {
+            OpCode::Negate => self.push((-operand)?),
+            OpCode::Not => self.push(Value::Boolean(!operand.is_truthy())),
+            _ => return Err(Error::invalid_opcode(op as u8)),
+        }
+        Ok(())
     }
 
-    /// Call a function
     fn call_value(&mut self, callee: Value, arg_count: usize) -> Result<()> {
-        todo!("Call function or callable")
+        match callee {
+            Value::Function {
+                name,
+                params,
+                chunk,
+            } => {
+                if params.len() != arg_count {
+                    return Err(Error::arity_error(&name, params.len(), arg_count));
+                }
+
+                let frame = CallFrame {
+                    function: Value::Function {
+                        name,
+                        params,
+                        chunk: chunk.clone(),
+                    },
+                    ip: self.ip,
+                    slots_offset: self.stack.len() - arg_count,
+                    caller_chunk: self.chunk.clone(),
+                };
+                self.call_stack.push(frame);
+
+                // Switch to function's chunk
+                self.chunk = Some(*chunk);
+                self.ip = 0;
+
+                Ok(())
+            }
+            _ => Err(Error::runtime("Can only call functions".to_string())),
+        }
     }
 
-    /// Call a user-defined function
-    fn call_function(&mut self, function: &Value, arg_count: usize) -> Result<()> {
-        todo!("Call user function")
-    }
-
-    /// Call a built-in function
-    fn call_builtin(&mut self, function: &Value, arg_count: usize) -> Result<()> {
-        todo!("Call builtin function")
-    }
-
-    /// Get a global variable
     fn get_global(&mut self, name: &str) -> Result<Value> {
-        todo!("Get global variable")
+        self.globals
+            .get(name)
+            .cloned()
+            .ok_or(Error::undefined_variable(name))
     }
 
-    /// Set a global variable
     fn set_global(&mut self, name: String, value: Value) -> Result<()> {
-        todo!("Set global variable")
+        if self.globals.contains_key(&name) {
+            self.globals.insert(name, value);
+            Ok(())
+        } else {
+            Err(Error::undefined_variable(&name))
+        }
     }
 
-    /// Define a global variable
     fn define_global(&mut self, name: String, value: Value) {
-        todo!("Define global variable")
+        self.globals.insert(name, value);
     }
 
-    /// Get a local variable
     fn get_local(&self, slot: usize) -> Result<Value> {
-        todo!("Get local variable")
+        self.stack
+            .get(self.call_stack.offset() + slot)
+            .cloned()
+            .ok_or(Error::stack_underflow())
     }
 
-    /// Set a local variable
     fn set_local(&mut self, slot: usize, value: Value) -> Result<()> {
-        todo!("Set local variable")
+        let index = self.call_stack.offset() + slot;
+        if index >= self.stack.len() {
+            return Err(Error::stack_underflow());
+        }
+        self.stack[index] = value;
+        Ok(())
     }
 
     /// Create an array from stack values
     fn create_array(&mut self, element_count: usize) -> Result<Value> {
-        todo!("Create array from stack")
+        let mut elements = Vec::with_capacity(element_count);
+        // Pop elements in reverse order (they were pushed in forward order)
+        for _ in 0..element_count {
+            elements.push(self.pop()?);
+        }
+        elements.reverse(); // Restore original order
+        Ok(Value::Array(elements))
     }
 
     /// Index into an array
     fn index_array(&mut self) -> Result<()> {
-        todo!("Index array operation")
+        let index = self.pop()?;
+        let array = self.pop()?;
+
+        match (&array, &index) {
+            (Value::Array(arr), Value::Number(idx)) => {
+                let idx = *idx as usize;
+                if idx >= arr.len() {
+                    return Err(Error::runtime(format!("Array index {} out of bounds", idx)));
+                }
+                self.push(arr[idx].clone());
+                Ok(())
+            }
+            (Value::Array(_), _) => Err(Error::runtime("Array index must be a number".to_string())),
+            _ => Err(Error::runtime("Can only index arrays".to_string())),
+        }
     }
 
     /// Set array element
     fn set_array_element(&mut self) -> Result<()> {
-        todo!("Set array element")
+        let value = self.pop()?;
+        let index = self.pop()?;
+        let array = self.pop()?;
+
+        match (&array, &index) {
+            (Value::Array(arr), Value::Number(idx)) => {
+                let idx = *idx as usize;
+                if idx >= arr.len() {
+                    return Err(Error::runtime(format!("Array index {} out of bounds", idx)));
+                }
+                // Create a new array with the modified element
+                let mut new_arr = arr.clone();
+                new_arr[idx] = value;
+                self.push(Value::Array(new_arr));
+                Ok(())
+            }
+            (Value::Array(_), _) => Err(Error::runtime("Array index must be a number".to_string())),
+            _ => Err(Error::runtime("Can only index arrays".to_string())),
+        }
     }
 
-    /// Print values
     fn print_values(&mut self, count: usize) -> Result<()> {
-        todo!("Print values from stack")
-    }
-
-    /// Reset the stack
-    fn reset_stack(&mut self) {
-        todo!("Reset stack")
-    }
-
-    /// Runtime error handling
-    fn runtime_error(&self, message: &str) -> Error {
-        todo!("Create runtime error with line info")
-    }
-
-    /// Check if a value is falsy
-    fn is_falsy(&self, value: &Value) -> bool {
-        todo!("Check if value is falsy")
-    }
-
-    /// Check if two values are equal
-    fn values_equal(&self, a: &Value, b: &Value) -> bool {
-        todo!("Check value equality")
+        for _ in 0..count {
+            let value = self.pop()?;
+            writeln!(self.output, "{value}")?;
+        }
+        Ok(())
     }
 }
 
@@ -186,6 +396,8 @@ impl VM {
 
     /// Disassemble the current chunk
     pub fn disassemble_chunk(&self, name: &str) {
-        todo!("Disassemble chunk for debugging")
+        if let Some(chunk) = &self.chunk {
+            chunk.disassemble(name);
+        }
     }
 }

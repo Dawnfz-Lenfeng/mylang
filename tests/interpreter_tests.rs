@@ -1,5 +1,5 @@
 use mylang::{
-    error::Result, treewalk_interpreter::Interpreter, lexer::lexer::Lexer, parser::parser::Parser,
+    error::Result, lexer::lexer::Lexer, parser::parser::Parser, treewalk_interpreter::Interpreter,
 };
 use std::{cell::RefCell, fs, io::Write, rc::Rc};
 
