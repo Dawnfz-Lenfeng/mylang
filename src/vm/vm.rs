@@ -39,8 +39,9 @@ impl VM {
                 break;
             }
 
-            let instruction = self.chunk.instruction(self.ip)?;
+            let instruction = OpCode::try_from(self.chunk.code(self.ip))?;
             self.ip += 1;
+            dbg!(&instruction);
 
             match instruction {
                 OpCode::Constant => {
@@ -99,8 +100,11 @@ impl VM {
                     self.ip += offset;
                 }
                 OpCode::JumpIfFalse => {
+                    dbg!("JumpIfFalse");
+
                     let offset = self.read_short()? as usize;
-                    let condition = self.peek(0)?;
+                    dbg!(&offset);
+                    let condition = self.pop()?;
                     if !condition.is_truthy() {
                         self.ip += offset;
                     }
@@ -164,7 +168,7 @@ impl VM {
     }
 
     fn read_byte(&mut self) -> Result<u8> {
-        let byte = self.chunk.instruction(self.ip)? as u8;
+        let byte = self.chunk.code(self.ip);
         self.ip += 1;
         Ok(byte)
     }
@@ -172,6 +176,8 @@ impl VM {
     fn read_short(&mut self) -> Result<u16> {
         let byte1 = self.read_byte()? as u16;
         let byte2 = self.read_byte()? as u16;
+        dbg!(&byte1);
+        dbg!(&byte2);
         Ok((byte1 << 8) | byte2)
     }
 

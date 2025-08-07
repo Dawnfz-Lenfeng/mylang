@@ -10,10 +10,10 @@ pub enum ErrorType {
     Runtime,
     Io,
     Internal,
-    Compilation,    // 编译错误
-    VmRuntime,      // 虚拟机运行时错误
-    StackOverflow,  // 栈溢出
-    StackUnderflow, // 栈下溢
+    Compilation,
+    VmRuntime,
+    StackOverflow,
+    StackUnderflow,
 }
 
 #[derive(Debug, Clone)]

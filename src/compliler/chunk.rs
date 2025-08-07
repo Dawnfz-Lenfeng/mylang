@@ -1,5 +1,4 @@
 use super::{value::Value, OpCode};
-use crate::error::{Error, Result};
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -18,8 +17,8 @@ impl Chunk {
         }
     }
 
-    pub fn instruction(&self, ip: usize) -> Result<OpCode> {
-        OpCode::try_from(self.code[ip]).map_err(|_| Error::invalid_opcode(self.code[ip]))
+    pub fn code(&self, ip: usize) -> u8 {
+        self.code[ip]
     }
 
     pub fn constant(&self, index: usize) -> &Value {
@@ -64,7 +63,7 @@ impl Chunk {
     }
 
     pub fn patch_jump(&mut self, offset: usize) {
-        let jump = self.code.len() - offset - 2; // 2 is the length of the jump instruction
+        let jump = self.current_ip() - offset - 2; // 2 is the length of the jump instruction
         self.code[offset] = (jump >> 8) as u8;
         self.code[offset + 1] = jump as u8;
     }
@@ -161,7 +160,7 @@ impl Chunk {
                 let low = self.code[offset + 2] as u16;
                 let jump_offset = (high << 8) | low;
                 println!(
-                    "{indent}{offset:4} {op:15} {jump_offset} ; -> {}",
+                    "{indent}{offset:4} {op:15} ; -> {}",
                     offset + 3 + jump_offset as usize
                 );
                 offset + 3
