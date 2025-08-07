@@ -6,7 +6,7 @@ use crate::{
 use std::{collections::HashMap, io::Write};
 
 pub struct VM {
-    chunk: Option<Chunk>,
+    chunk: Chunk,
     ip: usize,
     stack: Vec<Value>,
     globals: HashMap<String, Value>,
@@ -15,9 +15,9 @@ pub struct VM {
 }
 
 impl VM {
-    pub fn new() -> Self {
+    pub fn new(chunk: Chunk) -> Self {
         Self {
-            chunk: None,
+            chunk,
             ip: 0,
             stack: Vec::new(),
             globals: HashMap::new(),
@@ -26,31 +26,20 @@ impl VM {
         }
     }
 
-    pub fn with_output(output: Box<dyn Write>) -> Self {
+    pub fn with_output(chunk: Chunk, output: Box<dyn Write>) -> Self {
         Self {
             output,
-            ..Self::new()
+            ..Self::new(chunk)
         }
     }
 
-    pub fn interpret(&mut self, chunk: Chunk) -> Result<()> {
-        self.chunk = Some(chunk);
-        self.ip = 0;
-        self.stack.clear();
-        self.call_stack.clear();
-        self.globals.clear();
-
-        self.run()
-    }
-
-    fn run(&mut self) -> Result<()> {
+    pub fn run(&mut self) -> Result<()> {
         loop {
-            let chunk = self.chunk.as_ref().unwrap();
-            if self.ip >= chunk.code.len() {
+            if self.ip >= self.chunk.current_ip() {
                 break;
             }
 
-            let instruction = OpCode::try_from(chunk.code[self.ip])?;
+            let instruction = self.chunk.instruction(self.ip)?;
             self.ip += 1;
 
             match instruction {
@@ -77,6 +66,7 @@ impl VM {
 
                 OpCode::Negate | OpCode::Not => self.unary_op(instruction)?,
 
+                // Variables
                 OpCode::DefineGlobal => {
                     let name = self.read_global_name()?;
                     let value = self.pop()?;
@@ -142,7 +132,6 @@ impl VM {
                         self.ip = frame.ip;
                         self.stack.truncate(frame.slots_offset - 1); // -1 for function itself
                         self.push(result);
-                        self.chunk = frame.caller_chunk;
                     } else {
                         return Ok(());
                     }
@@ -175,7 +164,7 @@ impl VM {
     }
 
     fn read_byte(&mut self) -> Result<u8> {
-        let byte = self.chunk.as_ref().unwrap().code[self.ip];
+        let byte = self.chunk.instruction(self.ip)? as u8;
         self.ip += 1;
         Ok(byte)
     }
@@ -188,12 +177,12 @@ impl VM {
 
     fn read_constant(&mut self) -> Result<Value> {
         let index = self.read_byte()?;
-        Ok(self.chunk.as_ref().unwrap().constants[index as usize].clone())
+        Ok(self.chunk.constant(index as usize).clone())
     }
 
     fn read_global_name(&mut self) -> Result<String> {
         let index = self.read_byte()?;
-        Ok(self.chunk.as_ref().unwrap().globals[index as usize].clone())
+        Ok(self.chunk.global(index as usize).clone())
     }
 
     fn push(&mut self, value: Value) {
@@ -247,7 +236,7 @@ impl VM {
             Value::Function {
                 name,
                 params,
-                chunk,
+                start_ip,
             } => {
                 if params.len() != arg_count {
                     return Err(Error::arity_error(&name, params.len(), arg_count));
@@ -257,17 +246,15 @@ impl VM {
                     function: Value::Function {
                         name,
                         params,
-                        chunk: chunk.clone(),
+                        start_ip,
                     },
                     ip: self.ip,
                     slots_offset: self.stack.len() - arg_count,
-                    caller_chunk: self.chunk.clone(),
                 };
                 self.call_stack.push(frame);
 
-                // Switch to function's chunk
-                self.chunk = Some(*chunk);
-                self.ip = 0;
+                // Jump to function start address
+                self.ip = start_ip;
 
                 Ok(())
             }
@@ -365,24 +352,18 @@ impl VM {
     }
 
     fn print_values(&mut self, count: usize) -> Result<()> {
-        let output = self
-            .stack
+        if self.stack.len() < count {
+            return Err(Error::stack_underflow());
+        }
+        let start = self.stack.len() - count;
+        let output = self.stack[start..]
             .iter()
-            .rev()
-            .take(count)
-            .rev()
             .map(|value| value.to_string())
             .collect::<Vec<_>>()
             .join(" ");
 
         writeln!(self.output, "{output}").map_err(|e| Error::io(e.to_string()))?;
         Ok(())
-    }
-}
-
-impl Default for VM {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -400,8 +381,6 @@ impl VM {
 
     /// Disassemble the current chunk
     pub fn disassemble_chunk(&self, name: &str) {
-        if let Some(chunk) = &self.chunk {
-            chunk.disassemble(name);
-        }
+        self.chunk.disassemble(name);
     }
 }

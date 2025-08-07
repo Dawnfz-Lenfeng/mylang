@@ -1,4 +1,3 @@
-use super::Chunk;
 use crate::error::{Error, Result};
 use std::{
     cmp::Ordering,
@@ -15,7 +14,7 @@ pub enum Value {
     Function {
         name: String,
         params: Vec<String>,
-        chunk: Box<Chunk>,
+        start_ip: usize, // Function start address in main chunk
     },
     Nil,
 }

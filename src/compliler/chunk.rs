@@ -1,11 +1,12 @@
 use super::{value::Value, OpCode};
+use crate::error::{Error, Result};
 use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Chunk {
-    pub code: Vec<u8>,
-    pub constants: Vec<Value>,
-    pub globals: Vec<String>,
+    code: Vec<u8>,
+    constants: Vec<Value>,
+    globals: Vec<String>,
 }
 
 impl Chunk {
@@ -17,13 +18,27 @@ impl Chunk {
         }
     }
 
-    pub fn write(&mut self, byte: u8) {
-        self.code.push(byte);
+    pub fn instruction(&self, ip: usize) -> Result<OpCode> {
+        OpCode::try_from(self.code[ip]).map_err(|_| Error::invalid_opcode(self.code[ip]))
     }
 
-    pub fn write_op(&mut self, op: OpCode, arg: u8) {
-        self.write(op as u8);
-        self.write(arg);
+    pub fn constant(&self, index: usize) -> &Value {
+        &self.constants[index]
+    }
+
+    pub fn global(&self, index: usize) -> &String {
+        &self.globals[index]
+    }
+
+    pub fn current_ip(&self) -> usize {
+        self.code.len()
+    }
+}
+
+/// Write operations
+impl Chunk {
+    pub fn write(&mut self, byte: u8) {
+        self.code.push(byte);
     }
 
     pub fn add_constant(&mut self, value: Value) -> u8 {
@@ -35,21 +50,28 @@ impl Chunk {
         self.constants.len() as u8 - 1
     }
 
-    pub fn add_global(&mut self, global: String) -> u8 {
-        if let Some(index) = self.globals.iter().position(|s| s == &global) {
-            return index as u8;
+    pub fn add_global(&mut self, name: String) -> u8 {
+        if let Some(index) = self.resolve_global(&name) {
+            return index;
         }
 
-        self.globals.push(global);
+        self.globals.push(name);
         self.globals.len() as u8 - 1
     }
 
+    pub fn resolve_global(&self, name: &str) -> Option<u8> {
+        self.globals.iter().position(|s| s == name).map(|i| i as u8)
+    }
+
     pub fn patch_jump(&mut self, offset: usize) {
-        let jump = self.code.len() - offset - 2;
+        let jump = self.code.len() - offset - 2; // 2 is the length of the jump instruction
         self.code[offset] = (jump >> 8) as u8;
         self.code[offset + 1] = jump as u8;
     }
+}
 
+/// Debug utilities for the Chunk
+impl Chunk {
     pub fn disassemble(&self, name: &str) {
         self.disassemble_recursive(name, 0);
     }
@@ -65,13 +87,12 @@ impl Chunk {
                     Value::Function {
                         name: func_name,
                         params,
-                        chunk,
+                        start_ip,
                     } => {
                         println!(
-                            "{indent}constants[{i}] = function {func_name}({params_str})",
+                            "{indent}constants[{i}] = function {func_name}({params_str}) at @{start_ip}",
                             params_str = params.join(", ")
                         );
-                        chunk.disassemble_recursive(&format!("function {}", func_name), depth + 1);
                     }
                     _ => {
                         println!("{indent}constants[{i}] = {constant:?}");
@@ -157,6 +178,26 @@ impl Chunk {
                 let arg_count = self.code[offset + 1] as usize;
                 println!("{indent}{offset:4} {op:15} {arg_count} ; call");
                 offset + 2
+            }
+            OpCode::Print => {
+                let count = self.code[offset + 1] as usize;
+                println!("{indent}{offset:4} {op:15} {count} ; print");
+                offset + 2
+            }
+            OpCode::Add
+            | OpCode::Subtract
+            | OpCode::Multiply
+            | OpCode::Divide
+            | OpCode::Equal
+            | OpCode::NotEqual
+            | OpCode::LessThan
+            | OpCode::LessEqual
+            | OpCode::GreaterThan
+            | OpCode::GreaterEqual
+            | OpCode::And
+            | OpCode::Or => {
+                println!("{indent}{offset:4} {op:15} ; binary operation");
+                offset + 1
             }
             _ => {
                 println!("{indent}{offset:4} {:?}", op);

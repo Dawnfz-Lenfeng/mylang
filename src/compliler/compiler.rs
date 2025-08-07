@@ -35,7 +35,9 @@ impl<'a> Compiler<'a> {
         }
         Ok(())
     }
+}
 
+impl<'a> Compiler<'a> {
     fn begin_scope(&mut self) {
         self.scope_depth += 1;
     }
@@ -79,24 +81,14 @@ impl<'a> Compiler<'a> {
             .map(|(index, _)| index as u8)
     }
 
-    fn resolve_global(&mut self, name: &str) -> Option<u8> {
-        self.chunk
-            .globals
-            .iter()
-            .enumerate()
-            .rev()
-            .find(|(_, global)| global == &name)
-            .map(|(index, _)| index as u8)
-    }
-
     fn emit_constant(&mut self, value: Value) {
         let index = self.chunk.add_constant(value);
         self.emit_op_with_operand(OpCode::Constant, index);
     }
 
     fn emit_jump(&mut self, op: OpCode) -> usize {
-        let offset = self.chunk.code.len();
         self.emit_byte(op as u8);
+        let offset = self.chunk.current_ip();
         self.emit_byte(0);
         self.emit_byte(0);
         offset
@@ -116,7 +108,7 @@ impl<'a> Compiler<'a> {
     }
 
     fn emit_loop(&mut self, loop_start: usize) {
-        let offset = self.chunk.code.len() - loop_start;
+        let offset = self.chunk.current_ip() - loop_start;
         self.emit_byte(OpCode::Loop as u8);
         self.emit_byte(offset as u8);
     }
@@ -153,27 +145,30 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_func_decl(&mut self, name: &str, params: &[String], body: &Stmt) -> Result<()> {
-        let mut function_chunk = Chunk::new();
-        let mut function_compiler = Compiler::new(&mut function_chunk);
+        let name_index = self.add_global(name.to_string());
 
-        function_compiler.add_local(name.to_string());
-        for param in params {
-            function_compiler.add_local(param.clone());
-        }
-
-        body.accept(&mut function_compiler)?;
-
-        function_compiler.emit_op(OpCode::Nil);
-        function_compiler.emit_op(OpCode::Return);
+        let skip_function_jump = self.emit_jump(OpCode::Jump);
 
         let func_value = Value::Function {
             name: name.to_string(),
             params: params.to_vec(),
-            chunk: Box::new(function_chunk),
+            start_ip: self.chunk.current_ip(),
         };
+        let function_constant_index = self.chunk.add_constant(func_value);
 
-        self.emit_constant(func_value);
-        let name_index = self.add_global(name.to_string());
+        self.begin_scope();
+        for param in params {
+            self.add_local(param.clone());
+        }
+
+        body.accept(self)?;
+        self.emit_op(OpCode::Nil);
+        self.emit_op(OpCode::Return);
+        self.end_scope()?;
+
+        self.chunk.patch_jump(skip_function_jump);
+
+        self.emit_op_with_operand(OpCode::Constant, function_constant_index);
         self.emit_op_with_operand(OpCode::DefineGlobal, name_index as u8);
 
         Ok(())
@@ -203,7 +198,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
-        let loop_start = self.chunk.code.len();
+        let loop_start = self.chunk.current_ip();
         condition.accept(self)?;
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
         body.accept(self)?;
@@ -266,7 +261,7 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
     fn visit_identifier(&mut self, name: &str) -> Result<()> {
         if let Some(local_index) = self.resolve_local(name) {
             self.emit_op_with_operand(OpCode::GetLocal, local_index);
-        } else if let Some(global_index) = self.resolve_global(name) {
+        } else if let Some(global_index) = self.chunk.resolve_global(name) {
             self.emit_op_with_operand(OpCode::GetGlobal, global_index);
         } else {
             return Err(Error::runtime(format!("Undefined variable '{name}'")));
@@ -315,7 +310,7 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
         value.accept(self)?;
         if let Some(local_index) = self.resolve_local(name) {
             self.emit_op_with_operand(OpCode::SetLocal, local_index);
-        } else if let Some(global_index) = self.resolve_global(name) {
+        } else if let Some(global_index) = self.chunk.resolve_global(name) {
             self.emit_op_with_operand(OpCode::SetGlobal, global_index);
         } else {
             return Err(Error::runtime(format!(

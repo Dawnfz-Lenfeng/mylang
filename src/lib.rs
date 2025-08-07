@@ -84,8 +84,8 @@ pub fn run_with_vm(source: String) -> Result<()> {
     let mut compiler = Compiler::new(&mut chunk);
     compiler.compile(&stmts)?;
 
-    let mut vm = VM::new();
-    vm.interpret(chunk)?;
+    let mut vm = VM::new(chunk);
+    vm.run()?;
 
     Ok(())
 }

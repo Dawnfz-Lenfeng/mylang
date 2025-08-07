@@ -182,15 +182,15 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let type_name = match self.error_type {
-            ErrorType::Lexical => "LexicalError",
-            ErrorType::Syntax => "SyntaxError",
-            ErrorType::Runtime => "RuntimeError",
-            ErrorType::Io => "IOError",
-            ErrorType::Internal => "InternalError",
-            ErrorType::Compilation => "CompilationError",
-            ErrorType::VmRuntime => "VMRuntimeError",
-            ErrorType::StackOverflow => "StackOverflowError",
-            ErrorType::StackUnderflow => "StackUnderflowError",
+            ErrorType::Lexical => "Lexical Error",
+            ErrorType::Syntax => "Syntax Error",
+            ErrorType::Runtime => "Runtime Error",
+            ErrorType::Io => "IO Error",
+            ErrorType::Internal => "Internal Error",
+            ErrorType::Compilation => "Compilation Error",
+            ErrorType::VmRuntime => "VMRuntime Error",
+            ErrorType::StackOverflow => "StackOverflow Error",
+            ErrorType::StackUnderflow => "StackUnderflow Error",
         };
 
         match (&self.file, &self.location) {

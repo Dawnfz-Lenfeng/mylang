@@ -1,13 +1,10 @@
-use crate::{
-    compliler::{Chunk, Value},
-};
+use crate::compliler::Value;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
     pub function: Value,
     pub ip: usize,
     pub slots_offset: usize,
-    pub caller_chunk: Option<Chunk>,
 }
 
 pub struct CallStack {
@@ -36,6 +33,9 @@ impl CallStack {
     }
 
     pub fn offset(&self) -> usize {
-        self.frames.last().map(|frame| frame.slots_offset).unwrap_or(0)
+        self.frames
+            .last()
+            .map(|frame| frame.slots_offset)
+            .unwrap_or(0)
     }
 }
