@@ -61,7 +61,6 @@ pub enum OpCode {
     Closure = 90, // Create closure from function prototype
     GetUpvalue,   // Get upvalue value
     SetUpvalue,   // Set upvalue value
-    CloseUpvalue, // Close upvalue (move from stack to heap)
 }
 
 impl From<OpCode> for u8 {
@@ -113,7 +112,6 @@ impl TryFrom<u8> for OpCode {
             90 => Ok(OpCode::Closure),
             91 => Ok(OpCode::GetUpvalue),
             92 => Ok(OpCode::SetUpvalue),
-            93 => Ok(OpCode::CloseUpvalue),
             _ => Err(Error::invalid_opcode(byte)),
         }
     }

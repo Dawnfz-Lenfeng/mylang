@@ -7,49 +7,13 @@ use std::{
     rc::Rc,
 };
 
+pub type Upvalue = Rc<RefCell<Value>>;
+
 #[derive(Debug, Clone)]
 pub struct UpvalueInfo {
     pub index: usize,
     /// true if upvalue refers to local variable, false if it refers to upvalue
     pub is_local: bool,
-}
-
-#[derive(Debug, Clone)]
-pub enum Upvalue {
-    Open(usize),   // Points to stack slot
-    Closed(Value), // Value moved to heap
-}
-
-impl Upvalue {
-    pub fn new_open(slot: usize) -> Self {
-        Upvalue::Open(slot)
-    }
-
-    pub fn new_closed(value: Value) -> Self {
-        Upvalue::Closed(value)
-    }
-
-    pub fn is_open(&self) -> bool {
-        matches!(self, Upvalue::Open(_))
-    }
-
-    pub fn is_closed(&self) -> bool {
-        matches!(self, Upvalue::Closed(_))
-    }
-
-    pub fn stack_slot(&self) -> Option<usize> {
-        match self {
-            Upvalue::Open(slot) => Some(*slot),
-            Upvalue::Closed(_) => None,
-        }
-    }
-
-    pub fn closed_value(&self) -> Option<&Value> {
-        match self {
-            Upvalue::Open(_) => None,
-            Upvalue::Closed(value) => Some(value),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -60,24 +24,20 @@ pub struct Proto {
     pub upvalues: Vec<UpvalueInfo>,
 }
 
-impl Proto {
+#[derive(Debug, Clone)]
+pub struct Closure {
+    pub proto: Rc<Proto>,
+    pub upvalues: Vec<Upvalue>,
+}
+
+impl Closure {
     pub fn upvalue_count(&self) -> usize {
         self.upvalues.len()
     }
 
     pub fn arity(&self) -> usize {
-        self.params.len()
+        self.proto.params.len()
     }
-
-    pub fn has_upvalues(&self) -> bool {
-        !self.upvalues.is_empty()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Closure {
-    pub proto: Rc<Proto>,
-    pub upvalues: Vec<Rc<RefCell<Upvalue>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +52,10 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn new_upvalue(value: Value) -> Upvalue {
+        Rc::new(RefCell::new(value))
+    }
+
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Boolean(b) => *b,

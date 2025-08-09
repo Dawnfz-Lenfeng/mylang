@@ -1,8 +1,12 @@
-use crate::compliler::Value;
+use crate::{
+    compliler::value::{Closure, Upvalue},
+    error::{Error, Result},
+};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub function: Value,
+    pub closure: Rc<Closure>,
     pub ip: usize,
     pub slots_offset: usize,
 }
@@ -37,5 +41,23 @@ impl CallStack {
             .last()
             .map(|frame| frame.slots_offset)
             .unwrap_or(0)
+    }
+
+    pub fn get_upvalue(&self, index: usize) -> Result<&Upvalue> {
+        if let Some(frame) = self.frames.last() {
+            let closure = &frame.closure;
+            if index < closure.upvalues.len() {
+                Ok(&closure.upvalues[index])
+            } else {
+                Err(Error::upvalue_index_out_of_bounds(
+                    index,
+                    closure.upvalues.len(),
+                ))
+            }
+        } else {
+            Err(Error::runtime(
+                "Cannot get upvalue from empty call stack".to_string(),
+            ))
+        }
     }
 }

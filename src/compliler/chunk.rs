@@ -244,11 +244,6 @@ impl Chunk {
                 println!("{indent}{offset:4} {op:15} {upvalue_index} ; upvalue[{upvalue_index}]");
                 offset + 2
             }
-            OpCode::CloseUpvalue => {
-                let local_index = self.code[offset + 1];
-                println!("{indent}{offset:4} {op:15} {local_index} ; close local[{local_index}]");
-                offset + 2
-            }
             OpCode::Print => {
                 let count = self.code[offset + 1] as usize;
                 println!("{indent}{offset:4} {op:15} {count} ; print");

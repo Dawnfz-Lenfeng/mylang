@@ -121,6 +121,11 @@ impl Error {
         Self::new(ErrorType::StackUnderflow, "Stack underflow".to_string())
     }
 
+    /// Create a stack out of bounds error
+    pub fn stack_out_of_bounds(index: usize, length: usize) -> Self {
+        Self::vm_runtime(format!("Stack out of bounds: {index} > {length}"))
+    }
+
     /// Create a constant pool overflow error
     pub fn constant_overflow() -> Self {
         Self::compilation("Too many constants in chunk (max 256)".to_string())
@@ -168,6 +173,13 @@ impl Error {
     /// Create an undefined function error
     pub fn undefined_function(name: &str) -> Self {
         Self::vm_runtime(format!("Undefined function '{name}'"))
+    }
+
+    /// Create an upvalue index out of bounds error
+    pub fn upvalue_index_out_of_bounds(index: usize, length: usize) -> Self {
+        Self::vm_runtime(format!(
+            "Upvalue index {index} out of bounds (length: {length})",
+        ))
     }
 
     pub fn line(&self) -> Option<usize> {

@@ -1,9 +1,9 @@
 use super::stack::{CallFrame, CallStack};
 use crate::{
-    compliler::{Chunk, OpCode, Value},
+    compliler::{Chunk, Closure, OpCode, Value},
     error::{Error, Result},
 };
-use std::{collections::HashMap, io::Write};
+use std::{collections::HashMap, io::Write, rc::Rc};
 
 pub struct VM {
     chunk: Chunk,
@@ -41,7 +41,6 @@ impl VM {
 
             let instruction = OpCode::try_from(self.chunk.code(self.ip))?;
             self.ip += 1;
-            dbg!(&instruction);
 
             match instruction {
                 OpCode::Constant => {
@@ -100,10 +99,7 @@ impl VM {
                     self.ip += offset;
                 }
                 OpCode::JumpIfFalse => {
-                    dbg!("JumpIfFalse");
-
                     let offset = self.read_short()? as usize;
-                    dbg!(&offset);
                     let condition = self.pop()?;
                     if !condition.is_truthy() {
                         self.ip += offset;
@@ -162,6 +158,22 @@ impl VM {
                 OpCode::IndexSet => {
                     self.set_array_element()?;
                 }
+
+                // Closures and Upvalues
+                OpCode::Closure => {
+                    let proto_index = self.read_byte()? as usize;
+                    let upvalue_count = self.read_byte()? as usize;
+                    self.create_closure(proto_index, upvalue_count)?;
+                }
+                OpCode::GetUpvalue => {
+                    let upvalue_index = self.read_byte()? as usize;
+                    self.get_upvalue(upvalue_index)?;
+                }
+                OpCode::SetUpvalue => {
+                    let upvalue_index = self.read_byte()? as usize;
+                    let value = self.peek(0)?.clone();
+                    self.set_upvalue(upvalue_index, value)?;
+                }
             }
         }
         Ok(())
@@ -176,8 +188,7 @@ impl VM {
     fn read_short(&mut self) -> Result<u16> {
         let byte1 = self.read_byte()? as u16;
         let byte2 = self.read_byte()? as u16;
-        dbg!(&byte1);
-        dbg!(&byte2);
+
         Ok((byte1 << 8) | byte2)
     }
 
@@ -239,32 +250,27 @@ impl VM {
 
     fn call_value(&mut self, callee: Value, arg_count: usize) -> Result<()> {
         match callee {
-            Value::Function {
-                name,
-                params,
-                start_ip,
-            } => {
-                if params.len() != arg_count {
-                    return Err(Error::arity_error(&name, params.len(), arg_count));
+            Value::Closure(closure) => {
+                if closure.arity() != arg_count {
+                    return Err(Error::arity_error(
+                        &closure.proto.name,
+                        closure.arity(),
+                        arg_count,
+                    ));
                 }
 
                 let frame = CallFrame {
-                    function: Value::Function {
-                        name,
-                        params,
-                        start_ip,
-                    },
+                    closure: closure.clone(),
                     ip: self.ip,
                     slots_offset: self.stack.len() - arg_count,
                 };
                 self.call_stack.push(frame);
-
-                // Jump to function start address
-                self.ip = start_ip;
-
+                self.ip = closure.proto.start_ip;
                 Ok(())
             }
-            _ => Err(Error::runtime("Can only call functions".to_string())),
+            _ => Err(Error::runtime(
+                "Can only call functions and closures".to_string(),
+            )),
         }
     }
 
@@ -369,6 +375,48 @@ impl VM {
             .join(" ");
 
         writeln!(self.output, "{output}").map_err(|e| Error::io(e.to_string()))?;
+        Ok(())
+    }
+
+    fn create_closure(&mut self, proto_index: usize, upvalue_count: usize) -> Result<()> {
+        let proto = match self.chunk.constant(proto_index).clone() {
+            Value::Proto(proto) => proto,
+            _ => {
+                return Err(Error::runtime(
+                    "Expected function in closure creation".to_string(),
+                ))
+            }
+        };
+
+        let upvalues = (0..upvalue_count)
+            .map(|_| {
+                let is_local = self.read_byte()? == 1;
+                let index = self.read_byte()? as usize;
+                if is_local {
+                    let value = self.get_local(index)?;
+                    Ok(Value::new_upvalue(value.clone()))
+                } else {
+                    self.call_stack.get_upvalue(index).cloned()
+                }
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let closure = Value::Closure(Rc::new(Closure { proto, upvalues }));
+        self.push(closure);
+
+        Ok(())
+    }
+
+    fn get_upvalue(&mut self, upvalue_index: usize) -> Result<()> {
+        let upvalue = self.call_stack.get_upvalue(upvalue_index)?;
+        let value = upvalue.borrow().clone();
+        self.push(value);
+        Ok(())
+    }
+
+    fn set_upvalue(&mut self, upvalue_index: usize, value: Value) -> Result<()> {
+        let upvalue = self.call_stack.get_upvalue(upvalue_index)?;
+        *upvalue.borrow_mut() = value;
         Ok(())
     }
 }

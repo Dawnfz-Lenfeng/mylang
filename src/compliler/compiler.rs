@@ -83,16 +83,6 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn close_upvalues(&mut self) {
-        let captured_upvalues = self.env.borrow().upvalues.clone();
-
-        for upvalue in captured_upvalues {
-            if upvalue.is_local {
-                self.emit_op_with_operand(OpCode::CloseUpvalue, upvalue.index as u8);
-            }
-        }
-    }
-
     fn emit_constant(&mut self, value: Value) {
         let index = self.chunk.add_constant(value);
         self.emit_op_with_operand(OpCode::Constant, index);
@@ -168,7 +158,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
         for stmt in body {
             stmt.accept(self)?;
         }
-        self.close_upvalues();
+
         self.chunk.end_with_return();
         let upvalues = self.env.borrow().upvalues.clone();
 
@@ -239,7 +229,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
         } else {
             self.emit_op(OpCode::Nil);
         }
-        self.close_upvalues();
+
         self.emit_op(OpCode::Return);
         Ok(())
     }
