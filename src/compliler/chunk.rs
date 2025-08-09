@@ -96,13 +96,12 @@ impl Chunk {
             println!("{indent}=== Constants ===");
             for (i, constant) in self.constants.iter().enumerate() {
                 match constant {
-                    Value::Proto(function) => {
-                        let Proto {
-                            name,
-                            params,
-                            start_ip,
-                            ..
-                        } = function.as_ref();
+                    Value::Proto(Proto {
+                        name,
+                        params,
+                        start_ip,
+                        ..
+                    }) => {
                         println!(
                             "{indent}constants[{i}] = function {name}({params_str}) at @{start_ip}",
                             params_str = params.join(", ")
@@ -143,8 +142,7 @@ impl Chunk {
                 print!("{indent}{offset:4} {:15}", op);
                 if let Some(constant) = self.constants.get(operand as usize) {
                     match constant {
-                        Value::Proto(function) => {
-                            let Proto { name, params, .. } = function.as_ref();
+                        Value::Proto(Proto { name, params, .. }) => {
                             println!(" {} ; function {}({})", operand, name, params.join(", "));
                         }
                         _ => {

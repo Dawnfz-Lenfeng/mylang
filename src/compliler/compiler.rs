@@ -11,7 +11,6 @@ use crate::{
         stmt::{self, Stmt},
     },
 };
-use std::rc::Rc;
 
 pub struct Compiler<'a> {
     chunk: &'a mut Chunk,
@@ -149,12 +148,12 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
 
         self.chunk.patch_jump(skip); // jump here
 
-        let proto = Value::Proto(Rc::new(Proto {
+        let proto = Value::Proto(Proto {
             name: name.to_string(),
             params: params.to_vec(),
             start_ip,
             upvalues: upvalues.clone(),
-        }));
+        });
         let proto_index = self.chunk.add_constant(proto);
 
         self.emit_op_with_operand(OpCode::Closure, proto_index);

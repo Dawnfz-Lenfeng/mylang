@@ -9,14 +9,14 @@ use std::{
 
 pub type Upvalue = Rc<RefCell<Value>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct UpvalueInfo {
     pub index: usize,
     /// true if upvalue refers to local variable, false if it refers to upvalue
     pub is_local: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Proto {
     pub name: String,
     pub params: Vec<String>,
@@ -33,10 +33,10 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn from_proto(proto: Rc<Proto>, upvalues: Vec<Upvalue>) -> Self {
+    pub fn from_proto(proto: Proto, upvalues: Vec<Upvalue>) -> Self {
         Self {
-            name: proto.name.clone(),
-            params: proto.params.clone(),
+            name: proto.name,
+            params: proto.params,
             start_ip: proto.start_ip,
             upvalues,
         }
@@ -56,7 +56,7 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Array(Rc<RefCell<Vec<Value>>>),
-    Proto(Rc<Proto>),
+    Proto(Proto),
     Function(Rc<Function>),
     Nil,
 }
@@ -166,7 +166,7 @@ impl PartialEq for Value {
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
             (Value::Array(a), Value::Array(b)) => *a.borrow() == *b.borrow(),
-            (Value::Proto(a), Value::Proto(b)) => Rc::ptr_eq(a, b),
+            (Value::Proto(a), Value::Proto(b)) => a == b,
             (Value::Nil, Value::Nil) => true,
             _ => false,
         }
