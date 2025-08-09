@@ -132,7 +132,15 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_func_decl(&mut self, name: &str, params: &[String], body: &[Stmt]) -> Result<()> {
-        let skip = self.emit_jump(OpCode::Jump); // jump to create function with upvalues
+        // predeclare function name for recursion support
+        let index = if self.env.borrow().is_global() {
+            Some(self.chunk.add_global(name.to_string()))
+        } else {
+            self.env.borrow_mut().add_local(name.to_string());
+            None
+        };
+
+        let skip = self.emit_jump(OpCode::Jump);  // jump to create function with upvalues
         let start_ip = self.chunk.current_ip();
 
         self.begin_enclosed_scope(); // new enclosed env
@@ -163,11 +171,8 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
             self.emit_byte(upvalue.index as u8);
         }
 
-        if self.env.borrow().is_global() {
-            let name_index = self.chunk.add_global(name.to_string());
-            self.emit_op_with_operand(OpCode::DefineGlobal, name_index);
-        } else {
-            self.env.borrow_mut().add_local(name.to_string());
+        if let Some(index) = index {
+            self.emit_op_with_operand(OpCode::DefineGlobal, index);
         }
 
         Ok(())
