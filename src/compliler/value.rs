@@ -25,18 +25,28 @@ pub struct Proto {
 }
 
 #[derive(Debug, Clone)]
-pub struct Closure {
-    pub proto: Rc<Proto>,
+pub struct Function {
+    pub name: String,
+    pub params: Vec<String>,
+    pub start_ip: usize,
     pub upvalues: Vec<Upvalue>,
 }
 
-impl Closure {
+impl Function {
+    pub fn from_proto(proto: Rc<Proto>, upvalues: Vec<Upvalue>) -> Self {
+        Self {
+            name: proto.name.clone(),
+            params: proto.params.clone(),
+            start_ip: proto.start_ip,
+            upvalues,
+        }
+    }
     pub fn upvalue_count(&self) -> usize {
         self.upvalues.len()
     }
 
     pub fn arity(&self) -> usize {
-        self.proto.params.len()
+        self.params.len()
     }
 }
 
@@ -47,7 +57,7 @@ pub enum Value {
     Boolean(bool),
     Array(Vec<Value>),
     Proto(Rc<Proto>),
-    Closure(Rc<Closure>),
+    Function(Rc<Function>),
     Nil,
 }
 
@@ -64,7 +74,7 @@ impl Value {
             Value::String(s) => !s.is_empty(),
             Value::Array(arr) => !arr.is_empty(),
             Value::Proto(_) => true,
-            Value::Closure(_) => true,
+            Value::Function(_) => true,
         }
     }
 
@@ -74,8 +84,8 @@ impl Value {
             Value::String(_) => "string",
             Value::Boolean(_) => "boolean",
             Value::Array(_) => "array",
-            Value::Proto(_) => "function",
-            Value::Closure(_) => "closure",
+            Value::Proto(_) => "proto",
+            Value::Function(_) => "function",
             Value::Nil => "nil",
         }
     }
@@ -208,14 +218,19 @@ impl fmt::Display for Value {
             Value::Proto(function) => {
                 write!(
                     f,
-                    "<function {}({}) upvals:{}>",
+                    "<proto {}({}) upvals:{}>",
                     function.name,
                     function.params.join(", "),
                     function.upvalues.len()
                 )
             }
-            Value::Closure(closure) => {
-                write!(f, "<closure {}>", closure.proto.name)
+            Value::Function(function) => {
+                write!(
+                    f,
+                    "<function {}> upvals:{}",
+                    function.name,
+                    function.upvalue_count()
+                )
             }
             Value::Nil => write!(f, "nil"),
         }

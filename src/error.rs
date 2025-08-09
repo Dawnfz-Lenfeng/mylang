@@ -118,28 +118,28 @@ impl Error {
 
     /// Create a stack underflow error
     pub fn stack_underflow() -> Self {
-        Self::new(ErrorType::StackUnderflow, "Stack underflow".to_string())
+        Self::new(ErrorType::StackUnderflow, "stack underflow".to_string())
     }
 
     /// Create a stack out of bounds error
     pub fn stack_out_of_bounds(index: usize, length: usize) -> Self {
-        Self::vm_runtime(format!("Stack out of bounds: {index} > {length}"))
+        Self::vm_runtime(format!("stack out of bounds: {index} > {length}"))
     }
 
     /// Create a constant pool overflow error
     pub fn constant_overflow() -> Self {
-        Self::compilation("Too many constants in chunk (max 256)".to_string())
+        Self::compilation("too many constants in chunk (max 256)".to_string())
     }
 
     /// Create an invalid opcode error
     pub fn invalid_opcode(opcode: u8) -> Self {
-        Self::vm_runtime(format!("Invalid opcode: {}", opcode))
+        Self::vm_runtime(format!("invalid opcode: {}", opcode))
     }
 
     /// Create a type error for operations
     pub fn type_error(operation: &str, expected: &str, found: &str) -> Self {
         Self::vm_runtime(format!(
-            "Type error in {}: expected {}, found {}",
+            "type error in {}: expected {}, found {}",
             operation, expected, found
         ))
     }
@@ -147,32 +147,32 @@ impl Error {
     /// Create an arity error for function calls
     pub fn arity_error(function: &str, expected: usize, found: usize) -> Self {
         Self::vm_runtime(format!(
-            "Arity error in function '{}': expected {} arguments, found {}",
+            "arity error in function '{}': expected {} arguments, found {}",
             function, expected, found
         ))
     }
 
     /// Create a division by zero error
     pub fn division_by_zero() -> Self {
-        Self::vm_runtime("Division by zero".to_string())
+        Self::vm_runtime("division by zero".to_string())
     }
 
     /// Create an array index out of bounds error
     pub fn index_out_of_bounds(index: usize, length: usize) -> Self {
         Self::vm_runtime(format!(
-            "Array index {} out of bounds (length: {})",
+            "array index {} out of bounds (length: {})",
             index, length
         ))
     }
 
     /// Create an undefined variable error
     pub fn undefined_variable(name: &str) -> Self {
-        Self::vm_runtime(format!("Undefined variable '{name}'"))
+        Self::vm_runtime(format!("undefined variable '{name}'"))
     }
 
     /// Create an undefined function error
     pub fn undefined_function(name: &str) -> Self {
-        Self::vm_runtime(format!("Undefined function '{name}'"))
+        Self::vm_runtime(format!("undefined function '{name}'"))
     }
 
     /// Create an upvalue index out of bounds error
@@ -180,6 +180,11 @@ impl Error {
         Self::vm_runtime(format!(
             "Upvalue index {index} out of bounds (length: {length})",
         ))
+    }
+
+    /// Create a quit from global error
+    pub fn quit_from_global() -> Self {
+        Self::vm_runtime("cannot quit from global scope".to_string())
     }
 
     pub fn line(&self) -> Option<usize> {
@@ -308,8 +313,8 @@ impl From<VmControl> for Result<()> {
     fn from(control: VmControl) -> Self {
         match control {
             VmControl::Continue => Ok(()),
-            VmControl::Break => Err(Error::vm_runtime("Unexpected break".to_string())),
-            VmControl::Return(_) => Err(Error::vm_runtime("Unexpected return".to_string())),
+            VmControl::Break => Err(Error::vm_runtime("unexpected break".to_string())),
+            VmControl::Return(_) => Err(Error::vm_runtime("unexpected return".to_string())),
             VmControl::Error(e) => Err(e),
         }
     }

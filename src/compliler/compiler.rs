@@ -1,6 +1,6 @@
 use super::{
     chunk::Chunk,
-    env::{Env, EnvRef, Local},
+    env::{Env, EnvRef},
     opcode::OpCode,
     value::{Proto, Value},
 };
@@ -36,27 +36,13 @@ impl<'a> Compiler<'a> {
 
 impl<'a> Compiler<'a> {
     fn begin_scope(&mut self) {
-        self.env.borrow_mut().scope_depth += 1;
+        self.env.borrow_mut().begin_scope();
     }
 
     fn end_scope(&mut self) -> Result<()> {
-        if self.env.borrow().scope_depth == 0 {
-            return Err(Error::runtime("Cannot end scope with depth 0".to_string()));
-        }
-
-        self.env.borrow_mut().scope_depth -= 1;
-        let scope_depth = self.env.borrow().scope_depth;
-
-        unsafe {
-            let locals = &mut *(&mut self.env.borrow_mut().locals as *mut Vec<Local>);
-            while locals
-                .last()
-                .map(|l| l.depth > scope_depth)
-                .unwrap_or(false)
-            {
-                locals.pop();
-                self.emit_op(OpCode::Pop);
-            }
+        let pop_count = self.env.borrow_mut().end_scope()?;
+        for _ in 0..pop_count {
+            self.emit_op(OpCode::Pop);
         }
 
         Ok(())
@@ -69,7 +55,7 @@ impl<'a> Compiler<'a> {
 
     fn end_enclosed_scope(&mut self) -> Result<()> {
         if self.env.borrow().is_global() {
-            return Err(Error::runtime("Cannot end scope with depth 0".to_string()));
+            return Err(Error::quit_from_global());
         }
 
         let num_locals = self.env.borrow().locals.len();
@@ -147,23 +133,21 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_func_decl(&mut self, name: &str, params: &[String], body: &[Stmt]) -> Result<()> {
-        let skip = self.emit_jump(OpCode::Jump);
+        let skip = self.emit_jump(OpCode::Jump); // jump to create function with upvalues
         let start_ip = self.chunk.current_ip();
 
-        self.begin_enclosed_scope();
+        self.begin_enclosed_scope(); // new enclosed env
 
-        for param in params {
-            self.env.borrow_mut().add_local(param.clone());
-        }
+        self.env.borrow_mut().add_locals(params);
         for stmt in body {
             stmt.accept(self)?;
         }
-
         self.chunk.end_with_return();
         let upvalues = self.env.borrow().upvalues.clone();
 
         self.end_enclosed_scope()?;
-        self.chunk.patch_jump(skip);
+
+        self.chunk.patch_jump(skip); // jump here
 
         let proto = Value::Proto(Rc::new(Proto {
             name: name.to_string(),

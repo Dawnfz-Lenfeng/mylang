@@ -1,4 +1,5 @@
 use super::value::UpvalueInfo;
+use crate::error::{Error, Result};
 
 #[derive(Debug, Clone)]
 pub struct Local {
@@ -37,8 +38,39 @@ impl Env {
         }))
     }
 
+    pub fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+
+    /// Returns the number of locals to pop
+    pub fn end_scope(&mut self) -> Result<usize> {
+        if self.is_global() {
+            return Err(Error::quit_from_global());
+        }
+        self.scope_depth -= 1;
+
+        let mut pop_count = 0;
+        while self
+            .locals
+            .last()
+            .map(|l| l.depth > self.scope_depth)
+            .unwrap_or(false)
+        {
+            self.locals.pop();
+            pop_count += 1;
+        }
+
+        Ok(pop_count)
+    }
+
     pub fn is_global(&self) -> bool {
         self.scope_depth == 0
+    }
+
+    pub fn add_locals(&mut self, names: &[String]) {
+        for name in names {
+            self.add_local(name.clone());
+        }
     }
 
     pub fn add_local(&mut self, name: String) {
@@ -71,7 +103,7 @@ impl Env {
 
     pub fn resolve_upvalue(&mut self, name: &str) -> Option<u8> {
         let (index, is_local) = {
-            let mut enc = self.enclosing.as_ref().map(|e| e.borrow_mut())?;
+            let mut enc = self.enclosing.as_ref()?.borrow_mut();
 
             if let Some(local_index) = enc.resolve_local(name) {
                 enc.locals[local_index as usize].is_captured = true;

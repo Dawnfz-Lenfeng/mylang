@@ -1,12 +1,12 @@
 use crate::{
-    compliler::value::{Closure, Upvalue},
+    compliler::value::{Function, Upvalue},
     error::{Error, Result},
 };
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub closure: Rc<Closure>,
+    pub function: Rc<Function>,
     pub ip: usize,
     pub slots_offset: usize,
 }
@@ -28,14 +28,6 @@ impl CallStack {
         self.frames.pop()
     }
 
-    pub fn peek(&self) -> Option<&CallFrame> {
-        self.frames.last()
-    }
-
-    pub fn clear(&mut self) {
-        self.frames.clear();
-    }
-
     pub fn offset(&self) -> usize {
         self.frames
             .last()
@@ -45,13 +37,13 @@ impl CallStack {
 
     pub fn get_upvalue(&self, index: usize) -> Result<&Upvalue> {
         if let Some(frame) = self.frames.last() {
-            let closure = &frame.closure;
-            if index < closure.upvalues.len() {
-                Ok(&closure.upvalues[index])
+            let function = &frame.function;
+            if index < function.upvalues.len() {
+                Ok(&function.upvalues[index])
             } else {
                 Err(Error::upvalue_index_out_of_bounds(
                     index,
-                    closure.upvalues.len(),
+                    function.upvalues.len(),
                 ))
             }
         } else {

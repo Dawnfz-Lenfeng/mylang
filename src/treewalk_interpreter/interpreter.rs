@@ -239,8 +239,8 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                     )))
                 }
             }
-            (Value::Array(_), _) => Err(Error::runtime("Array index must be a number".to_string())),
-            _ => Err(Error::runtime("Cannot index non-array value".to_string())),
+            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
+            _ => Err(Error::runtime("cannot index non-array value".to_string())),
         }
     }
 

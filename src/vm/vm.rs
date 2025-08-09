@@ -1,6 +1,6 @@
 use super::stack::{CallFrame, CallStack};
 use crate::{
-    compliler::{Chunk, Closure, OpCode, Value},
+    compliler::{Chunk, Function, OpCode, Value},
     error::{Error, Result},
 };
 use std::{collections::HashMap, io::Write, rc::Rc};
@@ -250,22 +250,22 @@ impl VM {
 
     fn call_value(&mut self, callee: Value, arg_count: usize) -> Result<()> {
         match callee {
-            Value::Closure(closure) => {
-                if closure.arity() != arg_count {
+            Value::Function(function) => {
+                if function.arity() != arg_count {
                     return Err(Error::arity_error(
-                        &closure.proto.name,
-                        closure.arity(),
+                        &function.name,
+                        function.arity(),
                         arg_count,
                     ));
                 }
 
                 let frame = CallFrame {
-                    closure: closure.clone(),
+                    function: function.clone(),
                     ip: self.ip,
                     slots_offset: self.stack.len() - arg_count,
                 };
                 self.call_stack.push(frame);
-                self.ip = closure.proto.start_ip;
+                self.ip = function.start_ip;
                 Ok(())
             }
             _ => Err(Error::runtime(
@@ -330,13 +330,13 @@ impl VM {
             (Value::Array(arr), Value::Number(idx)) => {
                 let idx = *idx as usize;
                 if idx >= arr.len() {
-                    return Err(Error::runtime(format!("Array index {} out of bounds", idx)));
+                    return Err(Error::runtime(format!("array index {} out of bounds", idx)));
                 }
                 self.push(arr[idx].clone());
                 Ok(())
             }
-            (Value::Array(_), _) => Err(Error::runtime("Array index must be a number".to_string())),
-            _ => Err(Error::runtime("Can only index arrays".to_string())),
+            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
+            _ => Err(Error::runtime("can only index arrays".to_string())),
         }
     }
 
@@ -350,7 +350,7 @@ impl VM {
             (Value::Array(arr), Value::Number(idx)) => {
                 let idx = *idx as usize;
                 if idx >= arr.len() {
-                    return Err(Error::runtime(format!("Array index {} out of bounds", idx)));
+                    return Err(Error::runtime(format!("array index {} out of bounds", idx)));
                 }
                 // Create a new array with the modified element
                 let mut new_arr = arr.clone();
@@ -358,8 +358,8 @@ impl VM {
                 self.push(Value::Array(new_arr));
                 Ok(())
             }
-            (Value::Array(_), _) => Err(Error::runtime("Array index must be a number".to_string())),
-            _ => Err(Error::runtime("Can only index arrays".to_string())),
+            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
+            _ => Err(Error::runtime("can only index arrays".to_string())),
         }
     }
 
@@ -401,8 +401,8 @@ impl VM {
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let closure = Value::Closure(Rc::new(Closure { proto, upvalues }));
-        self.push(closure);
+        let function = Value::Function(Rc::new(Function::from_proto(proto.clone(), upvalues)));
+        self.push(function);
 
         Ok(())
     }
@@ -421,20 +421,3 @@ impl VM {
     }
 }
 
-/// Debug utilities for the VM
-impl VM {
-    /// Print the current stack state
-    pub fn debug_stack(&self) {
-        todo!("Debug print stack")
-    }
-
-    /// Print instruction at current IP
-    pub fn debug_instruction(&self) {
-        todo!("Debug print current instruction")
-    }
-
-    /// Disassemble the current chunk
-    pub fn disassemble_chunk(&self, name: &str) {
-        self.chunk.disassemble(name);
-    }
-}
