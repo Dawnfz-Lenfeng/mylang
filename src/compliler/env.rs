@@ -6,11 +6,7 @@ pub struct Local {
     pub depth: usize,
     pub is_captured: bool,
 }
-use std::{
-    cell::{RefCell, RefMut},
-    rc::Rc,
-};
-
+use std::{cell::RefCell, rc::Rc};
 
 pub type EnvRef = Rc<RefCell<Env>>;
 
@@ -75,7 +71,7 @@ impl Env {
 
     pub fn resolve_upvalue(&mut self, name: &str) -> Option<u8> {
         let (index, is_local) = {
-            let mut enc = self.enclosing_mut_borrow()?;
+            let mut enc = self.enclosing.as_ref().map(|e| e.borrow_mut())?;
 
             if let Some(local_index) = enc.resolve_local(name) {
                 enc.locals[local_index as usize].is_captured = true;
@@ -86,9 +82,5 @@ impl Env {
         };
 
         Some(self.add_upvalue(index as usize, is_local))
-    }
-
-    pub fn enclosing_mut_borrow(&self) -> Option<RefMut<Env>> {
-        self.enclosing.as_ref().map(|e| e.borrow_mut())
     }
 }

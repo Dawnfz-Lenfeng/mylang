@@ -97,7 +97,12 @@ impl Chunk {
             for (i, constant) in self.constants.iter().enumerate() {
                 match constant {
                     Value::Proto(function) => {
-                        let Proto { name, params, start_ip, .. } = function.as_ref();
+                        let Proto {
+                            name,
+                            params,
+                            start_ip,
+                            ..
+                        } = function.as_ref();
                         println!(
                             "{indent}constants[{i}] = function {name}({params_str}) at @{start_ip}",
                             params_str = params.join(", ")
@@ -187,6 +192,61 @@ impl Chunk {
             OpCode::Call => {
                 let arg_count = self.code[offset + 1] as usize;
                 println!("{indent}{offset:4} {op:15} {arg_count} ; call");
+                offset + 2
+            }
+            OpCode::Array => {
+                let element_count = self.code[offset + 1] as usize;
+                println!("{indent}{offset:4} {op:15} {element_count} ; create array with {element_count} elements");
+                offset + 2
+            }
+            OpCode::Index => {
+                println!("{indent}{offset:4} {op:15} ; array[index]");
+                offset + 1
+            }
+            OpCode::IndexSet => {
+                println!("{indent}{offset:4} {op:15} ; array[index] = value");
+                offset + 1
+            }
+            OpCode::Closure => {
+                let proto_index = self.code[offset + 1];
+                let upvalue_count = self.code[offset + 2];
+                print!("{indent}{offset:4} {op:15} {proto_index} ; ");
+
+                if let Some(constant) = self.constants.get(proto_index as usize) {
+                    if let Value::Proto(proto) = constant {
+                        println!(
+                            "closure for function '{}' with {} upvalues",
+                            proto.name, upvalue_count
+                        );
+
+                        // Print upvalue details
+                        let mut current_offset = offset + 3;
+                        for i in 0..upvalue_count {
+                            let is_local = self.code[current_offset];
+                            let index = self.code[current_offset + 1];
+                            println!(
+                                "{indent}     upvalue[{}]: {} index {}",
+                                i,
+                                if is_local == 1 { "local" } else { "upvalue" },
+                                index
+                            );
+                            current_offset += 2;
+                        }
+
+                        return current_offset;
+                    }
+                }
+                println!("INVALID_PROTO");
+                offset + 3 + (upvalue_count as usize * 2)
+            }
+            OpCode::GetUpvalue | OpCode::SetUpvalue => {
+                let upvalue_index = self.code[offset + 1];
+                println!("{indent}{offset:4} {op:15} {upvalue_index} ; upvalue[{upvalue_index}]");
+                offset + 2
+            }
+            OpCode::CloseUpvalue => {
+                let local_index = self.code[offset + 1];
+                println!("{indent}{offset:4} {op:15} {local_index} ; close local[{local_index}]");
                 offset + 2
             }
             OpCode::Print => {

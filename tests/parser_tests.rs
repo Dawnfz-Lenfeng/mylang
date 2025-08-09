@@ -613,7 +613,7 @@ mod parser_tests {
         let expected = vec![Stmt::FuncDecl {
             name: "hello".to_string(),
             params: vec![],
-            body:vec![Stmt::Return {
+            body: vec![Stmt::Return {
                 value: Some(Expr::String("world".to_string())),
             }],
         }];

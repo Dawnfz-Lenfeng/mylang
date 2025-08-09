@@ -11,10 +11,7 @@ use crate::{
         stmt::{self, Stmt},
     },
 };
-use std::{
-    cell::{Ref, RefMut},
-    rc::Rc,
-};
+use std::rc::Rc;
 
 pub struct Compiler<'a> {
     chunk: &'a mut Chunk,
@@ -38,28 +35,20 @@ impl<'a> Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    fn env_borrow(&self) -> Ref<'_, Env> {
-        self.env.borrow()
-    }
-
-    fn env_mut_borrow(&self) -> RefMut<'_, Env> {
-        self.env.borrow_mut()
-    }
-
     fn begin_scope(&mut self) {
-        self.env_mut_borrow().scope_depth += 1;
+        self.env.borrow_mut().scope_depth += 1;
     }
 
     fn end_scope(&mut self) -> Result<()> {
-        if self.env_borrow().scope_depth == 0 {
+        if self.env.borrow().scope_depth == 0 {
             return Err(Error::runtime("Cannot end scope with depth 0".to_string()));
         }
 
-        self.env_mut_borrow().scope_depth -= 1;
-        let scope_depth = self.env_borrow().scope_depth;
+        self.env.borrow_mut().scope_depth -= 1;
+        let scope_depth = self.env.borrow().scope_depth;
 
         unsafe {
-            let locals = &mut *(&mut self.env_mut_borrow().locals as *mut Vec<Local>);
+            let locals = &mut *(&mut self.env.borrow_mut().locals as *mut Vec<Local>);
             while locals
                 .last()
                 .map(|l| l.depth > scope_depth)
@@ -79,23 +68,23 @@ impl<'a> Compiler<'a> {
     }
 
     fn end_enclosed_scope(&mut self) -> Result<()> {
-        if self.env_borrow().is_global() {
+        if self.env.borrow().is_global() {
             return Err(Error::runtime("Cannot end scope with depth 0".to_string()));
         }
 
-        let num_locals = self.env_borrow().locals.len();
+        let num_locals = self.env.borrow().locals.len();
         for _ in 0..num_locals {
             self.emit_op(OpCode::Pop);
         }
 
-        let enclosing = self.env_mut_borrow().enclosing.take().unwrap();
+        let enclosing = self.env.borrow_mut().enclosing.take().unwrap();
         self.env = enclosing;
 
         Ok(())
     }
 
     fn close_upvalues(&mut self) {
-        let captured_upvalues = self.env_borrow().upvalues.clone();
+        let captured_upvalues = self.env.borrow().upvalues.clone();
 
         for upvalue in captured_upvalues {
             if upvalue.is_local {
@@ -158,11 +147,11 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
             self.emit_op(OpCode::Nil);
         }
 
-        if self.env_borrow().is_global() {
+        if self.env.borrow().is_global() {
             let global_index = self.chunk.add_global(name.to_string());
             self.emit_op_with_operand(OpCode::DefineGlobal, global_index as u8);
         } else {
-            self.env_mut_borrow().add_local(name.to_string());
+            self.env.borrow_mut().add_local(name.to_string());
         }
         Ok(())
     }
@@ -174,14 +163,14 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
         self.begin_enclosed_scope();
 
         for param in params {
-            self.env_mut_borrow().add_local(param.clone());
+            self.env.borrow_mut().add_local(param.clone());
         }
         for stmt in body {
             stmt.accept(self)?;
         }
         self.close_upvalues();
         self.chunk.end_with_return();
-        let upvalues = self.env_borrow().upvalues.clone();
+        let upvalues = self.env.borrow().upvalues.clone();
 
         self.end_enclosed_scope()?;
         self.chunk.patch_jump(skip);
@@ -201,11 +190,11 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
             self.emit_byte(upvalue.index as u8);
         }
 
-        if self.env_borrow().is_global() {
+        if self.env.borrow().is_global() {
             let name_index = self.chunk.add_global(name.to_string());
             self.emit_op_with_operand(OpCode::DefineGlobal, name_index);
         } else {
-            self.env_mut_borrow().add_local(name.to_string());
+            self.env.borrow_mut().add_local(name.to_string());
         }
 
         Ok(())
@@ -298,9 +287,10 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
 
     fn visit_identifier(&mut self, name: &str) -> Result<()> {
         let (op, index) = {
-            if let Some(local_index) = self.env_borrow().resolve_local(name) {
+            let mut env = self.env.borrow_mut();
+            if let Some(local_index) = env.resolve_local(name) {
                 (OpCode::GetLocal, local_index)
-            } else if let Some(upvalue_index) = self.env_mut_borrow().resolve_upvalue(name) {
+            } else if let Some(upvalue_index) = env.resolve_upvalue(name) {
                 (OpCode::GetUpvalue, upvalue_index)
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::GetGlobal, global_index)
@@ -354,9 +344,10 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
         value.accept(self)?;
 
         let (op, index) = {
-            if let Some(local_index) = self.env_borrow().resolve_local(name) {
+            let mut env = self.env.borrow_mut();
+            if let Some(local_index) = env.resolve_local(name) {
                 (OpCode::SetLocal, local_index)
-            } else if let Some(upvalue_index) = self.env_mut_borrow().resolve_upvalue(name) {
+            } else if let Some(upvalue_index) = env.resolve_upvalue(name) {
                 (OpCode::SetUpvalue, upvalue_index)
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::SetGlobal, global_index)
