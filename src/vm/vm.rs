@@ -3,7 +3,7 @@ use crate::{
     compliler::{Chunk, Function, OpCode, Value},
     error::{Error, Result},
 };
-use std::{collections::HashMap, io::Write, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
 
 pub struct VM {
     chunk: Chunk,
@@ -153,10 +153,15 @@ impl VM {
                     self.push(array);
                 }
                 OpCode::Index => {
-                    self.index_array()?;
+                    let index = self.pop()?;
+                    let array = self.pop()?;
+                    self.index_array(index, array)?;
                 }
                 OpCode::IndexSet => {
-                    self.set_array_element()?;
+                    let value = self.pop()?;
+                    let index = self.pop()?;
+                    let array = self.pop()?;
+                    self.set_array_element(value, index, array)?;
                 }
 
                 // Closures and Upvalues
@@ -310,29 +315,27 @@ impl VM {
         Ok(())
     }
 
-    /// Create an array from stack values
     fn create_array(&mut self, element_count: usize) -> Result<Value> {
-        let mut elements = Vec::with_capacity(element_count);
-        // Pop elements in reverse order (they were pushed in forward order)
-        for _ in 0..element_count {
-            elements.push(self.pop()?);
-        }
-        elements.reverse(); // Restore original order
-        Ok(Value::Array(elements))
+        let elements = (0..element_count)
+            .map(|_| self.pop())
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .rev()
+            .collect();
+
+        Ok(Value::Array(Rc::new(RefCell::new(elements))))
     }
 
-    /// Index into an array
-    fn index_array(&mut self) -> Result<()> {
-        let index = self.pop()?;
-        let array = self.pop()?;
-
+    fn index_array(&mut self, index: Value, array: Value) -> Result<()> {
         match (&array, &index) {
             (Value::Array(arr), Value::Number(idx)) => {
                 let idx = *idx as usize;
-                if idx >= arr.len() {
-                    return Err(Error::runtime(format!("array index {} out of bounds", idx)));
-                }
-                self.push(arr[idx].clone());
+                let value = arr
+                    .borrow()
+                    .get(idx)
+                    .ok_or(Error::index_out_of_bounds(idx, arr.borrow().len()))?
+                    .clone();
+                self.push(value);
                 Ok(())
             }
             (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
@@ -340,22 +343,15 @@ impl VM {
         }
     }
 
-    /// Set array element
-    fn set_array_element(&mut self) -> Result<()> {
-        let value = self.pop()?;
-        let index = self.pop()?;
-        let array = self.pop()?;
-
+    fn set_array_element(&mut self, value: Value, index: Value, array: Value) -> Result<()> {
         match (&array, &index) {
             (Value::Array(arr), Value::Number(idx)) => {
                 let idx = *idx as usize;
-                if idx >= arr.len() {
-                    return Err(Error::runtime(format!("array index {} out of bounds", idx)));
+                if let Some(target) = arr.borrow_mut().get_mut(idx) {
+                    *target = value;
+                } else {
+                    return Err(Error::index_out_of_bounds(idx, arr.borrow().len()));
                 }
-                // Create a new array with the modified element
-                let mut new_arr = arr.clone();
-                new_arr[idx] = value;
-                self.push(Value::Array(new_arr));
                 Ok(())
             }
             (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
@@ -420,4 +416,3 @@ impl VM {
         Ok(())
     }
 }
-

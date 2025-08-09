@@ -55,7 +55,7 @@ pub enum Value {
     Number(f64),
     String(String),
     Boolean(bool),
-    Array(Vec<Value>),
+    Array(Rc<RefCell<Vec<Value>>>),
     Proto(Rc<Proto>),
     Function(Rc<Function>),
     Nil,
@@ -72,7 +72,7 @@ impl Value {
             Value::Nil => false,
             Value::Number(n) => *n != 0.0,
             Value::String(s) => !s.is_empty(),
-            Value::Array(arr) => !arr.is_empty(),
+            Value::Array(arr) => !arr.borrow().is_empty(),
             Value::Proto(_) => true,
             Value::Function(_) => true,
         }
@@ -102,7 +102,7 @@ impl Add for Value {
             (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
             (Value::String(a), Value::String(b)) => Ok(Value::String(a + &b)),
             (Value::Array(a), Value::Array(b)) => {
-                Ok(Value::Array(a.iter().chain(b.iter()).cloned().collect()))
+                Ok(Value::Array(Rc::new(RefCell::new(a.borrow().iter().chain(b.borrow().iter()).cloned().collect()))))
             }
             _ => Err(Error::runtime(format!(
                 "unsupported operand type(s) for +: '{self_type}' and '{other_type}'"
@@ -165,7 +165,7 @@ impl PartialEq for Value {
             (Value::Number(a), Value::Number(b)) => (a - b).abs() < f64::EPSILON,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
-            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Array(a), Value::Array(b)) => *a.borrow() == *b.borrow(),
             (Value::Proto(a), Value::Proto(b)) => Rc::ptr_eq(a, b),
             (Value::Nil, Value::Nil) => true,
             _ => false,
@@ -179,7 +179,7 @@ impl PartialOrd for Value {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
             (Value::String(a), Value::String(b)) => a.partial_cmp(b),
             (Value::Boolean(a), Value::Boolean(b)) => a.partial_cmp(b),
-            (Value::Array(a), Value::Array(b)) => a.partial_cmp(b),
+            (Value::Array(a), Value::Array(b)) => a.borrow().partial_cmp(&b.borrow()),
             _ => None,
         }
     }
@@ -207,7 +207,7 @@ impl fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Array(arr) => {
                 write!(f, "[")?;
-                for (i, val) in arr.iter().enumerate() {
+                for (i, val) in arr.borrow().iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }

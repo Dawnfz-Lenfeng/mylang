@@ -278,10 +278,10 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_array(&mut self, elements: &[Expr]) -> Result<()> {
-        self.emit_op_with_operand(OpCode::Array, elements.len() as u8);
         for element in elements {
             element.accept(self)?;
         }
+        self.emit_op_with_operand(OpCode::Array, elements.len() as u8);
         Ok(())
     }
 
