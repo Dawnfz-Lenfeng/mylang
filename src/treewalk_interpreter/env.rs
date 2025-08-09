@@ -28,9 +28,9 @@ impl Environment {
         }))
     }
 
-    pub fn new_local(enclosing: &EnvRef) -> EnvRef {
+    pub fn new_enclosed(enclosing: EnvRef) -> EnvRef {
         Rc::new(RefCell::new(Environment {
-            enclosing: Some(Rc::clone(enclosing)),
+            enclosing: Some(enclosing),
             variables: HashMap::new(),
         }))
     }

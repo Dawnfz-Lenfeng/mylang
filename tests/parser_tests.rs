@@ -208,13 +208,13 @@ mod parser_tests {
         let expected = vec![Stmt::FuncDecl {
             name: "add".to_string(),
             params: vec!["a".to_string(), "b".to_string()],
-            body: Box::new(Stmt::Block(vec![Stmt::Return {
+            body: vec![Stmt::Return {
                 value: Some(Expr::Binary {
                     left: Box::new(Expr::Variable("a".to_string())),
                     operator: BinaryOp::Add,
                     right: Box::new(Expr::Variable("b".to_string())),
                 }),
-            }])),
+            }],
         }];
         assert_eq!(program, expected);
     }
@@ -247,14 +247,14 @@ mod parser_tests {
                 operator: BinaryOp::GreaterThan,
                 right: Box::new(Expr::Number(0.0)),
             },
-            body: Box::new(Stmt::Block(vec![Stmt::Expression(Expr::Assign {
+            body: vec![Stmt::Expression(Expr::Assign {
                 name: "x".to_string(),
                 value: Box::new(Expr::Binary {
                     left: Box::new(Expr::Variable("x".to_string())),
                     operator: BinaryOp::Subtract,
                     right: Box::new(Expr::Number(1.0)),
                 }),
-            })])),
+            })],
         }];
         assert_eq!(program, expected);
     }
@@ -546,14 +546,14 @@ mod parser_tests {
                 operator: BinaryOp::GreaterThan,
                 right: Box::new(Expr::Number(0.0)),
             },
-            body: Box::new(Stmt::Block(vec![Stmt::Expression(Expr::Assign {
+            body: vec![Stmt::Expression(Expr::Assign {
                 name: "x".to_string(),
                 value: Box::new(Expr::Binary {
                     left: Box::new(Expr::Variable("x".to_string())),
                     operator: BinaryOp::Subtract,
                     right: Box::new(Expr::Number(1.0)),
                 }),
-            })])),
+            })],
         }];
         assert_eq!(result, expected);
     }
@@ -573,7 +573,7 @@ mod parser_tests {
                     operator: BinaryOp::LessThan,
                     right: Box::new(Expr::Number(10.0)),
                 },
-                body: Box::new(Stmt::Block(vec![
+                body: vec![
                     Stmt::Block(vec![Stmt::Print(vec![Expr::Variable("i".to_string())])]),
                     Stmt::Expression(Expr::Assign {
                         name: "i".to_string(),
@@ -583,7 +583,7 @@ mod parser_tests {
                             right: Box::new(Expr::Number(1.0)),
                         }),
                     }),
-                ])),
+                ],
             },
         ])];
 
@@ -596,13 +596,13 @@ mod parser_tests {
         let expected = vec![Stmt::FuncDecl {
             name: "add".to_string(),
             params: vec!["a".to_string(), "b".to_string()],
-            body: Box::new(Stmt::Block(vec![Stmt::Return {
+            body: vec![Stmt::Return {
                 value: Some(Expr::Binary {
                     left: Box::new(Expr::Variable("a".to_string())),
                     operator: BinaryOp::Add,
                     right: Box::new(Expr::Variable("b".to_string())),
                 }),
-            }])),
+            }],
         }];
         assert_eq!(result, expected);
     }
@@ -613,9 +613,9 @@ mod parser_tests {
         let expected = vec![Stmt::FuncDecl {
             name: "hello".to_string(),
             params: vec![],
-            body: Box::new(Stmt::Block(vec![Stmt::Return {
+            body:vec![Stmt::Return {
                 value: Some(Expr::String("world".to_string())),
-            }])),
+            }],
         }];
         assert_eq!(result, expected);
     }
@@ -826,9 +826,9 @@ mod parser_tests {
             Stmt::FuncDecl {
                 name: "test".to_string(),
                 params: vec![],
-                body: Box::new(Stmt::Block(vec![Stmt::Return {
+                body: vec![Stmt::Return {
                     value: Some(Expr::Variable("x".to_string())),
-                }])),
+                }],
             },
         ];
         assert_eq!(result, expected);

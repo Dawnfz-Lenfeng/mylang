@@ -72,9 +72,8 @@ impl Parser {
 
         // Enter function scope
         self.function_depth += 1;
-        let body = Box::new(self.block_stmt()?);
+        let body = self.block()?;
         self.function_depth -= 1;
-
         Ok(Stmt::FuncDecl { name, params, body })
     }
 
@@ -137,17 +136,16 @@ impl Parser {
 
         // Enter loop scope
         self.loop_depth += 1;
-        let body = self.block_stmt()?;
+        let mut body = self.block()?;
         self.loop_depth -= 1;
 
-        let body_with_inc = match increment {
-            Some(inc) => Stmt::Block(vec![body, Stmt::Expression(inc)]),
-            None => body,
-        };
+        if let Some(inc) = increment {
+            body.push(Stmt::Expression(inc));
+        }
 
         let while_loop = Stmt::While {
             condition,
-            body: Box::new(body_with_inc),
+            body: Box::new(Stmt::Block(body)),
         };
 
         Ok(match initializer {
@@ -199,13 +197,18 @@ impl Parser {
     }
 
     fn block_stmt(&mut self) -> Result<Stmt> {
+        let statements = self.block()?;
+        Ok(Stmt::Block(statements))
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>> {
         self.consume(TokenType::LeftBrace, "expected '{' at start of block")?;
         let mut statements = Vec::new();
         while !self.check(&TokenType::RightBrace) {
             statements.push(self.stmt()?);
         }
         self.consume(TokenType::RightBrace, "expected '}' at end of block")?;
-        Ok(Stmt::Block(statements))
+        Ok(statements)
     }
 
     fn print_stmt(&mut self) -> Result<Stmt> {

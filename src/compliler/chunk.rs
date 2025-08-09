@@ -1,4 +1,7 @@
-use super::{value::Value, OpCode};
+use super::{
+    value::{Proto, Value},
+    OpCode,
+};
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -67,6 +70,16 @@ impl Chunk {
         self.code[offset] = (jump >> 8) as u8;
         self.code[offset + 1] = jump as u8;
     }
+
+    pub fn end_with_return(&mut self) {
+        if let Some(op) = self.code.last() {
+            if *op == OpCode::Return as u8 {
+                return;
+            }
+        }
+        self.write(OpCode::Nil as u8);
+        self.write(OpCode::Return as u8);
+    }
 }
 
 /// Debug utilities for the Chunk
@@ -83,13 +96,10 @@ impl Chunk {
             println!("{indent}=== Constants ===");
             for (i, constant) in self.constants.iter().enumerate() {
                 match constant {
-                    Value::Function {
-                        name: func_name,
-                        params,
-                        start_ip,
-                    } => {
+                    Value::Proto(function) => {
+                        let Proto { name, params, start_ip, .. } = function.as_ref();
                         println!(
-                            "{indent}constants[{i}] = function {func_name}({params_str}) at @{start_ip}",
+                            "{indent}constants[{i}] = function {name}({params_str}) at @{start_ip}",
                             params_str = params.join(", ")
                         );
                     }
@@ -128,7 +138,8 @@ impl Chunk {
                 print!("{indent}{offset:4} {:15}", op);
                 if let Some(constant) = self.constants.get(operand as usize) {
                     match constant {
-                        Value::Function { name, params, .. } => {
+                        Value::Proto(function) => {
+                            let Proto { name, params, .. } = function.as_ref();
                             println!(" {} ; function {}({})", operand, name, params.join(", "));
                         }
                         _ => {

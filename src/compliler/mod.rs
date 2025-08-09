@@ -1,5 +1,6 @@
 pub mod chunk;
 pub mod compiler;
+pub mod env;
 pub mod opcode;
 pub mod value;
 

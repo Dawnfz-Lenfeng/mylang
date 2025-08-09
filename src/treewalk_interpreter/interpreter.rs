@@ -40,11 +40,11 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn enter_scope(&mut self) {
-        self.env = Environment::new_local(&self.env);
+    pub fn begin_scope(&mut self) {
+        self.env = Environment::new_enclosed(self.env.clone());
     }
 
-    pub fn exit_scope(&mut self) {
+    pub fn end_scope(&mut self) {
         let enclosing = self.env.borrow_mut().enclosing.take();
         self.env = enclosing.unwrap();
     }
@@ -83,12 +83,12 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
         &mut self,
         name: &str,
         params: &[String],
-        body: &Stmt,
+        body: &[Stmt],
     ) -> InterpreterResult<()> {
         let func = Value::Function {
             name: name.to_string(),
             params: params.to_vec(),
-            body: body.clone(),
+            body: body.to_vec(),
             closure: Rc::clone(&self.env),
         };
         self.env.borrow_mut().define(name.to_string(), func);
@@ -112,9 +112,9 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> InterpreterResult<()> {
         while condition.accept(self)?.is_truthy() {
             match body.accept(self) {
-                Ok(_) => {}
+                Ok(_) => (),
                 Err(RuntimeControl::Break) => break,
-                Err(RuntimeControl::Continue) => {}
+                Err(RuntimeControl::Continue) => (),
                 Err(e) => return Err(e.into()),
             }
         }
@@ -138,11 +138,11 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
     }
 
     fn visit_block(&mut self, statements: &[Stmt]) -> InterpreterResult<()> {
-        self.enter_scope();
+        self.begin_scope();
         for stmt in statements {
             stmt.accept(self)?;
         }
-        self.exit_scope();
+        self.end_scope();
         Ok(())
     }
 }
@@ -296,9 +296,6 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 closure,
                 ..
             } => {
-                let prev_env = Rc::clone(&self.env);
-                self.env = Environment::new_local(&closure);
-
                 if params.len() != arguments.len() {
                     return Err(Error::runtime(format!(
                         "Expected {} arguments, got {}",
@@ -306,12 +303,16 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                         arguments.len()
                     )));
                 }
+                let prev_env = Rc::clone(&self.env);
+                self.env = Environment::new_enclosed(closure);
+
                 for (param, arg) in params.iter().zip(arguments.iter()) {
                     self.env.borrow_mut().define(param.clone(), arg.clone());
                 }
-                let result = body.accept(self);
+                let result = body.iter().try_for_each(|stmt| stmt.accept(self));
 
                 self.env = prev_env;
+
                 match result {
                     Ok(_) => Ok(Value::Nil),
                     Err(RuntimeControl::Return(value)) => Ok(value),

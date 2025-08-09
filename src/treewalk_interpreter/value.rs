@@ -19,7 +19,7 @@ pub enum Value {
     Function {
         name: String,
         params: Vec<String>,
-        body: Stmt,
+        body: Vec<Stmt>,
         closure: EnvRef,
     },
     BuiltinFunction {

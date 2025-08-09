@@ -10,7 +10,7 @@ pub enum Stmt {
     FuncDecl {
         name: String,
         params: Vec<String>,
-        body: Box<Stmt>,
+        body: Vec<Stmt>,
     },
 
     // Statements
@@ -37,8 +37,9 @@ pub trait Visitor<T> {
     fn visit_expr(&mut self, expr: &Expr) -> T;
     fn visit_print(&mut self, exprs: &[Expr]) -> T;
     fn visit_var_decl(&mut self, name: &str, initializer: Option<&Expr>) -> T;
-    fn visit_func_decl(&mut self, name: &str, params: &[String], body: &Stmt) -> T;
-    fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>) -> T;
+    fn visit_func_decl(&mut self, name: &str, params: &[String], body: &[Stmt]) -> T;
+    fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>)
+        -> T;
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> T;
     fn visit_return(&mut self, value: Option<&Expr>) -> T;
     fn visit_break(&mut self) -> T;

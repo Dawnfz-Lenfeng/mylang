@@ -1,9 +1,84 @@
 use crate::error::{Error, Result};
 use std::{
+    cell::RefCell,
     cmp::Ordering,
     fmt,
     ops::{Add, Div, Mul, Neg, Sub},
+    rc::Rc,
 };
+
+#[derive(Debug, Clone)]
+pub struct UpvalueInfo {
+    pub index: usize,
+    /// true if upvalue refers to local variable, false if it refers to upvalue
+    pub is_local: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum Upvalue {
+    Open(usize),   // Points to stack slot
+    Closed(Value), // Value moved to heap
+}
+
+impl Upvalue {
+    pub fn new_open(slot: usize) -> Self {
+        Upvalue::Open(slot)
+    }
+
+    pub fn new_closed(value: Value) -> Self {
+        Upvalue::Closed(value)
+    }
+
+    pub fn is_open(&self) -> bool {
+        matches!(self, Upvalue::Open(_))
+    }
+
+    pub fn is_closed(&self) -> bool {
+        matches!(self, Upvalue::Closed(_))
+    }
+
+    pub fn stack_slot(&self) -> Option<usize> {
+        match self {
+            Upvalue::Open(slot) => Some(*slot),
+            Upvalue::Closed(_) => None,
+        }
+    }
+
+    pub fn closed_value(&self) -> Option<&Value> {
+        match self {
+            Upvalue::Open(_) => None,
+            Upvalue::Closed(value) => Some(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Proto {
+    pub name: String,
+    pub params: Vec<String>,
+    pub start_ip: usize,
+    pub upvalues: Vec<UpvalueInfo>,
+}
+
+impl Proto {
+    pub fn upvalue_count(&self) -> usize {
+        self.upvalues.len()
+    }
+
+    pub fn arity(&self) -> usize {
+        self.params.len()
+    }
+
+    pub fn has_upvalues(&self) -> bool {
+        !self.upvalues.is_empty()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Closure {
+    pub proto: Rc<Proto>,
+    pub upvalues: Vec<Rc<RefCell<Upvalue>>>,
+}
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -11,11 +86,8 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Array(Vec<Value>),
-    Function {
-        name: String,
-        params: Vec<String>,
-        start_ip: usize, // Function start address in main chunk
-    },
+    Proto(Rc<Proto>),
+    Closure(Rc<Closure>),
     Nil,
 }
 
@@ -27,7 +99,8 @@ impl Value {
             Value::Number(n) => *n != 0.0,
             Value::String(s) => !s.is_empty(),
             Value::Array(arr) => !arr.is_empty(),
-            Value::Function { .. } => true,
+            Value::Proto(_) => true,
+            Value::Closure(_) => true,
         }
     }
 
@@ -37,7 +110,8 @@ impl Value {
             Value::String(_) => "string",
             Value::Boolean(_) => "boolean",
             Value::Array(_) => "array",
-            Value::Function { .. } => "function",
+            Value::Proto(_) => "function",
+            Value::Closure(_) => "closure",
             Value::Nil => "nil",
         }
     }
@@ -118,9 +192,7 @@ impl PartialEq for Value {
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
             (Value::Array(a), Value::Array(b)) => a == b,
-            (Value::Function { name: a_name, .. }, Value::Function { name: b_name, .. }) => {
-                a_name == b_name
-            }
+            (Value::Proto(a), Value::Proto(b)) => Rc::ptr_eq(a, b),
             (Value::Nil, Value::Nil) => true,
             _ => false,
         }
@@ -169,8 +241,17 @@ impl fmt::Display for Value {
                 }
                 write!(f, "]")
             }
-            Value::Function { name, params, .. } => {
-                write!(f, "<function {}({})>", name, params.join(", "))
+            Value::Proto(function) => {
+                write!(
+                    f,
+                    "<function {}({}) upvals:{}>",
+                    function.name,
+                    function.params.join(", "),
+                    function.upvalues.len()
+                )
+            }
+            Value::Closure(closure) => {
+                write!(f, "<closure {}>", closure.proto.name)
             }
             Value::Nil => write!(f, "nil"),
         }
