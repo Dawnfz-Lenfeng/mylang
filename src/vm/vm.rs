@@ -91,7 +91,7 @@ impl VM {
                 }
                 OpCode::SetGlobal => {
                     let name = self.read_global_name()?;
-                    let value = self.pop()?;
+                    let value = self.peek()?;
                     self.set_global(name, value)?;
                 }
                 OpCode::GetLocal => {
@@ -101,7 +101,7 @@ impl VM {
                 }
                 OpCode::SetLocal => {
                     let slot = self.read_byte()? as usize;
-                    let value = self.pop()?;
+                    let value = self.peek()?;
                     self.set_local(slot, value)?;
                 }
 
@@ -178,7 +178,7 @@ impl VM {
                 }
                 OpCode::SetUpvalue => {
                     let upvalue_index = self.read_byte()? as usize;
-                    let value = self.pop()?;
+                    let value = self.peek()?;
                     self.set_upvalue(upvalue_index, value)?;
                 }
             }
@@ -215,6 +215,10 @@ impl VM {
 
     fn pop(&mut self) -> Result<Value> {
         self.stack.pop().ok_or(Error::stack_underflow())
+    }
+
+    fn peek(&self) -> Result<Value> {
+        self.stack.last().cloned().ok_or(Error::stack_underflow())
     }
 
     fn binary_op(&mut self, op: OpCode) -> Result<()> {

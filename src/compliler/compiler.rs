@@ -119,6 +119,7 @@ impl Compiler {
 impl stmt::Visitor<Result<()>> for Compiler {
     fn visit_expr(&mut self, expr: &Expr) -> Result<()> {
         expr.accept(self)?;
+        self.emit_op(OpCode::Pop); // Pop the result of expression statement
         Ok(())
     }
 
