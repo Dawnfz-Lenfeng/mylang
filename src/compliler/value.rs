@@ -101,9 +101,13 @@ impl Add for Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
             (Value::String(a), Value::String(b)) => Ok(Value::String(a + &b)),
-            (Value::Array(a), Value::Array(b)) => {
-                Ok(Value::Array(Rc::new(RefCell::new(a.borrow().iter().chain(b.borrow().iter()).cloned().collect()))))
-            }
+            (Value::Array(a), Value::Array(b)) => Ok(Value::Array(Rc::new(RefCell::new(
+                a.borrow()
+                    .iter()
+                    .chain(b.borrow().iter())
+                    .cloned()
+                    .collect(),
+            )))),
             _ => Err(Error::runtime(format!(
                 "unsupported operand type(s) for +: '{self_type}' and '{other_type}'"
             ))),

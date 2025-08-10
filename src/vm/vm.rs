@@ -109,16 +109,6 @@ impl VM {
                     let offset = self.read_short()? as usize;
                     self.ip -= offset;
                 }
-                OpCode::Break => {
-                    // Break implementation - handled by compiler
-                    let offset = self.read_short()? as usize;
-                    self.ip += offset;
-                }
-                OpCode::Continue => {
-                    // Continue implementation - handled by compiler
-                    let offset = self.read_short()? as usize;
-                    self.ip -= offset;
-                }
 
                 // Functions
                 OpCode::Call => {

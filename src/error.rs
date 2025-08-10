@@ -178,7 +178,7 @@ impl Error {
     /// Create an upvalue index out of bounds error
     pub fn upvalue_index_out_of_bounds(index: usize, length: usize) -> Self {
         Self::vm_runtime(format!(
-            "Upvalue index {index} out of bounds (length: {length})",
+            "upvalue index {index} out of bounds (length: {length})",
         ))
     }
 

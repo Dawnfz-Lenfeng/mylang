@@ -180,12 +180,14 @@ impl Chunk {
                 offset + 3
             }
             OpCode::Loop => {
-                let operand = self.code[offset + 1];
+                let high = self.code[offset + 1] as u16;
+                let low = self.code[offset + 2] as u16;
+                let jump_offset = (high << 8) | low;
                 println!(
-                    "{indent}{offset:4} {op:15} {operand} ; -> {}",
-                    offset + 2 - operand as usize
+                    "{indent}{offset:4} {op:15} ; -> {}",
+                    offset + 3 - jump_offset as usize
                 );
-                offset + 2
+                offset + 3
             }
             OpCode::Call => {
                 let arg_count = self.code[offset + 1] as usize;

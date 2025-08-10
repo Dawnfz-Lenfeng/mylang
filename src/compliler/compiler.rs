@@ -47,6 +47,20 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    fn begin_loop(&mut self) {
+        self.env.borrow_mut().begin_loop(self.chunk.current_ip());
+    }
+
+    fn end_loop(&mut self) -> Result<()> {
+        if let Some(loop_context) = self.env.borrow_mut().end_loop() {
+            for break_jump in loop_context.break_jumps {
+                self.chunk.patch_jump(break_jump);
+            }
+        }
+
+        Ok(())
+    }
+
     fn begin_enclosed_scope(&mut self) {
         let enclosed = Env::new_enclosed(self.env.clone());
         self.env = enclosed;
@@ -95,8 +109,9 @@ impl<'a> Compiler<'a> {
     }
 
     fn emit_loop(&mut self, loop_start: usize) {
-        let offset = self.chunk.current_ip() - loop_start;
+        let offset = self.chunk.current_ip() - loop_start + 3; // +3 for the jump instruction
         self.emit_byte(OpCode::Loop as u8);
+        self.emit_byte((offset >> 8) as u8);
         self.emit_byte(offset as u8);
     }
 }
@@ -140,7 +155,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
             None
         };
 
-        let skip = self.emit_jump(OpCode::Jump);  // jump to create function with upvalues
+        let skip = self.emit_jump(OpCode::Jump); // jump to create function with upvalues
         let start_ip = self.chunk.current_ip();
 
         self.begin_enclosed_scope(); // new enclosed env
@@ -203,11 +218,19 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
         let loop_start = self.chunk.current_ip();
+
+        self.begin_loop();
+
         condition.accept(self)?;
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
+
         body.accept(self)?;
         self.emit_loop(loop_start);
+
         self.chunk.patch_jump(exit_jump);
+
+        self.end_loop()?;
+
         Ok(())
     }
 
@@ -223,12 +246,18 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_break(&mut self) -> Result<()> {
-        self.emit_op(OpCode::Break);
+        if !self.env.borrow().in_loop() {
+            return Err(Error::runtime("break outside of loop".to_string()));
+        }
+
+        let jump_position = self.emit_jump(OpCode::Jump);
+        self.env.borrow_mut().add_break_jump(jump_position)?;
         Ok(())
     }
 
     fn visit_continue(&mut self) -> Result<()> {
-        self.emit_op(OpCode::Continue);
+        let continue_target = self.env.borrow().get_continue_target()?;
+        self.emit_loop(continue_target);
         Ok(())
     }
 

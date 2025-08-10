@@ -17,9 +17,8 @@ use std::fs;
 use std::io::{self, Write};
 
 pub fn run_file(filename: &str) {
-    let mut interpreter = Interpreter::new();
     match fs::read_to_string(filename) {
-        Ok(source) => match run(source, &mut interpreter) {
+        Ok(source) => match run_with_vm(source) {
             Ok(_) => (),
             Err(error) => {
                 eprintln!("{}", error.in_file(filename.to_string()));

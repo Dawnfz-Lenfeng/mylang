@@ -41,8 +41,6 @@ pub enum OpCode {
     Jump = 50,
     JumpIfFalse,
     Loop,
-    Break,
-    Continue,
 
     // Functions
     Call = 60,
@@ -100,8 +98,6 @@ impl TryFrom<u8> for OpCode {
             50 => Ok(OpCode::Jump),
             51 => Ok(OpCode::JumpIfFalse),
             52 => Ok(OpCode::Loop),
-            53 => Ok(OpCode::Break),
-            54 => Ok(OpCode::Continue),
             60 => Ok(OpCode::Call),
             61 => Ok(OpCode::Return),
             70 => Ok(OpCode::Pop),

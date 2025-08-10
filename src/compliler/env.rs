@@ -12,11 +12,18 @@ use std::{cell::RefCell, rc::Rc};
 pub type EnvRef = Rc<RefCell<Env>>;
 
 #[derive(Debug)]
+pub struct LoopContext {
+    pub break_jumps: Vec<usize>,
+    pub continue_target: usize,
+}
+
+#[derive(Debug)]
 pub struct Env {
     pub locals: Vec<Local>,
     pub upvalues: Vec<UpvalueInfo>,
     pub scope_depth: usize,
     pub enclosing: Option<EnvRef>,
+    pub loop_contexts: Vec<LoopContext>,
 }
 
 impl Env {
@@ -26,6 +33,7 @@ impl Env {
             upvalues: Vec::new(),
             scope_depth: 0,
             enclosing: None,
+            loop_contexts: Vec::new(),
         }))
     }
 
@@ -35,6 +43,7 @@ impl Env {
             upvalues: Vec::new(),
             scope_depth: enclosing.borrow().scope_depth + 1,
             enclosing: Some(enclosing.clone()),
+            loop_contexts: Vec::new(),
         }))
     }
 
@@ -114,5 +123,37 @@ impl Env {
         };
 
         Some(self.add_upvalue(index as usize, is_local))
+    }
+
+    pub fn begin_loop(&mut self, continue_target: usize) {
+        self.loop_contexts.push(LoopContext {
+            break_jumps: Vec::new(),
+            continue_target,
+        });
+    }
+
+    pub fn end_loop(&mut self) -> Option<LoopContext> {
+        self.loop_contexts.pop()
+    }
+
+    pub fn add_break_jump(&mut self, jump_position: usize) -> Result<()> {
+        if let Some(context) = self.loop_contexts.last_mut() {
+            context.break_jumps.push(jump_position);
+            Ok(())
+        } else {
+            Err(Error::runtime("break outside of loop".to_string()))
+        }
+    }
+
+    pub fn get_continue_target(&self) -> Result<usize> {
+        if let Some(context) = self.loop_contexts.last() {
+            Ok(context.continue_target)
+        } else {
+            Err(Error::runtime("continue outside of loop".to_string()))
+        }
+    }
+
+    pub fn in_loop(&self) -> bool {
+        !self.loop_contexts.is_empty()
     }
 }
