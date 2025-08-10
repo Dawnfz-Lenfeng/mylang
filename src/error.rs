@@ -187,6 +187,16 @@ impl Error {
         Self::vm_runtime("cannot quit from global scope".to_string())
     }
 
+    /// Create an assertion error
+    pub fn assertion() -> Self {
+        Self::runtime("assertion failed".to_string())
+    }
+
+    /// Create an assertion error with message
+    pub fn assertion_with_message(message: String) -> Self {
+        Self::runtime(format!("assertion failed: {message}"))
+    }
+
     pub fn line(&self) -> Option<usize> {
         self.location.map(|loc| loc.line)
     }
@@ -287,8 +297,8 @@ impl Error {
     /// Add VM debugging information
     pub fn with_vm_debug(mut self, ip: usize, stack_size: usize, frame_count: usize) -> Self {
         self.message = format!(
-            "{} [VM: ip={}, stack={}, frames={}]",
-            self.message, ip, stack_size, frame_count
+            "{} [VM: ip={ip}, stack={stack_size}, frames={frame_count}]",
+            self.message
         );
         self
     }

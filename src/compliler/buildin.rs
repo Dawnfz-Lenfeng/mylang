@@ -7,6 +7,7 @@ pub const BUILTIN_FUNCTIONS: &[(&str, BuiltinFn)] = &[
     ("len", builtin_len as BuiltinFn),
     ("type", builtin_type as BuiltinFn),
     ("clock", builtin_clock as BuiltinFn),
+    ("assert", builtin_assert as BuiltinFn),
 ];
 
 /// Built-in function: len(value) -> number
@@ -57,4 +58,36 @@ pub fn builtin_clock(args: &[Value]) -> Result<Value> {
             .unwrap()
             .as_secs_f64(),
     ))
+}
+
+/// Built-in function: assert(condition, message?) -> nil
+/// Throws a runtime error if condition is falsy
+fn builtin_assert(args: &[Value]) -> Result<Value> {
+    if args.is_empty() || args.len() > 2 {
+        return Err(Error::runtime(format!(
+            "assert() takes 1 or 2 arguments ({} given)",
+            args.len()
+        )));
+    }
+
+    match args.iter().as_slice() {
+        [condition, message] => {
+            if !condition.is_truthy() {
+                return Err(Error::assertion_with_message(message.to_string()));
+            }
+        }
+        [condition] => {
+            if !condition.is_truthy() {
+                return Err(Error::assertion());
+            }
+        }
+        _ => {
+            return Err(Error::runtime(format!(
+                "assert() takes 1 or 2 arguments ({} given)",
+                args.len()
+            )));
+        }
+    }
+
+    Ok(Value::Nil)
 }
