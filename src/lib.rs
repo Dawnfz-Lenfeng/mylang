@@ -6,7 +6,7 @@ pub mod treewalk;
 pub mod utils;
 pub mod vm;
 
-use compliler::{Chunk, Compiler};
+use compliler::Compiler;
 use error::{Error, Result};
 use lexer::Lexer;
 use parser::Parser;
@@ -104,9 +104,8 @@ pub fn run_with_vm(source: String) -> Result<()> {
     let mut parser = Parser::new(tokens);
     let stmts = parser.parse()?;
 
-    let mut chunk = Chunk::new();
-    let mut compiler = Compiler::new(&mut chunk);
-    compiler.compile(&stmts)?;
+    let compiler = Compiler::new();
+    let chunk = compiler.compile(&stmts)?;
 
     let mut vm = VM::new(chunk);
     vm.run()?;

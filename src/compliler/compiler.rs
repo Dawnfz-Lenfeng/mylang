@@ -12,28 +12,28 @@ use crate::{
     },
 };
 
-pub struct Compiler<'a> {
-    chunk: &'a mut Chunk,
+pub struct Compiler {
+    chunk: Chunk,
     env: EnvRef,
 }
 
-impl<'a> Compiler<'a> {
-    pub fn new(chunk: &'a mut Chunk) -> Self {
+impl Compiler {
+    pub fn new() -> Self {
         Self {
-            chunk,
+            chunk: Chunk::new(),
             env: Env::new_global(),
         }
     }
 
-    pub fn compile(&mut self, stmts: &[Stmt]) -> Result<()> {
+    pub fn compile(mut self, stmts: &[Stmt]) -> Result<Chunk> {
         for stmt in stmts {
-            stmt.accept(self)?;
+            stmt.accept(&mut self)?;
         }
-        Ok(())
+        Ok(self.chunk)
     }
 }
 
-impl<'a> Compiler<'a> {
+impl Compiler {
     fn begin_scope(&mut self) {
         self.env.borrow_mut().begin_scope();
     }
@@ -116,7 +116,7 @@ impl<'a> Compiler<'a> {
     }
 }
 
-impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
+impl stmt::Visitor<Result<()>> for Compiler {
     fn visit_expr(&mut self, expr: &Expr) -> Result<()> {
         expr.accept(self)?;
         Ok(())
@@ -271,7 +271,7 @@ impl<'a> stmt::Visitor<Result<()>> for Compiler<'a> {
     }
 }
 
-impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
+impl expr::Visitor<Result<()>> for Compiler {
     fn visit_number(&mut self, value: f64) -> Result<()> {
         self.emit_constant(Value::Number(value));
         Ok(())
