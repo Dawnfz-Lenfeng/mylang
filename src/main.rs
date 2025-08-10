@@ -1,15 +1,17 @@
-use mylang::{print_usage, run_file, run_prompt};
+use mylang::{print_usage, run_file_with_tr, run_file_with_vm, run_prompt};
 use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() == 1 {
-        run_prompt();
-    } else if args.len() == 2 {
-        run_file(&args[1]);
-    } else {
-        print_usage(&args[0]);
-        std::process::exit(1);
+    match args.as_slice() {
+        [_] => run_prompt(),
+        [_, filename] => run_file_with_vm(filename),
+        [_, filename, option] if option == "--tr" => run_file_with_tr(filename),
+        [_, filename, option] if option == "--vm" => run_file_with_vm(filename),
+        _ => {
+            print_usage(&args[0]);
+            std::process::exit(1);
+        }
     }
 }

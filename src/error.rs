@@ -299,7 +299,7 @@ impl Error {
 pub enum VmControl {
     Continue,
     Break,
-    Return(crate::treewalk_interpreter::Value),
+    Return(crate::treewalk::Value),
     Error(Error),
 }
 

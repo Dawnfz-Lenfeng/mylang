@@ -2,7 +2,7 @@ pub mod compliler;
 pub mod error;
 pub mod lexer;
 pub mod parser;
-pub mod treewalk_interpreter;
+pub mod treewalk;
 pub mod utils;
 pub mod vm;
 
@@ -10,13 +10,28 @@ use compliler::{Chunk, Compiler};
 use error::{Error, Result};
 use lexer::Lexer;
 use parser::Parser;
-use treewalk_interpreter::Interpreter;
+use treewalk::Interpreter;
 use vm::VM;
 
 use std::fs;
 use std::io::{self, Write};
 
-pub fn run_file(filename: &str) {
+pub fn run_file_with_tr(filename: &str) {
+    let mut interpreter = Interpreter::new();
+    match fs::read_to_string(filename) {
+        Ok(source) => match run(source.to_string(), &mut interpreter) {
+            Ok(_) => (),
+            Err(error) => {
+                eprintln!("{}", error.in_file(filename.to_string()));
+            }
+        },
+        Err(error) => {
+            eprintln!("{}", Error::from(error));
+        }
+    }
+}
+
+pub fn run_file_with_vm(filename: &str) {
     match fs::read_to_string(filename) {
         Ok(source) => match run_with_vm(source) {
             Ok(_) => (),
@@ -87,19 +102,4 @@ pub fn run_with_vm(source: String) -> Result<()> {
     vm.run()?;
 
     Ok(())
-}
-
-/// Run file with bytecode VM
-pub fn run_file_with_vm(filename: &str) {
-    match fs::read_to_string(filename) {
-        Ok(source) => match run_with_vm(source) {
-            Ok(_) => (),
-            Err(error) => {
-                eprintln!("{}", error.in_file(filename.to_string()));
-            }
-        },
-        Err(error) => {
-            eprintln!("{}", Error::from(error));
-        }
-    }
 }
