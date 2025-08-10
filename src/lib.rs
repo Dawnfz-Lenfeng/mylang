@@ -72,7 +72,17 @@ pub fn run_prompt() {
 }
 
 pub fn print_usage(program_name: &str) {
-    println!("Usage: {program_name} [script]");
+    println!(
+        "Mylang interpreter
+    Usage: {program_name} [SCRIPT] [OPTIONS]
+    
+    Options:
+      --tr      Use tree-walk interpreter
+      --vm      Use bytecode VM (default)
+      --help    Display help information
+    
+    When no SCRIPT is provided, runs in interactive mode."
+    );
 }
 
 fn run(source: String, interpreter: &mut Interpreter) -> Result<()> {

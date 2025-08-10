@@ -6,6 +6,7 @@ fn main() {
 
     match args.as_slice() {
         [_] => run_prompt(),
+        [_, option] if option == "--help" => print_usage(&args[0]),
         [_, filename] => run_file_with_vm(filename),
         [_, filename, option] if option == "--tr" => run_file_with_tr(filename),
         [_, filename, option] if option == "--vm" => run_file_with_vm(filename),
