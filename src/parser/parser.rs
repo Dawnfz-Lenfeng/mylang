@@ -442,9 +442,13 @@ impl Parser {
                 Ok(expr)
             }
             TokenType::LeftBracket => {
-                let elements = self.arguments()?;
-                self.consume(TokenType::RightBracket, "expected ']' after array elements")?;
-                Ok(Expr::Array(elements))
+                if self.try_consume(TokenType::RightBracket).is_some() {
+                    Ok(Expr::Array(Vec::new()))
+                } else {
+                    let elements = self.arguments()?;
+                    self.consume(TokenType::RightBracket, "expected ']' after array elements")?;
+                    Ok(Expr::Array(elements))
+                }
             }
             _ => {
                 let expected = "number, string, boolean, identifier, '(' or '['";

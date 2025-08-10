@@ -247,14 +247,14 @@ mod parser_tests {
                 operator: BinaryOp::GreaterThan,
                 right: Box::new(Expr::Number(0.0)),
             },
-            body: vec![Stmt::Expression(Expr::Assign {
+            body: Box::new(Stmt::Block(vec![Stmt::Expression(Expr::Assign {
                 name: "x".to_string(),
                 value: Box::new(Expr::Binary {
                     left: Box::new(Expr::Variable("x".to_string())),
                     operator: BinaryOp::Subtract,
                     right: Box::new(Expr::Number(1.0)),
                 }),
-            })],
+            })])),
         }];
         assert_eq!(program, expected);
     }
@@ -546,14 +546,14 @@ mod parser_tests {
                 operator: BinaryOp::GreaterThan,
                 right: Box::new(Expr::Number(0.0)),
             },
-            body: vec![Stmt::Expression(Expr::Assign {
+            body: Box::new(Stmt::Block(vec![Stmt::Expression(Expr::Assign {
                 name: "x".to_string(),
                 value: Box::new(Expr::Binary {
                     left: Box::new(Expr::Variable("x".to_string())),
                     operator: BinaryOp::Subtract,
                     right: Box::new(Expr::Number(1.0)),
                 }),
-            })],
+            })])),
         }];
         assert_eq!(result, expected);
     }
@@ -573,7 +573,7 @@ mod parser_tests {
                     operator: BinaryOp::LessThan,
                     right: Box::new(Expr::Number(10.0)),
                 },
-                body: vec![
+                body: Box::new(Stmt::Block(vec![
                     Stmt::Block(vec![Stmt::Print(vec![Expr::Variable("i".to_string())])]),
                     Stmt::Expression(Expr::Assign {
                         name: "i".to_string(),
@@ -583,7 +583,7 @@ mod parser_tests {
                             right: Box::new(Expr::Number(1.0)),
                         }),
                     }),
-                ],
+                ])),
             },
         ])];
 

@@ -350,17 +350,16 @@ impl VM {
     }
 
     fn print_values(&mut self, count: usize) -> Result<()> {
-        if self.stack.len() < count {
-            return Err(Error::stack_underflow());
-        }
-        let start = self.stack.len() - count;
-        let output = self.stack[start..]
-            .iter()
+        let output = (0..count)
+            .map(|_| self.pop())
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .rev()
             .map(|value| value.to_string())
             .collect::<Vec<_>>()
             .join(" ");
 
-        writeln!(self.output, "{output}").map_err(|e| Error::io(e.to_string()))?;
+        writeln!(self.output, "{output}").map_err(|e| Error::from(e))?;
         Ok(())
     }
 
