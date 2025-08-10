@@ -385,11 +385,10 @@ impl<'a> expr::Visitor<Result<()>> for Compiler<'a> {
     }
 
     fn visit_call(&mut self, callee: &Expr, arguments: &[Expr]) -> Result<()> {
-        callee.accept(self)?;
         for argument in arguments {
             argument.accept(self)?;
         }
-
+        callee.accept(self)?;
         self.emit_op_with_operand(OpCode::Call, arguments.len() as u8);
         Ok(())
     }

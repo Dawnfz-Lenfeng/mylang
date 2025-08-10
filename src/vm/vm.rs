@@ -79,7 +79,7 @@ impl VM {
                 }
                 OpCode::SetGlobal => {
                     let name = self.read_global_name()?;
-                    let value = self.peek(0)?.clone();
+                    let value = self.pop()?;
                     self.set_global(name, value)?;
                 }
                 OpCode::GetLocal => {
@@ -89,7 +89,7 @@ impl VM {
                 }
                 OpCode::SetLocal => {
                     let slot = self.read_byte()? as usize;
-                    let value = self.peek(0)?.clone();
+                    let value = self.pop()?;
                     self.set_local(slot, value)?;
                 }
 
@@ -113,14 +113,14 @@ impl VM {
                 // Functions
                 OpCode::Call => {
                     let arg_count = self.read_byte()? as usize;
-                    let callee = self.peek(arg_count)?.clone();
+                    let callee = self.pop()?;
                     self.call_value(callee, arg_count)?;
                 }
                 OpCode::Return => {
                     let result = self.pop()?;
                     if let Some(frame) = self.call_stack.pop() {
                         self.ip = frame.ip;
-                        self.stack.truncate(frame.slots_offset - 1); // -1 for function itself
+                        self.stack.truncate(frame.slots_offset);
                         self.push(result);
                     } else {
                         return Ok(());
@@ -166,7 +166,7 @@ impl VM {
                 }
                 OpCode::SetUpvalue => {
                     let upvalue_index = self.read_byte()? as usize;
-                    let value = self.peek(0)?.clone();
+                    let value = self.pop()?;
                     self.set_upvalue(upvalue_index, value)?;
                 }
             }
@@ -203,12 +203,6 @@ impl VM {
 
     fn pop(&mut self) -> Result<Value> {
         self.stack.pop().ok_or(Error::stack_underflow())
-    }
-
-    fn peek(&self, distance: usize) -> Result<&Value> {
-        self.stack
-            .get(self.stack.len() - distance - 1)
-            .ok_or(Error::stack_underflow())
     }
 
     fn binary_op(&mut self, op: OpCode) -> Result<()> {
