@@ -1,46 +1,53 @@
-// Array functionality test
-
 // Array literals
 let numbers = [1, 2, 3, 4, 5];
-print "Numbers array:", numbers;
-
 let mixed = [42, "hello", true, [1, 2]];
-print "Mixed array:", mixed;
-
 let empty = [];
-print "Empty array:", empty;
 
-// Array indexing
-print "First number:", numbers[0];
-print "Last number:", numbers[4];
-print "Mixed second element:", mixed[1];
+// Test array basics
+assert(len(numbers) == 5, "Numbers array length should be 5");
+assert(len(mixed) == 4, "Mixed array length should be 4");
+assert(len(empty) == 0, "Empty array length should be 0");
 
-// Array assignment
+// Test array indexing
+assert(numbers[0] == 1, "First number should be 1");
+assert(numbers[4] == 5, "Last number should be 5");
+assert(mixed[1] == "hello", "Mixed second element should be hello");
+
+print "Array indexing tests passed!";
+
+// Test array assignment
 numbers[0] = 100;
-print "After changing first element:", numbers;
+assert(numbers[0] == 100, "First element should be changed to 100");
 
 mixed[3] = "replaced nested array";
-print "After replacing nested array:", mixed;
+assert(mixed[3] == "replaced nested array", "Nested array should be replaced");
 
-// Array with expressions
+// Test array with expressions
 let a = 10;
 let b = 20;
 let calculated = [a + b, a * b, a - b];
-print "Calculated array:", calculated;
+assert(calculated[0] == 30, "First calculated element should be 30");
+assert(calculated[1] == 200, "Second calculated element should be 200");
+assert(calculated[2] == -10, "Third calculated element should be -10");
 
-// Compound assignment with arrays
+// Test compound assignment with arrays
+let original_value = numbers[1];
 numbers[1] += 5;
-print "After numbers[1] += 5:", numbers;
+assert(numbers[1] == original_value + 5, "Compound addition failed");
 
+original_value = numbers[2];
 numbers[2] *= 3;
-print "After numbers[2] *= 3:", numbers;
+assert(numbers[2] == original_value * 3, "Compound multiplication failed");
 
-// Nested array access
+print "Array assignment tests passed!";
+
+// Test nested array access
 let matrix = [[1, 2], [3, 4], [5, 6]];
-print "Matrix:", matrix;
-print "Matrix[1][0]:", matrix[1][0];
+assert(matrix[1][0] == 3, "Matrix[1][0] should be 3");
+assert(len(matrix) == 3, "Matrix should have 3 rows");
+assert(len(matrix[0]) == 2, "Matrix row should have 2 columns");
 
-// Array in function
+// Test array in function
 fn sum_array(arr) {
     let total = 0;
     let i = 0;
@@ -52,4 +59,7 @@ fn sum_array(arr) {
 }
 
 let test_array = [10, 20, 30];
-print "Sum of test_array:", sum_array(test_array);
+let sum_result = sum_array(test_array);
+assert(sum_result == 60, "Sum of [10, 20, 30] should be 60");
+
+print "All array tests passed!";

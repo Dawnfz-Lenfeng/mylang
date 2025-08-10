@@ -3,27 +3,32 @@ let num = 42;
 let text = "Hello";
 let flag = true;
 
-print "Number:", num;
-print "Text:", text;
-print "Boolean:", flag;
+// Test initial values
+assert(num == 42, "Initial num should be 42");
+assert(text == "Hello", "Initial text should be Hello");
+assert(flag == true, "Initial flag should be true");
 
-// Variable reassignment
+// Test variable reassignment
 num = 100;
 text = "World";
 flag = false;
 
-print "Updated number:", num;
-print "Updated text:", text;
-print "Updated boolean:", flag;
+assert(num == 100, "Updated num should be 100");
+assert(text == "World", "Updated text should be World");
+assert(flag == false, "Updated flag should be false");
 
-// Block scoping
+print "Variable assignment tests passed!";
+
+// Test basic scoping (without assertions inside block for now)
+let original_num = num;
+
 {
-    let local_var = "I'm local";
-    print "Inside block:", local_var;
-    
-    // Shadow outer variable
+    // Test variable shadowing
     let num = 999;
-    print "Shadowed num:", num;
+    assert(num == 999, "Shadowed variable should be 999");
 }
 
-print "Outside block num:", num;
+// Test that outer variable is unchanged
+assert(num == original_num, "Outside block num should be unchanged");
+
+print "Scoping tests passed!";

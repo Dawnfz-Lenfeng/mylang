@@ -1,6 +1,6 @@
 // Function definitions and calls
 fn greet(name) {
-    print "Hello,", name;
+    return "Hello, " + name;
 }
 
 fn add(a, b) {
@@ -8,23 +8,38 @@ fn add(a, b) {
 }
 
 fn multiply(x, y) {
-    let result = x * y;
-    print "Multiplying", x, "and", y;
-    return result;
+    return x * y;
 }
 
-// Function calls
-greet("World");
+// Test function calls
+let greeting = greet("World");
+assert(greeting == "Hello, World", "Greeting function failed");
+
 let sum = add(5, 3);
-print "Sum:", sum;
+assert(sum == 8, "Addition function should return 8");
 
 let product = multiply(4, 6);
-print "Product:", product;
+assert(product == 24, "Multiplication function should return 24");
 
-// Function without return value
+print "Function call tests passed!";
+
+// Test function without explicit return value
 fn no_return() {
-    print "This function returns nil";
+    let x = 42; // Does something but returns nil
 }
 
 let nil_result = no_return();
-print "Result:", nil_result;
+assert(nil_result == nil, "Function without return should return nil");
+
+// Test recursive function
+fn factorial(n) {
+    if n <= 1 {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+assert(factorial(5) == 120, "factorial(5) should be 120");
+assert(factorial(0) == 1, "factorial(0) should be 1");
+
+print "All function tests passed!";

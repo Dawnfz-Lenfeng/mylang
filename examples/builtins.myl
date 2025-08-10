@@ -1,29 +1,29 @@
-// Test built-in functions: len and type
-
 // Test len() function
-print "Testing len() function:";
 let arr = [1, 2, 3, 4, 5];
-print "len([1, 2, 3, 4, 5]) =", len(arr);
+assert(len(arr) == 5, "len([1, 2, 3, 4, 5]) should be 5");
 
 let str = "hello";
-print "len('hello') =", len(str);
+assert(len(str) == 5, "len('hello') should be 5");
 
 let empty_arr = [];
-print "len([]) =", len(empty_arr);
+assert(len(empty_arr) == 0, "len([]) should be 0");
 
 let empty_str = "";
-print "len('') =", len(empty_str);
+assert(len(empty_str) == 0, "len('') should be 0");
+
+print "Length function tests passed!";
 
 // Test type() function
-print "Testing type() function:";
-print "type(42) =", type(42);
-print "type('hello') =", type("hello");
-print "type(true) =", type(true);
-print "type([1, 2, 3]) =", type([1, 2, 3]);
-print "type(nil) =", type(nil);
+assert(type(42) == "number", "type(42) should be 'number'");
+assert(type("hello") == "string", "type('hello') should be 'string'");
+assert(type(true) == "boolean", "type(true) should be 'boolean'");
+assert(type([1, 2, 3]) == "array", "type([1, 2, 3]) should be 'array'");
+assert(type(nil) == "nil", "type(nil) should be 'nil'");
 
 fn test_func(x) {
     return "test";
 }
-print "type(test_func) =", type(test_func);
-print "type(len) =", type(len);
+assert(type(test_func) == "function", "type(test_func) should be 'function'");
+assert(type(len) == "builtin_function", "type(len) should be 'builtin_function'");
+
+print "All builtin function tests passed!";

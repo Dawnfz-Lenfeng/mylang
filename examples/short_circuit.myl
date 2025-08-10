@@ -1,62 +1,79 @@
-// Short circuit evaluation tests
+// Test short circuit evaluation behavior
 let call_count = 0;
 
-fn side_effect(msg) {
-    call_count = call_count + 1;
-    print "Side effect called:", msg, "Count:", call_count;
+fn side_effect_true() {
+    call_count += 1;
     return true;
 }
 
-fn false_side_effect(msg) {
-    call_count = call_count + 1;
-    print "False side effect called:", msg, "Count:", call_count;
+fn side_effect_false() {
+    call_count += 1;
     return false;
 }
 
-print "=== Testing AND short circuit ===";
-
-// Test 1: false AND anything - should short circuit
+// Test AND short circuit: false AND anything should not evaluate second operand
 call_count = 0;
-let result1 = false and side_effect("should not be called");
-print "Result1:", result1, "Call count:", call_count;
+let result1 = false and side_effect_true();
+assert(result1 == false, "false AND anything should be false");
+assert(call_count == 0, "false AND should short-circuit (not call second operand)");
 
-// Test 2: true AND something - should not short circuit
+// Test AND no short circuit: true AND something should evaluate second operand
 call_count = 0;
-let result2 = true and side_effect("should be called");
-print "Result2:", result2, "Call count:", call_count;
+let result2 = true and side_effect_true();
+assert(result2 == true, "true AND true should be true");
+assert(call_count == 1, "true AND should evaluate second operand");
 
-print "=== Testing OR short circuit ===";
-
-// Test 3: true OR anything - should short circuit
+// Test OR short circuit: true OR anything should not evaluate second operand
 call_count = 0;
-let result3 = true or side_effect("should not be called");
-print "Result3:", result3, "Call count:", call_count;
+let result3 = true or side_effect_true();
+assert(result3 == true, "true OR anything should be true");
+assert(call_count == 0, "true OR should short-circuit (not call second operand)");
 
-// Test 4: false OR something - should not short circuit
+// Test OR no short circuit: false OR something should evaluate second operand
 call_count = 0;
-let result4 = false or side_effect("should be called");
-print "Result4:", result4, "Call count:", call_count;
+let result4 = false or side_effect_true();
+assert(result4 == true, "false OR true should be true");
+assert(call_count == 1, "false OR should evaluate second operand");
 
-print "=== Complex short circuit tests ===";
-
-// Test 5: Chain of AND operations
+// Test complex AND chain with short circuit
 call_count = 0;
-let result5 = true and false_side_effect("first") and side_effect("should not be called");
-print "Result5:", result5, "Call count:", call_count;
+let result5 = true and side_effect_false() and side_effect_true();
+assert(result5 == false, "true AND false AND anything should be false");
+assert(call_count == 1, "Should stop after first false in AND chain");
 
-// Test 6: Chain of OR operations
+// Test complex OR chain with short circuit
 call_count = 0;
-let result6 = false or side_effect("first") or false_side_effect("should not be called");
-print "Result6:", result6, "Call count:", call_count;
+let result6 = false or side_effect_true() or side_effect_false();
+assert(result6 == true, "false OR true OR anything should be true");
+assert(call_count == 1, "Should stop after first true in OR chain");
 
-print "=== Variable assignment in short circuit ===";
-
-// Test 7: Assignment in short-circuited expression
+// Test variable assignment in short-circuited expression
 let assigned = false;
 let result7 = false and (assigned = true);
-print "Result7:", result7, "Assigned:", assigned;
+assert(result7 == false, "false AND assignment should be false");
+assert(assigned == false, "Assignment should not execute in short-circuited AND");
 
-// Test 8: Assignment in short-circuited expression  
+// Test variable assignment in short-circuited OR
 assigned = false;
 let result8 = true or (assigned = true);
-print "Result8:", result8, "Assigned:", assigned;
+assert(result8 == true, "true OR assignment should be true");
+assert(assigned == false, "Assignment should not execute in short-circuited OR");
+
+// Test that non-short-circuited assignments do execute
+assigned = false;
+let result9 = false or (assigned = true);
+assert(result9 == true, "false OR assignment should be true");
+assert(assigned == true, "Assignment should execute in non-short-circuited OR");
+
+// Test mixed short circuit scenarios
+call_count = 0;
+let result10 = (true and side_effect_true()) or side_effect_false();
+assert(result10 == true, "Mixed expression should be true");
+assert(call_count == 1, "Should evaluate first part but short-circuit OR");
+
+call_count = 0;
+let result11 = (false or side_effect_false()) and side_effect_true();
+assert(result11 == false, "Mixed expression should be false");
+assert(call_count == 2, "Should evaluate both parts of OR, then short-circuit AND");
+
+print "All short-circuit evaluation tests passed!";

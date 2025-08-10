@@ -2,11 +2,16 @@
 let a = 10;
 let b = 3;
 
-print "Addition:", a + b;
-print "Subtraction:", a - b;
-print "Multiplication:", a * b;
-print "Division:", a / b;
+// Test arithmetic operations with assertions
+assert(a + b == 13, "Addition test failed");
+assert(a - b == 7, "Subtraction test failed");
+assert(a * b == 30, "Multiplication test failed");
+assert(a / b == 10 / 3, "Division test failed");
 
-// Operator precedence
-print "Precedence test:", 2 + 3 * 4;
-print "Parentheses:", (2 + 3) * 4;
+print "Arithmetic operations passed!";
+
+// Test operator precedence
+assert(2 + 3 * 4 == 14, "Precedence test failed");
+assert((2 + 3) * 4 == 20, "Parentheses test failed");
+
+print "Precedence tests passed!";

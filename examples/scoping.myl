@@ -1,21 +1,26 @@
-// Variable scoping test
+// Test variable scoping
 let global_var = "global";
 
 fn outer_function() {
     let outer_var = "outer";
-    print "In outer function:", outer_var;
-    print "Can access global:", global_var;
+    assert(outer_var == "outer", "Local variable should be accessible");
+    assert(global_var == "global", "Global variable should be accessible from function");
     
     fn inner_function() {
         let inner_var = "inner";
-        print "In inner function:", inner_var;
-        print "Can access outer:", outer_var;
-        print "Can access global:", global_var;
+        assert(inner_var == "inner", "Inner local variable should be accessible");
+        assert(outer_var == "outer", "Outer variable should be accessible from inner function");
+        assert(global_var == "global", "Global variable should be accessible from inner function");
+        return inner_var + "_" + outer_var + "_" + global_var;
     }
     
-    inner_function();
-    print "Back in outer function";
+    let result = inner_function();
+    assert(result == "inner_outer_global", "Nested function should access all scopes");
+    return outer_var + "_accessed";
 }
 
-outer_function();
-print "Back in global scope:", global_var;
+let outer_result = outer_function();
+assert(outer_result == "outer_accessed", "Outer function should return correct value");
+assert(global_var == "global", "Global variable should remain unchanged");
+
+print "All scoping tests passed!";

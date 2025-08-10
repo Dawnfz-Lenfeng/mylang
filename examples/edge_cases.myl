@@ -1,52 +1,60 @@
-// Edge cases and boundary conditions
+// Test edge cases and boundary conditions
 
-// Empty function
+// Test empty function
 fn empty_function() {
 }
 
 let result = empty_function();
-print "Empty function result:", result;
+assert(result == nil, "Empty function should return nil");
 
-// Zero and negative numbers
+// Test zero and negative numbers
 let zero = 0;
 let negative = -42;
-print "Zero:", zero;
-print "Negative:", negative;
+assert(zero == 0, "Zero should equal 0");
+assert(negative == -42, "Negative should equal -42");
+assert(-zero == 0, "Negative zero should be 0");
 
-// Boolean operations
-print "True and true:", true and true;
-print "True and false:", true and false;
-print "False or true:", false or true;
-print "Not true:", !true;
-print "Not false:", !false;
+// Test boolean operations
+assert((true and true) == true, "true AND true should be true");
+assert((true and false) == false, "true AND false should be false");
+assert((false or true) == true, "false OR true should be true");
+assert((!true) == false, "NOT true should be false");
+assert((!false) == true, "NOT false should be true");
 
-// String operations
+// Test string operations
 let empty_string = "";
 let space = " ";
-print "Empty string:", empty_string;
-print "Space:", space;
+assert(len(empty_string) == 0, "Empty string should have length 0");
+assert(len(space) == 1, "Space should have length 1");
+assert(empty_string != space, "Empty string should not equal space");
 
-// Nested blocks
+// Test nested block scoping
+let outer_var = "outer";
 {
     let a = 1;
+    assert(a == 1, "Block variable a should be 1");
+    assert(outer_var == "outer", "Should access outer variable");
     {
         let b = 2;
+        assert(b == 2, "Nested block variable b should be 2");
+        assert(a == 1, "Should still access a from parent block");
         {
             let c = 3;
-            print "Nested values:", a, b, c;
+            assert(c == 3, "Deep nested variable c should be 3");
+            assert(b == 2, "Should access b from outer block");
+            assert(a == 1, "Should access a from outermost block");
         }
-        print "After inner block:", a, b;
     }
-    print "After middle block:", a;
 }
 
-// Multiple returns in function
+// Test multiple returns in function
 fn multiple_returns(condition) {
     if condition {
         return "early return";
     }
     
-    print "After if statement";
+    // This should execute for false condition
+    let executed = true;
     
     if !condition {
         return "second return";
@@ -55,5 +63,19 @@ fn multiple_returns(condition) {
     return "default return";
 }
 
-print "Return 1:", multiple_returns(true);
-print "Return 2:", multiple_returns(false);
+assert(multiple_returns(true) == "early return", "Should return early for true");
+assert(multiple_returns(false) == "second return", "Should return second for false");
+
+// Test nil comparisons
+assert(nil == nil, "nil should equal nil");
+assert(nil != 0, "nil should not equal 0");
+assert(nil != false, "nil should not equal false");
+assert(nil != "", "nil should not equal empty string");
+
+// Test arithmetic edge cases
+assert(0 * 42 == 0, "Zero multiplication should be 0");
+assert(1 * 42 == 42, "Identity multiplication should work");
+assert(42 + 0 == 42, "Adding zero should not change value");
+assert(42 - 0 == 42, "Subtracting zero should not change value");
+
+print "All edge case tests passed!";

@@ -1,4 +1,4 @@
-// Complex closure scenarios
+// Test complex closure scenarios
 fn counter_factory(start) {
     let count = start;
     
@@ -7,33 +7,24 @@ fn counter_factory(start) {
         return count;
     }
     
-    fn decrement() {
-        count = count - 1;
-        return count;
-    }
-    
-    fn get_count() {
-        return count;
-    }
-    
     return increment;
 }
 
-// Test multiple counters
+// Test multiple independent counters
 let counter1 = counter_factory(0);
 let counter2 = counter_factory(100);
 
-print "Counter1:", counter1();
-print "Counter1:", counter1();
-print "Counter2:", counter2();
-print "Counter1:", counter1();
-print "Counter2:", counter2();
+// Test that each counter maintains its own state
+assert(counter1() == 1, "First counter1() should return 1");
+assert(counter1() == 2, "Second counter1() should return 2");
+assert(counter2() == 101, "First counter2() should return 101");
+assert(counter1() == 3, "Third counter1() should return 3");
+assert(counter2() == 102, "Second counter2() should return 102");
 
-// Nested closure
+// Test nested closures with parameter capture
 fn outer(x) {
     fn middle(y) {
         fn inner(z) {
-            print "Values:", x, y, z;
             return x + y + z;
         }
         return inner;
@@ -43,4 +34,31 @@ fn outer(x) {
 
 let nested = outer(1)(2);
 let result = nested(3);
-print "Nested result:", result;
+assert(result == 6, "Nested closure should return 1+2+3=6");
+
+// Test multiple nested calls with different values
+let nested2 = outer(10)(20);
+let result2 = nested2(30);
+assert(result2 == 60, "Second nested closure should return 10+20+30=60");
+
+// Test that original nested still works
+let result3 = nested(5);
+assert(result3 == 8, "Original nested closure should return 1+2+5=8");
+
+// Test closure with multiple captured variables
+fn create_calculator(base, multiplier) {
+    fn calculate(value) {
+        return (value + base) * multiplier;
+    }
+    return calculate;
+}
+
+let calc1 = create_calculator(5, 2);
+let calc2 = create_calculator(10, 3);
+
+assert(calc1(0) == 10, "calc1(0) should be (0+5)*2=10");
+assert(calc1(5) == 20, "calc1(5) should be (5+5)*2=20");
+assert(calc2(0) == 30, "calc2(0) should be (0+10)*3=30");
+assert(calc2(5) == 45, "calc2(5) should be (5+10)*3=45");
+
+print "All complex closure tests passed!";

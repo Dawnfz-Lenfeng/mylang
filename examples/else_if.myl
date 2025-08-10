@@ -1,69 +1,110 @@
-// Testing else if functionality
-print "=== Testing else if ===";
+// Test else if functionality
 
-let score = 85;
-
-if score >= 90 {
-    print "Grade: A";
-} else if score >= 80 {
-    print "Grade: B";
-} else if score >= 70 {
-    print "Grade: C";
-} else if score >= 60 {
-    print "Grade: D";
-} else {
-    print "Grade: F";
+// Test basic else if chain
+fn get_grade(score) {
+    let grade = "";
+    if score >= 90 {
+        grade = "A";
+    } else if score >= 80 {
+        grade = "B";
+    } else if score >= 70 {
+        grade = "C";
+    } else if score >= 60 {
+        grade = "D";
+    } else {
+        grade = "F";
+    }
+    return grade;
 }
 
-print "";
+assert(get_grade(95) == "A", "Score 95 should get grade A");
+assert(get_grade(85) == "B", "Score 85 should get grade B");
+assert(get_grade(75) == "C", "Score 75 should get grade C");
+assert(get_grade(65) == "D", "Score 65 should get grade D");
+assert(get_grade(45) == "F", "Score 45 should get grade F");
 
-// Testing multiple else if with different values
-let values = [45, 65, 75, 85, 95];
-let i = 0;
-while i < 5 {
-    let val = values[i];
-    print "Testing value:", val;
-    
+// Test edge cases for else if
+assert(get_grade(90) == "A", "Score 90 should get grade A (boundary)");
+assert(get_grade(89) == "B", "Score 89 should get grade B");
+assert(get_grade(60) == "D", "Score 60 should get grade D (boundary)");
+assert(get_grade(59) == "F", "Score 59 should get grade F");
+
+// Test multiple else if with array processing
+fn categorize_value(val) {
     if val >= 90 {
-        print "  Excellent!";
+        return "excellent";
     } else if val >= 80 {
-        print "  Good!";
+        return "good";
     } else if val >= 70 {
-        print "  Average";
+        return "average";
     } else if val >= 60 {
-        print "  Below average";
+        return "below_average";
     } else {
-        print "  Poor";
+        return "poor";
     }
-    
-    i = i + 1;
 }
 
-print "";
+let values = [45, 65, 75, 85, 95];
+let expected = ["poor", "below_average", "average", "good", "excellent"];
 
-// Testing nested if with else if
-print "=== Testing nested if with else if ===";
-let x = 15;
-let y = 25;
+let i = 0;
+while i < len(values) {
+    let result = categorize_value(values[i]);
+    assert(result == expected[i], "Value categorization failed");
+    i += 1;
+}
 
-if x > 10 {
-    print "x is greater than 10";
-    if y > 20 {
-        print "y is also greater than 20";
-        if x + y > 35 {
-            print "sum is greater than 35";
-        } else if x + y > 30 {
-            print "sum is greater than 30";
+// Test nested if with else if
+fn evaluate_coordinates(x, y) {
+    let result = "";
+    if x > 10 {
+        result = "x_gt_10";
+        if y > 20 {
+            result = result + "_y_gt_20";
+            if x + y > 35 {
+                result = result + "_sum_gt_35";
+            } else if x + y > 30 {
+                result = result + "_sum_gt_30";
+            } else {
+                result = result + "_sum_lte_30";
+            }
+        } else if y > 15 {
+            result = result + "_y_15_to_20";
         } else {
-            print "sum is 30 or less";
+            result = result + "_y_lte_15";
         }
-    } else if y > 15 {
-        print "y is greater than 15 but not 20";
+    } else if x > 5 {
+        result = "x_5_to_10";
     } else {
-        print "y is 15 or less";
+        result = "x_lte_5";
     }
-} else if x > 5 {
-    print "x is greater than 5 but not 10";
-} else {
-    print "x is 5 or less";
+    return result;
 }
+
+assert(evaluate_coordinates(15, 25) == "x_gt_10_y_gt_20_sum_gt_35", "Coordinates (15,25) evaluation failed");
+assert(evaluate_coordinates(12, 18) == "x_gt_10_y_15_to_20", "Coordinates (12,18) evaluation failed");
+assert(evaluate_coordinates(8, 10) == "x_5_to_10", "Coordinates (8,10) evaluation failed");
+assert(evaluate_coordinates(3, 5) == "x_lte_5", "Coordinates (3,5) evaluation failed");
+
+// Test else if with different data types
+fn type_check(value) {
+    if type(value) == "number" {
+        return "numeric";
+    } else if type(value) == "string" {
+        return "textual";
+    } else if type(value) == "boolean" {
+        return "logical";
+    } else if type(value) == "array" {
+        return "collection";
+    } else {
+        return "unknown";
+    }
+}
+
+assert(type_check(42) == "numeric", "Number type check failed");
+assert(type_check("hello") == "textual", "String type check failed");
+assert(type_check(true) == "logical", "Boolean type check failed");
+assert(type_check([1, 2, 3]) == "collection", "Array type check failed");
+assert(type_check(nil) == "unknown", "Nil type check failed");
+
+print "All else-if tests passed!";

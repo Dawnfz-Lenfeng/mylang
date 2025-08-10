@@ -1,58 +1,65 @@
-// Basic break test
-print "Testing break:";
+// Test break statement
 let i = 0;
+let iterations = 0;
 while i < 10 {
     if i == 3 {
         break;
     }
-    print "i =", i;
-    i = i + 1;
+    iterations += 1;
+    i += 1;
 }
-print "After while loop, i =", i;
+assert(i == 3, "Break should stop loop at i = 3");
+assert(iterations == 3, "Should have 3 iterations before break");
 
-print "";
-
-// Basic continue test
-print "Testing continue:";
+// Test continue statement
 let j = 0;
+let processed = 0;
 while j < 5 {
-    j = j + 1;
+    j += 1;
     if j == 3 {
         continue;
     }
-    print "j =", j;
+    processed += 1;
 }
+assert(j == 5, "Continue should not affect loop counter");
+assert(processed == 4, "Should process 4 items (skip j=3)");
 
-print "";
-
-// Nested loops with break
-print "Testing nested break:";
+// Test nested loops with break
+let outer_count = 0;
+let inner_break_count = 0;
 let x = 0;
 while x < 3 {
     let y = 0;
     while y < 3 {
         if y == 1 {
+            inner_break_count += 1;
             break; // Only breaks inner loop
         }
-        print "x =", x, "y =", y;
-        y = y + 1;
+        y += 1;
     }
-    x = x + 1;
+    outer_count += 1;
+    x += 1;
 }
+assert(outer_count == 3, "Outer loop should complete 3 times");
+assert(inner_break_count == 3, "Inner break should occur 3 times");
 
-print "";
-
-// Nested loops with continue
-print "Testing nested continue:";
+// Test nested loops with continue
+let continue_count = 0;
+let total_inner_iterations = 0;
 let a = 0;
-while a < 3 {
+while a < 2 {
     let b = 0;
     while b < 3 {
-        b = b + 1;
+        b += 1;
+        total_inner_iterations += 1;
         if b == 2 {
+            continue_count += 1;
             continue; // Only continues inner loop
         }
-        print "a =", a, "b =", b;
     }
-    a = a + 1;
+    a += 1;
 }
+assert(continue_count == 2, "Continue should occur 2 times");
+assert(total_inner_iterations == 6, "Should have 6 total inner iterations");
+
+print "All break/continue tests passed!";
