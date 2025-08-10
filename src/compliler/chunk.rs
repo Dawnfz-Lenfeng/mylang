@@ -1,6 +1,7 @@
 use super::{
+    buildin::BUILTIN_FUNCTIONS,
+    opcode::OpCode,
     value::{Proto, Value},
-    OpCode,
 };
 use std::fmt;
 
@@ -13,10 +14,15 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new() -> Self {
+        let globals = BUILTIN_FUNCTIONS
+            .iter()
+            .map(|(name, _)| name.to_string())
+            .collect();
+
         Self {
             code: Vec::new(),
             constants: Vec::new(),
-            globals: Vec::new(),
+            globals,
         }
     }
 

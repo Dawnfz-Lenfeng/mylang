@@ -1,6 +1,6 @@
 use super::stack::{CallFrame, CallStack};
 use crate::{
-    compliler::{Chunk, Function, OpCode, Value},
+    compliler::{Chunk, Function, OpCode, Value, BUILTIN_FUNCTIONS},
     error::{Error, Result},
 };
 use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
@@ -16,11 +16,23 @@ pub struct VM {
 
 impl VM {
     pub fn new(chunk: Chunk) -> Self {
+        let globals = BUILTIN_FUNCTIONS
+            .iter()
+            .map(|(name, func)| {
+                (
+                    name.to_string(),
+                    Value::BuiltinFunction {
+                        name: name.to_string(),
+                        function: *func,
+                    },
+                )
+            })
+            .collect();
         Self {
             chunk,
             ip: 0,
             stack: Vec::new(),
-            globals: HashMap::new(),
+            globals,
             call_stack: CallStack::new(),
             output: Box::new(std::io::stdout()),
         }
@@ -255,6 +267,18 @@ impl VM {
                 };
                 self.call_stack.push(frame);
                 self.ip = function.start_ip;
+                Ok(())
+            }
+            Value::BuiltinFunction { function, .. } => {
+                let args: Vec<Value> = (0..arg_count)
+                    .map(|_| self.pop())
+                    .collect::<Result<Vec<_>>>()?
+                    .into_iter()
+                    .rev()
+                    .collect();
+
+                let result = function(&args)?;
+                self.push(result);
                 Ok(())
             }
             _ => Err(Error::runtime(

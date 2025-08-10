@@ -1,3 +1,4 @@
+use super::buildin::BuiltinFn;
 use crate::error::{Error, Result};
 use std::{
     cell::RefCell,
@@ -58,6 +59,7 @@ pub enum Value {
     Array(Rc<RefCell<Vec<Value>>>),
     Proto(Proto),
     Function(Rc<Function>),
+    BuiltinFunction { name: String, function: BuiltinFn },
     Nil,
 }
 
@@ -75,6 +77,7 @@ impl Value {
             Value::Array(arr) => !arr.borrow().is_empty(),
             Value::Proto(_) => true,
             Value::Function(_) => true,
+            Value::BuiltinFunction { .. } => true,
         }
     }
 
@@ -86,6 +89,7 @@ impl Value {
             Value::Array(_) => "array",
             Value::Proto(_) => "proto",
             Value::Function(_) => "function",
+            Value::BuiltinFunction { .. } => "builtin_function",
             Value::Nil => "nil",
         }
     }
@@ -171,6 +175,9 @@ impl PartialEq for Value {
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
             (Value::Array(a), Value::Array(b)) => *a.borrow() == *b.borrow(),
             (Value::Proto(a), Value::Proto(b)) => a == b,
+            (Value::BuiltinFunction { name: a, .. }, Value::BuiltinFunction { name: b, .. }) => {
+                a == b
+            }
             (Value::Nil, Value::Nil) => true,
             _ => false,
         }
@@ -235,6 +242,9 @@ impl fmt::Display for Value {
                     function.name,
                     function.upvalue_count()
                 )
+            }
+            Value::BuiltinFunction { name, .. } => {
+                write!(f, "<builtin function {}>", name)
             }
             Value::Nil => write!(f, "nil"),
         }
