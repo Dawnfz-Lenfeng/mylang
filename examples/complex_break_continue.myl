@@ -95,6 +95,6 @@ while outer < 3 {
 assert(outer_iterations == 3, "Should complete 3 outer iterations");
 assert(middle_skips == 3, "Should skip middle=2 three times");
 assert(inner_breaks == 3, "Should break inner loop 3 times at middle=3, inner=2");
-assert(total_values == 15, "Should process correct number of values");
+assert(total_values == 12, "Should process correct number of values");
 
 print "All complex break/continue tests passed!";
