@@ -368,7 +368,8 @@ impl VM {
             (Value::Array(arr), Value::Number(idx)) => {
                 let idx = *idx as usize;
                 if let Some(target) = arr.borrow_mut().get_mut(idx) {
-                    *target = value;
+                    *target = value.clone();
+                    self.push(value);
                 } else {
                     return Err(Error::index_out_of_bounds(idx, arr.borrow().len())
                         .at_location(self.location()));
@@ -449,6 +450,6 @@ impl VM {
     }
 
     fn location(&self) -> Location {
-        self.chunk.location_at(self.ip)
+        self.chunk.location_at(self.ip - 1)
     }
 }
