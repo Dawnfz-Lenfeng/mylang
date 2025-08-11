@@ -19,14 +19,16 @@ use std::io::{self, Write};
 pub fn run_file_with_tr(filename: &str) {
     let mut interpreter = Interpreter::new();
     match fs::read_to_string(filename) {
-        Ok(source) => match run(source.to_string(), &mut interpreter) {
+        Ok(source) => match run_with_tr(source.to_string(), &mut interpreter) {
             Ok(_) => (),
             Err(error) => {
                 eprintln!("{}", error.in_file(filename.to_string()));
+                std::process::exit(1);
             }
         },
         Err(error) => {
             eprintln!("{}", Error::from(error));
+            std::process::exit(1);
         }
     }
 }
@@ -37,10 +39,12 @@ pub fn run_file_with_vm(filename: &str) {
             Ok(_) => (),
             Err(error) => {
                 eprintln!("{}", error.in_file(filename.to_string()));
+                std::process::exit(1);
             }
         },
         Err(error) => {
             eprintln!("{}", Error::from(error));
+            std::process::exit(1);
         }
     }
 }
@@ -60,7 +64,7 @@ pub fn run_prompt() {
             break;
         }
 
-        match run(input.to_string(), &mut interpreter) {
+        match run_with_tr(input.to_string(), &mut interpreter) {
             Ok(_) => (),
             Err(error) => {
                 eprintln!("{}", error.in_file("<stdin>".to_string()));
@@ -85,7 +89,7 @@ pub fn print_usage(program_name: &str) {
     );
 }
 
-fn run(source: String, interpreter: &mut Interpreter) -> Result<()> {
+pub fn run_with_tr(source: String, interpreter: &mut Interpreter) -> Result<()> {
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize()?;
 

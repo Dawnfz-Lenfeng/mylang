@@ -2,23 +2,34 @@
 
 A simple interpreter built in Rust, reference from https://craftinginterpreters.com/.
 
+## Features
+
+- [x] Lexer
+- [x] Parser
+- [x] Treewalk Interpreter
+- [x] VM with bytecode
+- [ ] Object-oriented
+
 ## Usage
 
 ```bash
 # Run the interpreter with the example script
-cargo run examples/hello.myl
+cargo run examples/hello.myl --vm # with the VM
+cargo run examples/hello.myl --tr # with the treewalk interpreter
+
 # Run the interpreter with the interactive mode
-cargo run
+cargo run # default with the treewalk interpreter
 ```
 
 ## Tests
 
-There are three main test suites in this project, each targeting a core component:
+There are four main test suites in this project, each targeting a core component:
 
 ```bash
 cargo test lexer_tests
 cargo test parser_tests
-cargo test interpreter_tests
+cargo test treewalk_tests
+cargo test vm_tests
 ```
 
 ## Language Grammar
