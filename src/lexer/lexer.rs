@@ -1,7 +1,7 @@
 use super::token::{Token, TokenType};
 use crate::{
     error::{Error, Result},
-    utils::Location,
+    location::Location,
 };
 
 pub struct Lexer {

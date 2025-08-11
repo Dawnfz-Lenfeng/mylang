@@ -2,6 +2,7 @@ use super::stack::{CallFrame, CallStack};
 use crate::{
     compliler::{Chunk, Function, OpCode, Value, BUILTIN_FUNCTIONS},
     error::{Error, Result},
+    location::Location,
 };
 use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
 
@@ -214,11 +215,11 @@ impl VM {
     }
 
     fn pop(&mut self) -> Result<Value> {
-        self.stack.pop().ok_or(Error::stack_underflow())
+        self.stack.pop().ok_or(Error::stack_underflow().at_location(self.location()))
     }
 
     fn peek(&self) -> Result<Value> {
-        self.stack.last().cloned().ok_or(Error::stack_underflow())
+        self.stack.last().cloned().ok_or(Error::stack_underflow().at_location(self.location()))
     }
 
     fn binary_op(&mut self, op: OpCode) -> Result<()> {
@@ -238,7 +239,7 @@ impl VM {
             OpCode::GreaterEqual => self.push(Value::Boolean(left >= right)),
             OpCode::And => self.push(Value::Boolean(left.is_truthy() && right.is_truthy())),
             OpCode::Or => self.push(Value::Boolean(left.is_truthy() || right.is_truthy())),
-            _ => return Err(Error::invalid_opcode(op as u8)),
+            _ => return Err(Error::invalid_opcode(op as u8).at_location(self.location())),
         }
         Ok(())
     }
@@ -248,7 +249,7 @@ impl VM {
         match op {
             OpCode::Negate => self.push((-operand)?),
             OpCode::Not => self.push(Value::Boolean(!operand.is_truthy())),
-            _ => return Err(Error::invalid_opcode(op as u8)),
+            _ => return Err(Error::invalid_opcode(op as u8).at_location(self.location())),
         }
         Ok(())
     }
@@ -257,11 +258,10 @@ impl VM {
         match callee {
             Value::Function(function) => {
                 if function.arity() != arg_count {
-                    return Err(Error::arity_error(
-                        &function.name,
-                        function.arity(),
-                        arg_count,
-                    ));
+                    return Err(
+                        Error::arity_error(&function.name, function.arity(), arg_count)
+                            .at_location(self.location()),
+                    );
                 }
 
                 let frame = CallFrame {
@@ -281,13 +281,14 @@ impl VM {
                     .rev()
                     .collect();
 
-                let result = function(&args)?;
+                let result = function(&args).map_err(|e| e.at_location(self.location()))?;
                 self.push(result);
                 Ok(())
             }
-            _ => Err(Error::runtime(
-                "Can only call functions and closures".to_string(),
-            )),
+            _ => Err(
+                Error::runtime("Can only call functions and closures".to_string())
+                    .at_location(self.location()),
+            ),
         }
     }
 
@@ -295,7 +296,7 @@ impl VM {
         self.globals
             .get(name)
             .cloned()
-            .ok_or(Error::undefined_variable(name))
+            .ok_or(Error::undefined_variable(name).at_location(self.location()))
     }
 
     fn set_global(&mut self, name: String, value: Value) -> Result<()> {
@@ -303,7 +304,7 @@ impl VM {
             self.globals.insert(name, value);
             Ok(())
         } else {
-            Err(Error::undefined_variable(&name))
+            Err(Error::undefined_variable(&name).at_location(self.location()))
         }
     }
 
@@ -315,13 +316,13 @@ impl VM {
         self.stack
             .get(self.call_stack.offset() + slot)
             .cloned()
-            .ok_or(Error::stack_underflow())
+            .ok_or(Error::stack_underflow().at_location(self.location()))
     }
 
     fn set_local(&mut self, slot: usize, value: Value) -> Result<()> {
         let index = self.call_stack.offset() + slot;
         if index >= self.stack.len() {
-            return Err(Error::stack_underflow());
+            return Err(Error::stack_underflow().at_location(self.location()));
         }
         self.stack[index] = value;
         Ok(())
@@ -345,13 +346,20 @@ impl VM {
                 let value = arr
                     .borrow()
                     .get(idx)
-                    .ok_or(Error::index_out_of_bounds(idx, arr.borrow().len()))?
+                    .ok_or(
+                        Error::index_out_of_bounds(idx, arr.borrow().len())
+                            .at_location(self.location()),
+                    )?
                     .clone();
                 self.push(value);
                 Ok(())
             }
-            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
-            _ => Err(Error::runtime("can only index arrays".to_string())),
+            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())
+                .at_location(self.location())),
+            _ => {
+                Err(Error::runtime("can only index arrays".to_string())
+                    .at_location(self.location()))
+            }
         }
     }
 
@@ -362,12 +370,17 @@ impl VM {
                 if let Some(target) = arr.borrow_mut().get_mut(idx) {
                     *target = value;
                 } else {
-                    return Err(Error::index_out_of_bounds(idx, arr.borrow().len()));
+                    return Err(Error::index_out_of_bounds(idx, arr.borrow().len())
+                        .at_location(self.location()));
                 }
                 Ok(())
             }
-            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())),
-            _ => Err(Error::runtime("can only index arrays".to_string())),
+            (Value::Array(_), _) => Err(Error::runtime("array index must be a number".to_string())
+                .at_location(self.location())),
+            _ => {
+                Err(Error::runtime("can only index arrays".to_string())
+                    .at_location(self.location()))
+            }
         }
     }
 
@@ -381,7 +394,8 @@ impl VM {
             .collect::<Vec<_>>()
             .join(" ");
 
-        writeln!(self.output, "{output}").map_err(|e| Error::from(e))?;
+        writeln!(self.output, "{output}")
+            .map_err(|e| Error::from(e).at_location(self.location()))?;
         Ok(())
     }
 
@@ -389,9 +403,10 @@ impl VM {
         let proto = match self.chunk.constant(proto_index).clone() {
             Value::Proto(proto) => proto,
             _ => {
-                return Err(Error::runtime(
-                    "Expected function in closure creation".to_string(),
-                ))
+                return Err(
+                    Error::runtime("Expected function in closure creation".to_string())
+                        .at_location(self.location()),
+                )
             }
         };
 
@@ -403,7 +418,10 @@ impl VM {
                     let value = self.get_local(index)?;
                     Ok(Value::new_upvalue(value.clone()))
                 } else {
-                    self.call_stack.get_upvalue(index).cloned()
+                    self.call_stack
+                        .get_upvalue(index)
+                        .cloned()
+                        .map_err(|e| e.at_location(self.location()))
                 }
             })
             .collect::<Result<Vec<_>>>()?;
@@ -415,7 +433,10 @@ impl VM {
     }
 
     fn get_upvalue(&mut self, upvalue_index: usize) -> Result<()> {
-        let upvalue = self.call_stack.get_upvalue(upvalue_index)?;
+        let upvalue = self
+            .call_stack
+            .get_upvalue(upvalue_index)
+            .map_err(|e| e.at_location(self.location()))?;
         let value = upvalue.borrow().clone();
         self.push(value);
         Ok(())
@@ -425,5 +446,9 @@ impl VM {
         let upvalue = self.call_stack.get_upvalue(upvalue_index)?;
         *upvalue.borrow_mut() = value;
         Ok(())
+    }
+
+    fn location(&self) -> Location {
+        self.chunk.location_at(self.ip)
     }
 }

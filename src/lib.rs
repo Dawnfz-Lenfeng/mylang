@@ -1,9 +1,9 @@
 pub mod compliler;
 pub mod error;
 pub mod lexer;
+pub mod location;
 pub mod parser;
 pub mod treewalk;
-pub mod utils;
 pub mod vm;
 
 use compliler::Compiler;
@@ -94,7 +94,11 @@ pub fn run_with_tr(source: String, interpreter: &mut Interpreter) -> Result<()> 
     let tokens = lexer.tokenize()?;
 
     let mut parser = Parser::new(tokens);
-    let stmts = parser.parse()?;
+    let stmts = parser
+        .parse()?
+        .into_iter()
+        .map(|stmt| stmt.into_inner())
+        .collect::<Vec<_>>();
 
     interpreter.interpret(&stmts)?;
     Ok(())

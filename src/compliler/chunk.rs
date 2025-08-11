@@ -3,6 +3,7 @@ use super::{
     opcode::OpCode,
     value::{Proto, Value},
 };
+use crate::location::Location;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -10,6 +11,7 @@ pub struct Chunk {
     code: Vec<u8>,
     constants: Vec<Value>,
     globals: Vec<String>,
+    locations: Vec<Location>,
 }
 
 impl Chunk {
@@ -23,6 +25,7 @@ impl Chunk {
             code: Vec::new(),
             constants: Vec::new(),
             globals,
+            locations: Vec::new(),
         }
     }
 
@@ -41,12 +44,23 @@ impl Chunk {
     pub fn current_ip(&self) -> usize {
         self.code.len()
     }
+
+    pub fn location_at(&self, ip: usize) -> Location {
+        self.locations.get(ip).expect("location not found").clone()
+    }
 }
 
 /// Write operations
 impl Chunk {
     pub fn write(&mut self, byte: u8) {
         self.code.push(byte);
+        // Use a default location if none is provided
+        self.locations.push(Location::new());
+    }
+
+    pub fn write_with_location(&mut self, byte: u8, location: Location) {
+        self.code.push(byte);
+        self.locations.push(location);
     }
 
     pub fn add_constant(&mut self, value: Value) -> u8 {

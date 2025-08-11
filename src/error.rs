@@ -1,4 +1,4 @@
-use crate::utils::Location;
+use crate::location::Location;
 use std::fmt;
 
 pub type Result<T> = std::result::Result<T, Error>;

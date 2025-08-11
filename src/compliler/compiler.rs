@@ -6,15 +6,14 @@ use super::{
 };
 use crate::{
     error::{Error, Result},
-    parser::{
-        expr::{self, BinaryOp, Expr, UnaryOp},
-        stmt::{self, Stmt},
-    },
+    location::Location,
+    parser::{expr, stmt, BinaryOp, Expr, LocatedStmt, Stmt, UnaryOp},
 };
 
 pub struct Compiler {
     chunk: Chunk,
     env: EnvRef,
+    location: Location,
 }
 
 impl Compiler {
@@ -22,12 +21,14 @@ impl Compiler {
         Self {
             chunk: Chunk::new(),
             env: Env::new_global(),
+            location: Location::new(),
         }
     }
 
-    pub fn compile(mut self, stmts: &[Stmt]) -> Result<Chunk> {
+    pub fn compile(mut self, stmts: &[LocatedStmt]) -> Result<Chunk> {
         for stmt in stmts {
-            stmt.accept(&mut self)?;
+            self.location = stmt.location();
+            stmt.as_inner().accept(&mut self)?;
         }
         Ok(self.chunk)
     }
@@ -68,7 +69,7 @@ impl Compiler {
 
     fn end_enclosed_scope(&mut self) -> Result<()> {
         if self.env.borrow().is_global() {
-            return Err(Error::quit_from_global());
+            return Err(Error::quit_from_global().at_location(self.location));
         }
 
         let num_locals = self.env.borrow().locals.len();
@@ -96,7 +97,7 @@ impl Compiler {
     }
 
     fn emit_byte(&mut self, byte: u8) {
-        self.chunk.write(byte);
+        self.chunk.write_with_location(byte, self.location);
     }
 
     fn emit_op(&mut self, op: OpCode) {
@@ -248,7 +249,10 @@ impl stmt::Visitor<Result<()>> for Compiler {
 
     fn visit_break(&mut self) -> Result<()> {
         if !self.env.borrow().in_loop() {
-            return Err(Error::runtime("break outside of loop".to_string()));
+            return Err(Error::compilation_at(
+                "break outside of loop".to_string(),
+                self.location,
+            ));
         }
 
         let jump_position = self.emit_jump(OpCode::Jump);
@@ -303,7 +307,7 @@ impl expr::Visitor<Result<()>> for Compiler {
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::GetGlobal, global_index)
             } else {
-                return Err(Error::undefined_variable(name));
+                return Err(Error::undefined_variable(name).at_location(self.location));
             }
         };
 
@@ -360,9 +364,12 @@ impl expr::Visitor<Result<()>> for Compiler {
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::SetGlobal, global_index)
             } else {
-                return Err(Error::runtime(format!(
-                    "Assignment to undeclared variable '{name}'"
-                )));
+                return Err(
+                    Error::compilation_at(
+                        format!("Assignment to undeclared variable '{name}'"),
+                        self.location,
+                    ),
+                );
             }
         };
 

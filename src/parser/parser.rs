@@ -5,7 +5,10 @@ use super::{
 use crate::{
     error::{Error, Result},
     lexer::token::{Token, TokenType},
+    location::Located,
 };
+
+pub type LocatedStmt = Located<Stmt>;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -24,14 +27,20 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+    pub fn parse(&mut self) -> Result<Vec<LocatedStmt>> {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
-            statements.push(self.stmt()?);
+            statements.push(self.located_stmt()?);
         }
 
         Ok(statements)
+    }
+
+    fn located_stmt(&mut self) -> Result<LocatedStmt> {
+        let start_location = self.peek().location;
+        let stmt = self.stmt()?;
+        Ok(Located::new(stmt, start_location))
     }
 
     fn stmt(&mut self) -> Result<Stmt> {
