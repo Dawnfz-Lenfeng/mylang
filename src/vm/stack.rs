@@ -1,5 +1,6 @@
 use crate::{
     compliler::value::{Function, Upvalue},
+    constant::STACK_SIZE,
     error::{Error, Result},
 };
 use std::rc::Rc;
@@ -17,7 +18,9 @@ pub struct CallStack {
 
 impl CallStack {
     pub fn new() -> Self {
-        Self { frames: Vec::new() }
+        Self {
+            frames: Vec::with_capacity(STACK_SIZE),
+        }
     }
 
     pub fn push(&mut self, frame: CallFrame) {

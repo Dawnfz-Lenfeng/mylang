@@ -364,12 +364,10 @@ impl expr::Visitor<Result<()>> for Compiler {
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::SetGlobal, global_index)
             } else {
-                return Err(
-                    Error::compilation_at(
-                        format!("Assignment to undeclared variable '{name}'"),
-                        self.location,
-                    ),
-                );
+                return Err(Error::compilation_at(
+                    format!("Assignment to undeclared variable '{name}'"),
+                    self.location,
+                ));
             }
         };
 

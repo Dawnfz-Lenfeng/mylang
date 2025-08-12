@@ -1,6 +1,7 @@
 use super::stack::{CallFrame, CallStack};
 use crate::{
     compliler::{Chunk, Function, OpCode, Value, BUILTIN_FUNCTIONS},
+    constant::STACK_SIZE,
     error::{Error, Result},
 };
 use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
@@ -31,7 +32,7 @@ impl VM {
         Self {
             chunk,
             ip: 0,
-            stack: Vec::new(),
+            stack: Vec::with_capacity(STACK_SIZE),
             globals,
             call_stack: CallStack::new(),
             output: Box::new(std::io::stdout()),

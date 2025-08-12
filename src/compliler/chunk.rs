@@ -3,7 +3,10 @@ use super::{
     opcode::OpCode,
     value::{Proto, Value},
 };
-use crate::location::Location;
+use crate::{
+    constant::{CONSTANTS_SIZE, GLOBALS_SIZE},
+    location::Location,
+};
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -16,14 +19,14 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new() -> Self {
-        let globals = BUILTIN_FUNCTIONS
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect();
+        let mut globals = Vec::with_capacity(GLOBALS_SIZE);
+        for (name, _) in BUILTIN_FUNCTIONS {
+            globals.push(name.to_string());
+        }
 
         Self {
-            code: Vec::new(),
-            constants: Vec::new(),
+            code: Vec::with_capacity(CONSTANTS_SIZE),
+            constants: Vec::with_capacity(CONSTANTS_SIZE),
             globals,
             locations: Vec::new(),
         }

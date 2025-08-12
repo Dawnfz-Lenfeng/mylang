@@ -1,4 +1,5 @@
 pub mod compliler;
+pub mod constant;
 pub mod error;
 pub mod lexer;
 pub mod location;
