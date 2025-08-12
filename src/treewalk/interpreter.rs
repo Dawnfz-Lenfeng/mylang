@@ -5,11 +5,7 @@ use super::{
 };
 use crate::{
     error::{Error, Result},
-    parser::{
-        expr::{self, Expr},
-        stmt::{self, Stmt},
-        BinaryOp, UnaryOp,
-    },
+    parser::{expr, stmt, BinaryOp, Expr, LocatedStmt, Stmt, UnaryOp},
 };
 use std::{io::Write, rc::Rc};
 
@@ -33,9 +29,12 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&mut self, stmts: &[Stmt]) -> Result<()> {
+    pub fn interpret(&mut self, stmts: &[LocatedStmt]) -> Result<()> {
         for stmt in stmts {
-            stmt.accept(self)?;
+            let loc = stmt.location();
+            stmt.as_inner()
+                .accept(self)
+                .map_err(|e| Error::from(e).at_location(loc))?;
         }
         Ok(())
     }

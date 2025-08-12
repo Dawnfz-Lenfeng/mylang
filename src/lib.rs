@@ -94,11 +94,7 @@ pub fn run_with_tr(source: String, interpreter: &mut Interpreter) -> Result<()> 
     let tokens = lexer.tokenize()?;
 
     let mut parser = Parser::new(tokens);
-    let stmts = parser
-        .parse()?
-        .into_iter()
-        .map(|stmt| stmt.into_inner())
-        .collect::<Vec<_>>();
+    let stmts = parser.parse()?;
 
     interpreter.interpret(&stmts)?;
     Ok(())

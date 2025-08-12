@@ -79,10 +79,6 @@ impl Error {
         Self::new(ErrorType::Runtime, message)
     }
 
-    pub fn runtime_at(message: String, location: Location) -> Self {
-        Self::with_location(ErrorType::Runtime, message, location)
-    }
-
     pub fn io(message: String) -> Self {
         Self::new(ErrorType::Io, message)
     }
@@ -106,9 +102,9 @@ impl Error {
         Self::new(ErrorType::VmRuntime, message)
     }
 
-    /// Create a VM runtime error with location
-    pub fn vm_runtime_at(message: String, location: Location) -> Self {
-        Self::with_location(ErrorType::VmRuntime, message, location)
+    /// Create a code out of bounds error
+    pub fn code_out_of_bounds(ip: usize, length: usize) -> Self {
+        Self::vm_runtime(format!("code out of bounds: {ip} > {length}"))
     }
 
     /// Create a stack overflow error
@@ -129,6 +125,11 @@ impl Error {
     /// Create a constant pool overflow error
     pub fn constant_overflow() -> Self {
         Self::compilation("too many constants in chunk (max 256)".to_string())
+    }
+
+    /// Create a global pool overflow error
+    pub fn global_overflow() -> Self {
+        Self::compilation("too many globals in chunk (max 256)".to_string())
     }
 
     /// Create an invalid opcode error

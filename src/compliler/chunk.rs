@@ -29,16 +29,16 @@ impl Chunk {
         }
     }
 
-    pub fn code(&self, ip: usize) -> u8 {
-        self.code[ip]
+    pub fn code(&self, ip: usize) -> Option<u8> {
+        self.code.get(ip).cloned()
     }
 
-    pub fn constant(&self, index: usize) -> &Value {
-        &self.constants[index]
+    pub fn constant(&self, index: usize) -> Option<&Value> {
+        self.constants.get(index)
     }
 
-    pub fn global(&self, index: usize) -> &String {
-        &self.globals[index]
+    pub fn global(&self, index: usize) -> Option<&String> {
+        self.globals.get(index)
     }
 
     pub fn current_ip(&self) -> usize {
