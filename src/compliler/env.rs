@@ -15,6 +15,7 @@ pub type EnvRef = Rc<RefCell<Env>>;
 pub struct LoopContext {
     pub break_jumps: Vec<usize>,
     pub continue_jumps: Vec<usize>,
+    pub scope_depth: usize,
 }
 
 #[derive(Debug)]
@@ -129,7 +130,24 @@ impl Env {
         self.loop_contexts.push(LoopContext {
             break_jumps: Vec::new(),
             continue_jumps: Vec::new(),
+            scope_depth: self.scope_depth,
         });
+    }
+
+    pub fn get_loop_locals_to_pop(&self) -> usize {
+        if let Some(context) = self.loop_contexts.last() {
+            let mut pop_count = 0;
+            for local in self.locals.iter().rev() {
+                if local.depth > context.scope_depth {
+                    pop_count += 1;
+                } else {
+                    break;
+                }
+            }
+            pop_count
+        } else {
+            0
+        }
     }
 
     pub fn end_loop(&mut self) -> Option<LoopContext> {

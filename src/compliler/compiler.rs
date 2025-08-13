@@ -298,6 +298,12 @@ impl stmt::Visitor<Result<()>> for Compiler {
             return Err(Error::compilation("break outside of loop".to_string()));
         }
 
+        // pop locals that are in the loop
+        let pop_count = self.env.borrow().get_loop_locals_to_pop();
+        for _ in 0..pop_count {
+            self.emit_op(OpCode::Pop);
+        }
+
         let jump_position = self.emit_jump(OpCode::Jump);
         self.env.borrow_mut().add_break_jump(jump_position)?;
         Ok(())
@@ -307,6 +313,13 @@ impl stmt::Visitor<Result<()>> for Compiler {
         if !self.env.borrow().in_loop() {
             return Err(Error::compilation("continue outside of loop".to_string()));
         }
+
+        // pop locals that are in the loop
+        let pop_count = self.env.borrow().get_loop_locals_to_pop();
+        for _ in 0..pop_count {
+            self.emit_op(OpCode::Pop);
+        }
+
         let jump_position = self.emit_jump(OpCode::Jump);
         self.env.borrow_mut().add_continue_jump(jump_position)?;
         Ok(())
