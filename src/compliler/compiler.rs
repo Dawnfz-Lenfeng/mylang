@@ -386,26 +386,26 @@ impl expr::Visitor<Result<()>> for Compiler {
         match op {
             BinaryOp::LogicalAnd => {
                 left.accept(self)?;
+                self.emit_op(OpCode::Dup); // keep left value on stack
                 let left_jump = self.emit_jump(OpCode::JumpIfFalse);
 
+                self.emit_op(OpCode::Pop); // pop left value
                 right.accept(self)?;
-                self.emit_op(OpCode::Boolean);
                 let right_jump = self.emit_jump(OpCode::Jump);
 
                 self.chunk.patch_jump(left_jump);
-                self.emit_op(OpCode::False);
                 self.chunk.patch_jump(right_jump);
             }
             BinaryOp::LogicalOr => {
                 left.accept(self)?;
+                self.emit_op(OpCode::Dup);
                 let left_jump = self.emit_jump(OpCode::JumpIfTrue);
 
+                self.emit_op(OpCode::Pop);
                 right.accept(self)?;
-                self.emit_op(OpCode::Boolean);
                 let right_jump = self.emit_jump(OpCode::Jump);
 
                 self.chunk.patch_jump(left_jump);
-                self.emit_op(OpCode::True);
                 self.chunk.patch_jump(right_jump);
             }
             _ => {

@@ -76,4 +76,52 @@ let result11 = (false or side_effect_true()) and side_effect_true();
 assert(result11 == true, "Mixed expression should be true");
 assert(call_count == 2, "Should evaluate both parts of OR, then short-circuit AND");
 
+
+// Test short circuit with return values (not just boolean)
+// LogicalAnd should return left value if falsy, right value if left is truthy
+let result12 = 0 and 42;
+assert(result12 == 0, "0 AND 42 should return 0 (falsy left value)");
+
+let result13 = 5 and 42;
+assert(result13 == 42, "5 AND 42 should return 42 (right value when left is truthy)");
+
+let result14 = nil and "hello";
+assert(result14 == nil, "nil AND string should return nil");
+
+let result15 = "hello" and "world";
+assert(result15 == "world", "string AND string should return second string");
+
+// LogicalOr should return left value if truthy, right value if left is falsy
+let result16 = 0 or 42;
+assert(result16 == 42, "0 OR 42 should return 42 (right value when left is falsy)");
+
+let result17 = 5 or 42;
+assert(result17 == 5, "5 OR 42 should return 5 (truthy left value)");
+
+let result18 = nil or "hello";
+assert(result18 == "hello", "nil OR string should return string");
+
+let result19 = "hello" or "world";
+assert(result19 == "hello", "string OR string should return first string");
+
+// Test with arrays
+let arr1 = [1, 2, 3];
+let arr2 = [4, 5, 6];
+let result20 = arr1 and arr2;
+assert(result20 == arr2, "non-empty array AND array should return second array");
+
+let empty_arr = [];
+let result21 = empty_arr or arr1;
+assert(result21 == arr1, "empty array OR non-empty should return non-empty array");
+
+// Test chaining with different types
+let result22 = 0 or nil or "fallback";
+assert(result22 == "fallback", "Should return first truthy value in OR chain");
+
+let result23 = "first" and 42 and true;
+assert(result23 == true, "Should return last value in AND chain when all truthy");
+
+let result24 = "first" and 0 and "never reached";
+assert(result24 == 0, "Should return first falsy value in AND chain");
+
 print "All short-circuit evaluation tests passed!";

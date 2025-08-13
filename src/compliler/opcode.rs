@@ -27,7 +27,6 @@ pub enum OpCode {
 
     // Logical
     Not = 30,
-    Boolean,
 
     // Variables
     DefineGlobal = 40,
@@ -49,6 +48,7 @@ pub enum OpCode {
     // Stack operations
     Pop = 70,
     Print,
+    Dup,
 
     // Arrays
     Array = 80,
@@ -88,7 +88,6 @@ impl TryFrom<u8> for OpCode {
             24 => Ok(OpCode::GreaterThan),
             25 => Ok(OpCode::GreaterEqual),
             30 => Ok(OpCode::Not),
-            31 => Ok(OpCode::Boolean),
             40 => Ok(OpCode::DefineGlobal),
             41 => Ok(OpCode::GetGlobal),
             42 => Ok(OpCode::SetGlobal),
@@ -102,6 +101,7 @@ impl TryFrom<u8> for OpCode {
             61 => Ok(OpCode::Return),
             70 => Ok(OpCode::Pop),
             71 => Ok(OpCode::Print),
+            72 => Ok(OpCode::Dup),
             80 => Ok(OpCode::Array),
             81 => Ok(OpCode::Index),
             82 => Ok(OpCode::IndexSet),

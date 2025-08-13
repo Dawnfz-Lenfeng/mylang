@@ -121,10 +121,6 @@ impl VM {
             OpCode::Nil => self.push(Value::Nil),
             OpCode::True => self.push(Value::Boolean(true)),
             OpCode::False => self.push(Value::Boolean(false)),
-            OpCode::Boolean => {
-                let value = self.pop()?;
-                self.push(Value::Boolean(value.is_truthy()));
-            }
 
             OpCode::Add
             | OpCode::Subtract
@@ -218,6 +214,10 @@ impl VM {
             OpCode::Print => {
                 let count = self.read_byte()? as usize;
                 self.print_values(count)?;
+            }
+            OpCode::Dup => {
+                let value = self.peek()?;
+                self.push(value);
             }
 
             // Arrays

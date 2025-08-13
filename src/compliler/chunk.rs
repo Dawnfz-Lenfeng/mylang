@@ -284,10 +284,6 @@ impl Chunk {
                 println!("{indent}{offset:4} {op:15} {count} ; print");
                 offset + 2
             }
-            OpCode::Boolean => {
-                println!("{indent}{offset:4} {op:15} ; boolean");
-                offset + 1
-            }
             OpCode::Add
             | OpCode::Subtract
             | OpCode::Multiply
