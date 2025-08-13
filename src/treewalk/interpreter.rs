@@ -94,6 +94,34 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
         Ok(())
     }
 
+    fn visit_for(
+        &mut self,
+        initializer: Option<&Stmt>,
+        condition: &Expr,
+        increment: Option<&Expr>,
+        body: &Stmt,
+    ) -> InterpreterResult<()> {
+        self.begin_scope();
+
+        if let Some(init) = initializer {
+            init.accept(self)?;
+        }
+        while condition.accept(self)?.is_truthy() {
+            match body.accept(self) {
+                Ok(_) => (),
+                Err(RuntimeControl::Break) => break,
+                Err(RuntimeControl::Continue) => (),
+                Err(e) => return Err(e.into()),
+            }
+            if let Some(inc) = increment {
+                inc.accept(self)?;
+            }
+        }
+
+        self.end_scope();
+        Ok(())
+    }
+
     fn visit_if(
         &mut self,
         condition: &Expr,

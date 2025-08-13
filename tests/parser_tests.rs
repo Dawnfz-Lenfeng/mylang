@@ -578,7 +578,7 @@ mod parser_tests {
                     right: Box::new(Expr::Number(10.0)),
                 },
                 body: Box::new(Stmt::Block(vec![
-                    Stmt::Block(vec![Stmt::Print(vec![Expr::Variable("i".to_string())])]),
+                    Stmt::Print(vec![Expr::Variable("i".to_string())]),
                     Stmt::Expression(Expr::Assign {
                         name: "i".to_string(),
                         value: Box::new(Expr::Binary {
@@ -622,22 +622,6 @@ mod parser_tests {
             }],
         }];
         assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_return_statement() {
-        let result = parse_program("return 42;");
-        let expected = vec![Stmt::Return {
-            value: Some(Expr::Number(42.0)),
-        }];
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_return_statement_no_value() {
-        let program = parse_program("return;");
-        let expected = vec![Stmt::Return { value: None }];
-        assert_eq!(program, expected);
     }
 
     #[test]

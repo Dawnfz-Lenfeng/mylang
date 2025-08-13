@@ -26,6 +26,12 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+    For {
+        initializer: Option<Box<Stmt>>,
+        condition: Expr,
+        increment: Option<Expr>,
+        body: Box<Stmt>,
+    },
     Break,
     Continue,
     Return {
@@ -44,6 +50,13 @@ pub trait Visitor<T> {
     fn visit_break(&mut self) -> T;
     fn visit_continue(&mut self) -> T;
     fn visit_block(&mut self, statements: &[Stmt]) -> T;
+    fn visit_for(
+        &mut self,
+        initializer: Option<&Stmt>,
+        condition: &Expr,
+        increment: Option<&Expr>,
+        body: &Stmt,
+    ) -> T;
 }
 
 impl Stmt {
@@ -65,6 +78,12 @@ impl Stmt {
             Stmt::Return { value } => visitor.visit_return(value.as_ref()),
             Stmt::Break => visitor.visit_break(),
             Stmt::Continue => visitor.visit_continue(),
+            Stmt::For {
+                initializer,
+                condition,
+                increment,
+                body,
+            } => visitor.visit_for(initializer.as_deref(), condition, increment.as_ref(), body),
         }
     }
 }

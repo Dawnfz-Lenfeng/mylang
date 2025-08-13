@@ -131,7 +131,7 @@ impl Parser {
                 None
             }
             _ => Some(self.expr_stmt()?),
-        };
+        }.map(Box::new);
 
         let condition = (!self.check(&TokenType::Semicolon))
             .then(|| self.expr())
@@ -145,21 +145,14 @@ impl Parser {
 
         // Enter loop scope
         self.loop_depth += 1;
-        let mut body = self.block()?;
+        let body = Box::new(self.block_stmt()?);
         self.loop_depth -= 1;
 
-        if let Some(inc) = increment {
-            body.push(Stmt::Expression(inc));
-        }
-
-        let while_loop = Stmt::While {
+        Ok(Stmt::For {
+            initializer,
             condition,
-            body: Box::new(Stmt::Block(body)),
-        };
-
-        Ok(match initializer {
-            Some(init) => Stmt::Block(vec![init, while_loop]),
-            None => while_loop,
+            increment,
+            body,
         })
     }
 
