@@ -131,7 +131,8 @@ impl Parser {
                 None
             }
             _ => Some(self.expr_stmt()?),
-        }.map(Box::new);
+        }
+        .map(Box::new);
 
         let condition = (!self.check(&TokenType::Semicolon))
             .then(|| self.expr())

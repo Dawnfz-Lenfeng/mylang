@@ -94,6 +94,18 @@ impl Chunk {
         self.code[offset + 1] = jump as u8;
     }
 
+    /// Patch a jump instruction to jump to the target
+    pub fn patch_jump_with_target(&mut self, offset: usize, target: usize) {
+        let (op, jump) = if offset < target {
+            (OpCode::Jump, target - offset - 2)
+        } else {
+            (OpCode::Loop, offset - target + 2)
+        };
+        self.code[offset - 1] = op as u8;
+        self.code[offset] = (jump >> 8) as u8;
+        self.code[offset + 1] = jump as u8;
+    }
+
     pub fn end_with_return(&mut self) {
         if let Some(op) = self.code.last() {
             if *op == OpCode::Return as u8 {

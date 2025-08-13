@@ -28,7 +28,9 @@ impl Compiler {
     pub fn compile(mut self, stmts: &[LocatedStmt]) -> Result<Chunk> {
         for stmt in stmts {
             self.location = stmt.location();
-            stmt.as_inner().accept(&mut self)?;
+            stmt.as_inner()
+                .accept(&mut self)
+                .map_err(|e| e.at_location(self.location))?;
         }
         Ok(self.chunk)
     }
@@ -49,13 +51,17 @@ impl Compiler {
     }
 
     fn begin_loop(&mut self) {
-        self.env.borrow_mut().begin_loop(self.chunk.current_ip());
+        self.env.borrow_mut().begin_loop();
     }
 
-    fn end_loop(&mut self) -> Result<()> {
+    fn end_loop(&mut self, continue_target: usize) -> Result<()> {
         if let Some(loop_context) = self.env.borrow_mut().end_loop() {
             for break_jump in loop_context.break_jumps {
                 self.chunk.patch_jump(break_jump);
+            }
+            for continue_jump in loop_context.continue_jumps {
+                self.chunk
+                    .patch_jump_with_target(continue_jump, continue_target);
             }
         }
 
@@ -69,7 +75,7 @@ impl Compiler {
 
     fn end_enclosed_scope(&mut self) -> Result<()> {
         if self.env.borrow().is_global() {
-            return Err(Error::quit_from_global().at_location(self.location));
+            return Err(Error::quit_from_global());
         }
 
         let num_locals = self.env.borrow().locals.len();
@@ -219,9 +225,9 @@ impl stmt::Visitor<Result<()>> for Compiler {
     }
 
     fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
-        let loop_start = self.chunk.current_ip();
-
         self.begin_loop();
+
+        let loop_start = self.chunk.current_ip();
 
         condition.accept(self)?;
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
@@ -231,7 +237,47 @@ impl stmt::Visitor<Result<()>> for Compiler {
 
         self.chunk.patch_jump(exit_jump);
 
-        self.end_loop()?;
+        self.end_loop(loop_start)?;
+
+        Ok(())
+    }
+
+    fn visit_for(
+        &mut self,
+        initializer: Option<&Stmt>,
+        condition: &Expr,
+        increment: Option<&Expr>,
+        body: &Stmt,
+    ) -> Result<()> {
+        self.begin_scope();
+
+        if let Some(init) = initializer {
+            init.accept(self)?;
+        }
+
+        let loop_start = self.chunk.current_ip();
+
+        self.begin_loop();
+
+        condition.accept(self)?;
+        let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
+
+        body.accept(self)?;
+        let continue_target = if let Some(inc) = increment {
+            let target = self.chunk.current_ip();
+            inc.accept(self)?;
+            self.emit_op(OpCode::Pop); // pop the increment value
+            target
+        } else {
+            loop_start
+        };
+        self.emit_loop(loop_start);
+
+        self.chunk.patch_jump(exit_jump);
+
+        self.end_loop(continue_target)?;
+
+        self.end_scope()?;
 
         Ok(())
     }
@@ -249,10 +295,7 @@ impl stmt::Visitor<Result<()>> for Compiler {
 
     fn visit_break(&mut self) -> Result<()> {
         if !self.env.borrow().in_loop() {
-            return Err(Error::compilation_at(
-                "break outside of loop".to_string(),
-                self.location,
-            ));
+            return Err(Error::compilation("break outside of loop".to_string()));
         }
 
         let jump_position = self.emit_jump(OpCode::Jump);
@@ -261,8 +304,11 @@ impl stmt::Visitor<Result<()>> for Compiler {
     }
 
     fn visit_continue(&mut self) -> Result<()> {
-        let continue_target = self.env.borrow().get_continue_target()?;
-        self.emit_loop(continue_target);
+        if !self.env.borrow().in_loop() {
+            return Err(Error::compilation("continue outside of loop".to_string()));
+        }
+        let jump_position = self.emit_jump(OpCode::Jump);
+        self.env.borrow_mut().add_continue_jump(jump_position)?;
         Ok(())
     }
 
@@ -307,7 +353,7 @@ impl expr::Visitor<Result<()>> for Compiler {
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::GetGlobal, global_index)
             } else {
-                return Err(Error::undefined_variable(name).at_location(self.location));
+                return Err(Error::undefined_variable(name));
             }
         };
 
@@ -364,10 +410,9 @@ impl expr::Visitor<Result<()>> for Compiler {
             } else if let Some(global_index) = self.chunk.resolve_global(name) {
                 (OpCode::SetGlobal, global_index)
             } else {
-                return Err(Error::compilation_at(
-                    format!("Assignment to undeclared variable '{name}'"),
-                    self.location,
-                ));
+                return Err(Error::compilation(format!(
+                    "Assignment to undeclared variable '{name}'"
+                )));
             }
         };
 

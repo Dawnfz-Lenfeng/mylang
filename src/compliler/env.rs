@@ -14,7 +14,7 @@ pub type EnvRef = Rc<RefCell<Env>>;
 #[derive(Debug)]
 pub struct LoopContext {
     pub break_jumps: Vec<usize>,
-    pub continue_target: usize,
+    pub continue_jumps: Vec<usize>,
 }
 
 #[derive(Debug)]
@@ -125,10 +125,10 @@ impl Env {
         Some(self.add_upvalue(index as usize, is_local))
     }
 
-    pub fn begin_loop(&mut self, continue_target: usize) {
+    pub fn begin_loop(&mut self) {
         self.loop_contexts.push(LoopContext {
             break_jumps: Vec::new(),
-            continue_target,
+            continue_jumps: Vec::new(),
         });
     }
 
@@ -145,9 +145,10 @@ impl Env {
         }
     }
 
-    pub fn get_continue_target(&self) -> Result<usize> {
-        if let Some(context) = self.loop_contexts.last() {
-            Ok(context.continue_target)
+    pub fn add_continue_jump(&mut self, jump_position: usize) -> Result<()> {
+        if let Some(context) = self.loop_contexts.last_mut() {
+            context.continue_jumps.push(jump_position);
+            Ok(())
         } else {
             Err(Error::runtime("continue outside of loop".to_string()))
         }
