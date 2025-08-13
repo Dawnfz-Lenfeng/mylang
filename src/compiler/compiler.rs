@@ -409,7 +409,6 @@ impl expr::Visitor<Result<()>> for Compiler {
                 self.chunk.patch_jump(right_jump);
             }
             _ => {
-                // 其他二进制操作正常处理
                 left.accept(self)?;
                 right.accept(self)?;
                 match op {

@@ -1,4 +1,4 @@
-pub mod compliler;
+pub mod compiler;
 pub mod constant;
 pub mod error;
 pub mod lexer;
@@ -7,7 +7,7 @@ pub mod parser;
 pub mod treewalk;
 pub mod vm;
 
-use compliler::Compiler;
+use compiler::Compiler;
 use error::{Error, Result};
 use lexer::Lexer;
 use parser::Parser;

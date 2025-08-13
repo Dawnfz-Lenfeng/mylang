@@ -1,6 +1,6 @@
 use super::stack::{CallFrame, CallStack};
 use crate::{
-    compliler::{Chunk, Function, OpCode, Value, BUILTIN_FUNCTIONS},
+    compiler::{Chunk, Function, OpCode, Value, BUILTIN_FUNCTIONS},
     constant::STACK_SIZE,
     error::{Error, Result},
 };

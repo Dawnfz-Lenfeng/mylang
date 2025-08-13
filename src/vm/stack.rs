@@ -1,5 +1,5 @@
 use crate::{
-    compliler::value::{Function, Upvalue},
+    compiler::value::{Function, Upvalue},
     constant::STACK_SIZE,
     error::{Error, Result},
 };
