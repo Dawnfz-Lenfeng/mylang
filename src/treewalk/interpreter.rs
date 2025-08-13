@@ -208,19 +208,17 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             BinaryOp::LogicalAnd => {
                 let left = left.accept(self)?;
                 if !left.is_truthy() {
-                    Ok(Value::Boolean(false))
+                    Ok(left)
                 } else {
-                    let right = right.accept(self)?;
-                    Ok(Value::Boolean(right.is_truthy()))
+                    right.accept(self)
                 }
             }
             BinaryOp::LogicalOr => {
                 let left = left.accept(self)?;
                 if left.is_truthy() {
-                    Ok(Value::Boolean(true))
+                    Ok(left)
                 } else {
-                    let right = right.accept(self)?;
-                    Ok(Value::Boolean(right.is_truthy()))
+                    right.accept(self)
                 }
             }
             _ => {
