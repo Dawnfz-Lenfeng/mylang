@@ -30,6 +30,7 @@ mod file_tests {
         test_arrays => "arrays.myl",
         test_break_continue => "break_continue.myl",
         test_builtins => "builtins.myl",
+        test_complex_for_break_continue => "complex_for_break_continue.myl",
         test_complex_break_continue => "complex_break_continue.myl",
         test_complex_closures => "complex_closures.myl",
         test_compound_assignment => "compound_assignment.myl",
