@@ -27,8 +27,7 @@ pub enum OpCode {
 
     // Logical
     Not = 30,
-    And,
-    Or,
+    Boolean,
 
     // Variables
     DefineGlobal = 40,
@@ -40,6 +39,7 @@ pub enum OpCode {
     // Control flow
     Jump = 50,
     JumpIfFalse,
+    JumpIfTrue,
     Loop,
 
     // Functions
@@ -88,8 +88,7 @@ impl TryFrom<u8> for OpCode {
             24 => Ok(OpCode::GreaterThan),
             25 => Ok(OpCode::GreaterEqual),
             30 => Ok(OpCode::Not),
-            31 => Ok(OpCode::And),
-            32 => Ok(OpCode::Or),
+            31 => Ok(OpCode::Boolean),
             40 => Ok(OpCode::DefineGlobal),
             41 => Ok(OpCode::GetGlobal),
             42 => Ok(OpCode::SetGlobal),
@@ -97,7 +96,8 @@ impl TryFrom<u8> for OpCode {
             44 => Ok(OpCode::SetLocal),
             50 => Ok(OpCode::Jump),
             51 => Ok(OpCode::JumpIfFalse),
-            52 => Ok(OpCode::Loop),
+            52 => Ok(OpCode::JumpIfTrue),
+            53 => Ok(OpCode::Loop),
             60 => Ok(OpCode::Call),
             61 => Ok(OpCode::Return),
             70 => Ok(OpCode::Pop),

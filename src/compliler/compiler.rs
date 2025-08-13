@@ -383,21 +383,49 @@ impl expr::Visitor<Result<()>> for Compiler {
     }
 
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> Result<()> {
-        left.accept(self)?;
-        right.accept(self)?;
         match op {
-            BinaryOp::Add => self.emit_op(OpCode::Add),
-            BinaryOp::Subtract => self.emit_op(OpCode::Subtract),
-            BinaryOp::Multiply => self.emit_op(OpCode::Multiply),
-            BinaryOp::Divide => self.emit_op(OpCode::Divide),
-            BinaryOp::Equal => self.emit_op(OpCode::Equal),
-            BinaryOp::NotEqual => self.emit_op(OpCode::NotEqual),
-            BinaryOp::LessThan => self.emit_op(OpCode::LessThan),
-            BinaryOp::LessEqual => self.emit_op(OpCode::LessEqual),
-            BinaryOp::GreaterThan => self.emit_op(OpCode::GreaterThan),
-            BinaryOp::GreaterEqual => self.emit_op(OpCode::GreaterEqual),
-            BinaryOp::LogicalAnd => self.emit_op(OpCode::And),
-            BinaryOp::LogicalOr => self.emit_op(OpCode::Or),
+            BinaryOp::LogicalAnd => {
+                left.accept(self)?;
+                let left_jump = self.emit_jump(OpCode::JumpIfFalse);
+
+                right.accept(self)?;
+                self.emit_op(OpCode::Boolean);
+                let right_jump = self.emit_jump(OpCode::Jump);
+
+                self.chunk.patch_jump(left_jump);
+                self.emit_op(OpCode::False);
+                self.chunk.patch_jump(right_jump);
+            }
+            BinaryOp::LogicalOr => {
+                left.accept(self)?;
+                let left_jump = self.emit_jump(OpCode::JumpIfTrue);
+
+                right.accept(self)?;
+                self.emit_op(OpCode::Boolean);
+                let right_jump = self.emit_jump(OpCode::Jump);
+
+                self.chunk.patch_jump(left_jump);
+                self.emit_op(OpCode::True);
+                self.chunk.patch_jump(right_jump);
+            }
+            _ => {
+                // 其他二进制操作正常处理
+                left.accept(self)?;
+                right.accept(self)?;
+                match op {
+                    BinaryOp::Add => self.emit_op(OpCode::Add),
+                    BinaryOp::Subtract => self.emit_op(OpCode::Subtract),
+                    BinaryOp::Multiply => self.emit_op(OpCode::Multiply),
+                    BinaryOp::Divide => self.emit_op(OpCode::Divide),
+                    BinaryOp::Equal => self.emit_op(OpCode::Equal),
+                    BinaryOp::NotEqual => self.emit_op(OpCode::NotEqual),
+                    BinaryOp::LessThan => self.emit_op(OpCode::LessThan),
+                    BinaryOp::LessEqual => self.emit_op(OpCode::LessEqual),
+                    BinaryOp::GreaterThan => self.emit_op(OpCode::GreaterThan),
+                    BinaryOp::GreaterEqual => self.emit_op(OpCode::GreaterEqual),
+                    _ => unreachable!(),
+                }
+            }
         }
         Ok(())
     }

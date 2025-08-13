@@ -121,6 +121,10 @@ impl VM {
             OpCode::Nil => self.push(Value::Nil),
             OpCode::True => self.push(Value::Boolean(true)),
             OpCode::False => self.push(Value::Boolean(false)),
+            OpCode::Boolean => {
+                let value = self.pop()?;
+                self.push(Value::Boolean(value.is_truthy()));
+            }
 
             OpCode::Add
             | OpCode::Subtract
@@ -131,9 +135,11 @@ impl VM {
             | OpCode::LessThan
             | OpCode::LessEqual
             | OpCode::GreaterThan
-            | OpCode::GreaterEqual
-            | OpCode::And
-            | OpCode::Or => self.binary_op(instruction)?,
+            | OpCode::GreaterEqual => {
+                let right = self.pop()?;
+                let left = self.pop()?;
+                self.binary_op(instruction, left, right)?
+            }
 
             OpCode::Negate | OpCode::Not => self.unary_op(instruction)?,
 
@@ -173,6 +179,13 @@ impl VM {
                 let offset = self.read_short()? as usize;
                 let condition = self.pop()?;
                 if !condition.is_truthy() {
+                    self.ip += offset;
+                }
+            }
+            OpCode::JumpIfTrue => {
+                let offset = self.read_short()? as usize;
+                let condition = self.pop()?;
+                if condition.is_truthy() {
                     self.ip += offset;
                 }
             }
@@ -244,10 +257,7 @@ impl VM {
         Ok(())
     }
 
-    fn binary_op(&mut self, op: OpCode) -> Result<()> {
-        let right = self.pop()?;
-        let left = self.pop()?;
-
+    fn binary_op(&mut self, op: OpCode, left: Value, right: Value) -> Result<()> {
         match op {
             OpCode::Add => self.push((left + right)?),
             OpCode::Subtract => self.push((left - right)?),
@@ -259,8 +269,6 @@ impl VM {
             OpCode::LessEqual => self.push(Value::Boolean(left <= right)),
             OpCode::GreaterThan => self.push(Value::Boolean(left > right)),
             OpCode::GreaterEqual => self.push(Value::Boolean(left >= right)),
-            OpCode::And => self.push(Value::Boolean(left.is_truthy() && right.is_truthy())),
-            OpCode::Or => self.push(Value::Boolean(left.is_truthy() || right.is_truthy())),
             _ => return Err(Error::invalid_opcode(op as u8)),
         }
         Ok(())

@@ -204,7 +204,7 @@ impl Chunk {
                 println!("{indent}{offset:4} {op:15} {operand} ; local[{operand}]");
                 offset + 2
             }
-            OpCode::JumpIfFalse | OpCode::Jump => {
+            OpCode::JumpIfFalse | OpCode::Jump | OpCode::JumpIfTrue => {
                 let high = self.code[offset + 1] as u16;
                 let low = self.code[offset + 2] as u16;
                 let jump_offset = (high << 8) | low;
@@ -284,6 +284,10 @@ impl Chunk {
                 println!("{indent}{offset:4} {op:15} {count} ; print");
                 offset + 2
             }
+            OpCode::Boolean => {
+                println!("{indent}{offset:4} {op:15} ; boolean");
+                offset + 1
+            }
             OpCode::Add
             | OpCode::Subtract
             | OpCode::Multiply
@@ -293,9 +297,7 @@ impl Chunk {
             | OpCode::LessThan
             | OpCode::LessEqual
             | OpCode::GreaterThan
-            | OpCode::GreaterEqual
-            | OpCode::And
-            | OpCode::Or => {
+            | OpCode::GreaterEqual => {
                 println!("{indent}{offset:4} {op:15} ; binary operation");
                 offset + 1
             }
