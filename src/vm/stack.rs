@@ -1,13 +1,12 @@
 use crate::{
-    compiler::value::{Function, Upvalue},
+    compiler::value::Upvalue,
     constant::STACK_SIZE,
     error::{Error, Result},
 };
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub function: Rc<Function>,
+    pub upvalues: Vec<Upvalue>,
     pub ip: usize,
     pub slots_offset: usize,
 }
@@ -40,13 +39,12 @@ impl CallStack {
 
     pub fn get_upvalue(&self, index: usize) -> Result<&Upvalue> {
         if let Some(frame) = self.frames.last() {
-            let function = &frame.function;
-            if index < function.upvalues.len() {
-                Ok(&function.upvalues[index])
+            if index < frame.upvalues.len() {
+                Ok(&frame.upvalues[index])
             } else {
                 Err(Error::upvalue_index_out_of_bounds(
                     index,
-                    function.upvalues.len(),
+                    frame.upvalues.len(),
                 ))
             }
         } else {

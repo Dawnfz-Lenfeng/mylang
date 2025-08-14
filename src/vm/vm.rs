@@ -296,7 +296,7 @@ impl VM {
                 }
 
                 let frame = CallFrame {
-                    function: function.clone(),
+                    upvalues: function.upvalues.clone(),
                     ip: self.ip,
                     slots_offset: self.stack.len() - arg_count,
                 };
