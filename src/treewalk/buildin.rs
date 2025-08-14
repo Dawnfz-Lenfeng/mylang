@@ -21,7 +21,7 @@ fn builtin_len(args: &[Value]) -> Result<Value> {
     }
 
     match &args[0] {
-        Value::Array(arr) => Ok(Value::Number(arr.len() as f64)),
+        Value::Array(arr) => Ok(Value::Number(arr.borrow().len() as f64)),
         Value::String(s) => Ok(Value::Number(s.len() as f64)),
         _ => Err(Error::runtime(format!(
             "object of type '{}' has no len()",

@@ -70,7 +70,7 @@ fn builtin_assert(args: &[Value]) -> Result<Value> {
         )));
     }
 
-    match args.iter().as_slice() {
+    match args {
         [condition, message] => {
             if !condition.is_truthy() {
                 return Err(Error::assertion_with_message(message.to_string()));

@@ -1,13 +1,13 @@
 use super::{
     control::{InterpreterResult, RuntimeControl},
     env::{EnvRef, Environment},
-    value::Value,
+    value::{Function, Value},
 };
 use crate::{
     error::{Error, Result},
     parser::{expr, stmt, BinaryOp, Expr, LocatedStmt, Stmt, UnaryOp},
 };
-use std::{io::Write, rc::Rc};
+use std::{cell::RefCell, io::Write, rc::Rc};
 
 pub struct Interpreter {
     env: EnvRef,
@@ -84,12 +84,12 @@ impl stmt::Visitor<InterpreterResult<()>> for Interpreter {
         params: &[String],
         body: &[Stmt],
     ) -> InterpreterResult<()> {
-        let func = Value::Function {
+        let func = Value::Function(Rc::new(Function {
             name: name.to_string(),
             params: params.to_vec(),
             body: body.to_vec(),
             closure: Rc::clone(&self.env),
-        };
+        }));
         self.env.borrow_mut().define(name.to_string(), func);
         Ok(())
     }
@@ -200,7 +200,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             .iter()
             .map(|expr| expr.accept(self))
             .collect::<Result<Vec<Value>>>()?;
-        Ok(Value::Array(values))
+        Ok(Value::Array(Rc::new(RefCell::new(values))))
     }
 
     fn visit_binary(&mut self, left: &Expr, op: &BinaryOp, right: &Expr) -> Result<Value> {
@@ -254,13 +254,13 @@ impl expr::Visitor<Result<Value>> for Interpreter {
         match (array_value, index_value) {
             (Value::Array(arr), Value::Number(idx)) => {
                 let idx = idx as usize;
-                if idx < arr.len() {
-                    Ok(arr[idx].clone())
+                if idx < arr.borrow().len() {
+                    Ok(arr.borrow()[idx].clone())
                 } else {
                     Err(Error::runtime(format!(
                         "Array index {} out of bounds (length: {})",
                         idx,
-                        arr.len()
+                        arr.borrow().len()
                     )))
                 }
             }
@@ -281,15 +281,15 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                         let mut array_value = self.env.borrow().get(name)?;
                         match &mut array_value {
                             Value::Array(ref mut arr) => {
-                                if idx < arr.len() {
-                                    arr[idx] = new_value.clone();
+                                if idx < arr.borrow().len() {
+                                    arr.borrow_mut()[idx] = new_value.clone();
                                     self.env.borrow_mut().set(name, array_value)?;
                                     Ok(new_value)
                                 } else {
                                     Err(Error::runtime(format!(
                                         "Array index {} out of bounds (length: {})",
                                         idx,
-                                        arr.len()
+                                        arr.borrow().len()
                                     )))
                                 }
                             }
@@ -315,26 +315,21 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             .collect::<Result<Vec<Value>>>()?;
 
         match callee {
-            Value::Function {
-                params,
-                body,
-                closure,
-                ..
-            } => {
-                if params.len() != arguments.len() {
+            Value::Function(func) => {
+                if func.params.len() != arguments.len() {
                     return Err(Error::runtime(format!(
                         "Expected {} arguments, got {}",
-                        params.len(),
+                        func.params.len(),
                         arguments.len()
                     )));
                 }
                 let prev_env = Rc::clone(&self.env);
-                self.env = Environment::new_enclosed(closure);
+                self.env = Environment::new_enclosed(Rc::clone(&func.closure));
 
-                for (param, arg) in params.iter().zip(arguments.iter()) {
+                for (param, arg) in func.params.iter().zip(arguments.iter()) {
                     self.env.borrow_mut().define(param.clone(), arg.clone());
                 }
-                let result = body.iter().try_for_each(|stmt| stmt.accept(self));
+                let result = func.body.iter().try_for_each(|stmt| stmt.accept(self));
 
                 self.env = prev_env;
 

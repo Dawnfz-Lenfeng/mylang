@@ -4,6 +4,7 @@ use crate::{
     parser::Stmt,
 };
 use std::{
+    cell::RefCell,
     cmp::Ordering,
     fmt,
     ops::{Add, Div, Mul, Neg, Sub},
@@ -11,21 +12,21 @@ use std::{
 };
 
 #[derive(Debug, Clone)]
+pub struct Function {
+    pub name: String,
+    pub params: Vec<String>,
+    pub body: Vec<Stmt>,
+    pub closure: EnvRef,
+}
+
+#[derive(Debug, Clone)]
 pub enum Value {
     Number(f64),
     String(String),
     Boolean(bool),
-    Array(Vec<Value>),
-    Function {
-        name: String,
-        params: Vec<String>,
-        body: Vec<Stmt>,
-        closure: EnvRef,
-    },
-    BuiltinFunction {
-        name: String,
-        function: BuiltinFn,
-    },
+    Array(Rc<RefCell<Vec<Value>>>),
+    Function(Rc<Function>),
+    BuiltinFunction { name: String, function: BuiltinFn },
     Nil,
 }
 
@@ -36,7 +37,7 @@ impl Value {
             Value::Nil => false,
             Value::Number(n) => *n != 0.0,
             Value::String(s) => !s.is_empty(),
-            Value::Array(arr) => !arr.is_empty(),
+            Value::Array(arr) => !arr.borrow().is_empty(),
             Value::Function { .. } => true,
             Value::BuiltinFunction { .. } => true,
         }
@@ -65,9 +66,13 @@ impl Add for Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
             (Value::String(a), Value::String(b)) => Ok(Value::String(a + &b)),
-            (Value::Array(a), Value::Array(b)) => {
-                Ok(Value::Array(a.iter().chain(b.iter()).cloned().collect()))
-            }
+            (Value::Array(a), Value::Array(b)) => Ok(Value::Array(Rc::new(RefCell::new(
+                a.borrow()
+                    .iter()
+                    .chain(b.borrow().iter())
+                    .cloned()
+                    .collect(),
+            )))),
             _ => Err(Error::runtime(format!(
                 "unsupported operand type(s) for +: '{self_type}' and '{other_type}'"
             ))),
@@ -130,18 +135,7 @@ impl PartialEq for Value {
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
             (Value::Array(a), Value::Array(b)) => a == b,
-            (
-                Value::Function {
-                    name: a_name,
-                    closure: a_closure,
-                    ..
-                },
-                Value::Function {
-                    name: b_name,
-                    closure: b_closure,
-                    ..
-                },
-            ) => Rc::ptr_eq(&a_closure, &b_closure) && a_name == b_name,
+            (Value::Function(a), Value::Function(b)) => Rc::ptr_eq(a, b),
             (
                 Value::BuiltinFunction { name: a_name, .. },
                 Value::BuiltinFunction { name: b_name, .. },
@@ -186,7 +180,7 @@ impl fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Array(arr) => {
                 write!(f, "[")?;
-                for (i, val) in arr.iter().enumerate() {
+                for (i, val) in arr.borrow().iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
@@ -194,8 +188,8 @@ impl fmt::Display for Value {
                 }
                 write!(f, "]")
             }
-            Value::Function { name, params, .. } => {
-                write!(f, "<function {}({})>", name, params.join(", "))
+            Value::Function(func) => {
+                write!(f, "<function {}({})>", func.name, func.params.join(", "))
             }
             Value::BuiltinFunction { name, .. } => {
                 write!(f, "<builtin function {}>", name)
